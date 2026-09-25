@@ -14,6 +14,55 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
+<style>
+  /* Kartan vierityslukko: sivu skrollaa normaalisti kunnes karttaa klikataan */
+  .map-lock{
+    position:absolute; inset:0; z-index:3; cursor:pointer;
+    display:grid; place-content:center; justify-items:center; gap:10px;
+    background:rgba(6,10,8,.34);
+    -webkit-backdrop-filter:blur(.5px); backdrop-filter:blur(.5px);
+    opacity:0; transition:opacity .28s ease, background .28s ease;
+    touch-action:pan-y;
+  }
+  .map-frame:hover .map-lock,
+  .map-lock:focus-visible{ opacity:1 }
+  .map-lock__pill{
+    display:inline-flex; align-items:center; gap:9px;
+    padding:11px 18px; border-radius:999px;
+    background:rgba(8,14,11,.82); border:1px solid var(--line-strong,rgba(255,255,255,.18));
+    color:var(--text,#eaf3ee); font-size:.92rem; letter-spacing:.01em;
+    box-shadow:0 10px 30px -14px #000;
+  }
+  .map-lock__pill svg{ flex:0 0 auto }
+  .map-lock[hidden]{ display:none }
+  /* Aktivointiefekti */
+  .map-ripple{
+    position:absolute; z-index:4; width:12px; height:12px; margin:-6px 0 0 -6px;
+    border-radius:50%; pointer-events:none;
+    border:2px solid var(--green,#3ef08a);
+    box-shadow:0 0 22px 4px rgba(62,240,138,.45);
+    animation:mapRipple .62s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  @keyframes mapRipple{
+    from{ transform:scale(1); opacity:.95 }
+    to  { transform:scale(26); opacity:0 }
+  }
+  .map-frame.is-live{ box-shadow:var(--shadow),0 0 60px -22px var(--green,#3ef08a) }
+  .map-frame.is-live::after{
+    content:"Kartta aktiivinen — Esc tai siirrä hiiri pois";
+    position:absolute; z-index:5; left:50%; bottom:14px; transform:translateX(-50%);
+    padding:7px 14px; border-radius:999px; pointer-events:none;
+    background:rgba(8,14,11,.8); border:1px solid var(--line,rgba(255,255,255,.12));
+    color:var(--muted,#9db3a6); font-size:.78rem; white-space:nowrap;
+    animation:mapHint 2.6s ease forwards;
+  }
+  @keyframes mapHint{ 0%{opacity:0} 12%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
+  @media (prefers-reduced-motion:reduce){
+    .map-lock{transition:none}
+    .map-ripple{display:none}
+    .map-frame.is-live::after{animation:none;opacity:1}
+  }
+</style>
 </head>
 <body>
 <a class="skip" href="#main">Siirry sisältöön</a>
@@ -49,6 +98,16 @@
 
     <div class="map-frame" data-reveal="zoom">
       <iframe id="map-frame" src="about:blank" title="K-S-P-K maailmankartta (uNmINeD)"></iframe>
+      <div class="map-lock" id="map-lock" role="button" tabindex="0"
+           aria-label="Ota kartta käyttöön — sivu vierii normaalisti kunnes klikkaat">
+        <span class="map-lock__pill">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 9l6-6 6 6M6 15l6 6 6-6"/>
+          </svg>
+          Klikkaa karttaa käyttääksesi sitä
+        </span>
+      </div>
       <div class="map-placeholder" id="map-ph" hidden>
         <div style="font-size:2.8rem">🗺️</div>
         <h3 style="margin:0">Kartta on tulossa</h3>
@@ -119,6 +178,54 @@
     b.addEventListener('click', function(){ show(b.dataset.map); });
   });
   document.getElementById('map-reload').addEventListener('click', function(){ show(current); });
+
+  /* --- Vierityslukko -------------------------------------------------
+     Kartta on iframe, joka nappaa hiiren rullan itselleen. Sen päällä on
+     läpinäkyvä kerros, joka päästää rullan sivulle => sivu skrollaa
+     normaalisti. Ensimmäinen klikkaus poistaa kerroksen ja kartta on
+     käytössä. Kun hiiri viedään pois (tai painetaan Esc), lukko palaa. --- */
+  var frame = f.parentNode;              // .map-frame
+  var lock  = document.getElementById('map-lock');
+  var live  = false;
+
+  function activate(ev){
+    if (live || !ph.hidden) return;
+    live = true;
+    lock.hidden = true;
+    frame.classList.add('is-live');
+    if (ev && typeof ev.clientX === 'number' && !matchMedia('(prefers-reduced-motion:reduce)').matches){
+      var r = frame.getBoundingClientRect();
+      var dot = document.createElement('span');
+      dot.className = 'map-ripple';
+      dot.style.left = (ev.clientX - r.left) + 'px';
+      dot.style.top  = (ev.clientY - r.top)  + 'px';
+      frame.appendChild(dot);
+      setTimeout(function(){ dot.remove(); }, 700);
+    }
+  }
+
+  function deactivate(){
+    if (!live) return;
+    live = false;
+    frame.classList.remove('is-live');
+    lock.hidden = !ph.hidden;
+  }
+
+  lock.addEventListener('click', activate);
+  lock.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+  });
+  frame.addEventListener('mouseleave', deactivate);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') deactivate(); });
+  // Kosketuslaitteet: lukko palaa kun kosketetaan kartan ulkopuolelle
+  document.addEventListener('pointerdown', function(e){
+    if (live && !frame.contains(e.target)) deactivate();
+  }, true);
+
+  // Lukko näkyy vain kun oikea kartta on ladattuna (ei "tulossa"-tilassa)
+  function syncLock(){ if (!live) lock.hidden = !ph.hidden; }
+  new MutationObserver(syncLock).observe(ph, { attributes:true, attributeFilter:['hidden'] });
+  syncLock();
 
   // Näytä päivä/yö-napit vasta kun vähintään toinen kartta on olemassa
   Promise.all([exists(paths.day), exists(paths.night)]).then(function(r){
