@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="fi" class="is-loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uusi sivu | K-S-P-K</title>
+<meta name="description" content="Sivupohja.">
+<meta property="og:title" content="Uusi sivu | K-S-P-K">
+<meta property="og:description" content="Sivupohja.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#060a08">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Siirry sisältöön</a>
+<main id="main">
+
+<!-- =====================================================================
+     SIVUPOHJA — kopioi tämä tiedosto uudeksi sivuksi.
+     1) Nimeä esim. "tapahtumat.html"
+     2) Vaihda <title> ja description yllä
+     3) Lisää sivu assets/js/site.js -tiedoston SITE.pages-listaan
+     Käytettävissä olevat animaatiot:
+       data-reveal            (alhaalta)   data-reveal="left" / "right"
+       data-reveal="zoom"     data-reveal="clip"
+       data-parallax="0.08"   (liikkuu skrollatessa)
+       data-count="120"       (laskuri)    data-copy="teksti"
+       luokka .tilt korttiin  (3D-kallistus)
+     ===================================================================== -->
+
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>Osio</span>
+    <h1 data-reveal>Sivun <span class="grad-text">otsikko</span></h1>
+    <p class="lead" data-reveal>Lyhyt kuvaus siitä, mitä tältä sivulta löytyy.</p>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">Väliotsikko</span>
+      <h2>Sisältölohko</h2>
+      <p class="lead">Kuvausteksti.</p>
+    </div>
+    <div class="grid g-3">
+      <div class="card tilt" data-reveal><div class="card__ico">✨</div><h3>Kortti</h3><p>Sisältöä.</p></div>
+      <div class="card tilt" data-reveal><div class="card__ico">⛏️</div><h3>Kortti</h3><p>Sisältöä.</p></div>
+      <div class="card tilt" data-reveal><div class="card__ico">🧱</div><h3>Kortti</h3><p>Sisältöä.</p></div>
+    </div>
+  </div>
+</section>
+</main>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

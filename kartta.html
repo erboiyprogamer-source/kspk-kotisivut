@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fi" class="is-loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maailmankartta | K-S-P-K Minecraft Official</title>
+<meta name="description" content="uNmINeD-renderöity interaktiivinen kartta K-S-P-K Minecraft -serverin maailmasta.">
+<meta property="og:title" content="Maailmankartta | K-S-P-K Minecraft Official">
+<meta property="og:description" content="uNmINeD-renderöity interaktiivinen kartta K-S-P-K Minecraft -serverin maailmasta.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#060a08">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Siirry sisältöön</a>
+<main id="main">
+
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>uNmINeD</span>
+    <h1 data-reveal><span class="grad-text">Maailmankartta</span></h1>
+    <p class="lead" data-reveal>
+      Serverin maailma renderöitynä selainkartaksi. Zoomaa, panoroi ja etsi tutut rakennukset.
+    </p>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="map-toolbar" data-reveal>
+      <a class="btn btn--sm btn--solid" id="map-open" href="kartta/index.html" target="_blank" rel="noopener">Avaa koko näytölle</a>
+      <button class="btn btn--sm" type="button" id="map-reload">Lataa uudelleen</button>
+      <span class="tag tag--dim">Päivitetty renderöinnin yhteydessä</span>
+    </div>
+
+    <div class="map-frame" data-reveal="zoom">
+      <iframe id="map-frame" src="kartta/index.html" title="K-S-P-K maailmankartta (uNmINeD)" loading="lazy"></iframe>
+      <div class="map-placeholder" id="map-ph" hidden>
+        <div style="font-size:2.6rem">🗺️</div>
+        <h3 style="margin:0">Karttaa ei ole vielä ladattu</h3>
+        <p class="muted" style="max-width:46ch;margin:0">
+          Kopioi uNmINeD-renderöinnin koko kansion sisältö (<code>index.html</code>, <code>lib/</code>,
+          <code>tiles/</code>, <code>playerimages/</code>) tämän sivuston <code>kartta/</code>-kansioon.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head" data-reveal><span class="eyebrow">Ohje</span><h2>Miten kartta viedään tänne</h2></div>
+    <div class="grid g-3">
+      <div class="card" data-reveal>
+        <div class="card__ico">1️⃣</div><h3>Renderöi uNmINeD:llä</h3>
+        <p>Aja uNmINeD ja valitse web-kartan export. Lopputulos on kansio, jossa on
+           <code>index.html</code> ja sen tarvitsemat alikansiot.</p>
+      </div>
+      <div class="card" data-reveal>
+        <div class="card__ico">2️⃣</div><h3>Kopioi <code>kartta/</code>-kansioon</h3>
+        <p>Siirrä <b>koko kansion sisältö</b> tämän sivuston <code>kartta/</code>-kansioon.
+           Pelkkä <code>index.html</code> ei riitä — polut ovat suhteellisia.</p>
+      </div>
+      <div class="card" data-reveal>
+        <div class="card__ico">3️⃣</div><h3>Valmis</h3>
+        <p>Kartta näkyy heti tällä sivulla upotettuna ja aukeaa myös
+           omaan välilehteen osoitteesta <code>/kartta/</code>.</p>
+      </div>
+    </div>
+
+    <div class="notice" style="margin-top:28px" data-reveal>
+      <b>Huom:</b> <code>tiles/</code>-kansio voi olla iso. Jos repo kasvaa liian suureksi,
+      harkitse karttojen vientiä erilliseen repoon tai omalle webhotellille ja vaihda
+      yllä oleva osoite tiedostossa <code>assets/js/site.js</code> (<code>mapPath</code>).
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  var f = document.getElementById('map-frame');
+  var ph = document.getElementById('map-ph');
+  document.getElementById('map-reload').addEventListener('click', function(){
+    f.src = f.src;
+  });
+  // Näytä ohje jos kartta puuttuu (fetch HEAD)
+  fetch('kartta/index.html', {method:'HEAD'})
+    .then(function(r){ if(!r.ok) throw 0; })
+    .catch(function(){ ph.hidden = false; f.style.visibility = 'hidden'; });
+})();
+</script>
+</main>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fi" class="is-loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tietoa ja yhteystiedot | K-S-P-K</title>
+<meta name="description" content="Tietoa K-S-P-K Minecraft Official -kanavasta ja yhteystiedot.">
+<meta property="og:title" content="Tietoa ja yhteystiedot | K-S-P-K">
+<meta property="og:description" content="Tietoa K-S-P-K Minecraft Official -kanavasta ja yhteystiedot.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#060a08">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Siirry sisältöön</a>
+<main id="main">
+
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>Kanava</span>
+    <h1 data-reveal>Tietoa &amp; <span class="grad-text">yhteystiedot</span></h1>
+    <p class="lead" data-reveal>Kuka tekee, mitä tehdään ja miten saat yhteyden.</p>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap grid g-2" style="align-items:start">
+    <div data-reveal="left">
+      <span class="eyebrow">Tarina</span>
+      <h2 style="font-size:1.6rem">K-S-P-K Minecraft Official</h2>
+      <p>Kanava sai alkunsa halusta näyttää, mitä Minecraftissa syntyy kun jaksaa rakentaa
+         pidempään kuin yhden illan. Alussa videot olivat lyhyitä pätkiä omasta maailmasta —
+         nyt mukana on oma serveri, pitkiä projekteja ja yhteisö, joka rakentaa yhdessä.</p>
+      <p>Sisältö on suomeksi ja kaikenikäisille. Mukaan mahtuu survivalia, megabuildeja,
+         redstone-viritystä ja satunnaista kaaosta kavereiden kanssa.</p>
+      <div class="stack-end" style="margin-top:8px">
+        <a class="btn btn--solid" data-site-href="youtube" target="_blank" rel="noopener" href="#">Katso kanava</a>
+        <a class="btn btn--ghost" href="serveri.html">Serverin tiedot</a>
+      </div>
+    </div>
+
+    <div class="grid" style="gap:16px" data-reveal="right">
+      <div class="card"><div class="card__ico">🎯</div><h3>Mitä teemme</h3>
+        <p>Pitkäjänteisiä rakennusprojekteja, serverisarjoja ja selkeitä tutoriaaleja.</p></div>
+      <div class="card"><div class="card__ico">🤝</div><h3>Yhteistyöt</h3>
+        <p>Otamme vastaan yhteistyöehdotuksia, jotka sopivat kanavan tyyliin ja yleisölle.</p></div>
+      <div class="card"><div class="card__ico">🔒</div><h3>Turvallisuus</h3>
+        <p>Chatti ja serveri pidetään asiallisina. Ylläpito puuttuu häiriköintiin heti.</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap grid g-2" style="align-items:start">
+    <div data-reveal>
+      <span class="eyebrow">Viesti</span>
+      <h2 style="font-size:1.6rem">Ota yhteyttä</h2>
+      <p class="muted">Lomake avaa oman sähköpostiohjelmasi valmiiksi täytetyllä viestillä.</p>
+      <form id="contact-form" data-email="erboiy22@gmail.com" novalidate>
+        <div class="field"><label for="nimi">Nimi</label><input id="nimi" name="nimi" required></div>
+        <div class="field"><label for="email">Sähköposti</label><input id="email" name="email" type="email" required></div>
+        <div class="field"><label for="aihe">Aihe</label>
+          <select id="aihe" name="aihe">
+            <option>Yhteistyö</option><option>Serveri / whitelist</option>
+            <option>Palaute</option><option>Muu</option>
+          </select></div>
+        <div class="field"><label for="viesti">Viesti</label><textarea id="viesti" name="viesti" required></textarea></div>
+        <button class="btn btn--solid" type="submit">Lähetä viesti</button>
+      </form>
+    </div>
+
+    <div class="card card--accent" data-reveal="right">
+      <span class="eyebrow">Suorat linkit</span>
+      <h3>Löydät meidät täältä</h3>
+      <ul class="rules" style="margin-top:18px">
+        <li><b>YT</b><span><a data-site-href="youtube" href="#" target="_blank" rel="noopener">YouTube-kanava</a></span></li>
+        <li><b>DC</b><span><a data-site-href="discord" href="#">Discord-yhteisö</a></span></li>
+        <li><b>TT</b><span><a data-site-href="tiktok" href="#">TikTok</a></span></li>
+        <li><b>@</b><span><a href="mailto:erboiy22@gmail.com">erboiy22@gmail.com</a></span></li>
+      </ul>
+      <p class="muted" style="font-size:.85rem;margin-top:20px;margin-bottom:0">
+        Linkit päivitetään tiedostossa <code>assets/js/site.js</code>.
+      </p>
+    </div>
+  </div>
+</section>
+</main>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
