@@ -598,6 +598,9 @@ tfoot td{padding:15px 18px;border-top:1px solid var(--line-strong);font-weight:6
 .socials svg{width:18px;height:18px;fill:var(--green)}
 
 /* ---------- 21. Apuluokat & muut ---------- */
+/* hidden-attribuutin on voitettava komponenttien display-arvot */
+[hidden]{display:none !important}
+
 .to-top{
   position:fixed;right:22px;bottom:22px;z-index:70;
   width:46px;height:46px;border-radius:13px;cursor:pointer;
