@@ -28,9 +28,54 @@ const SITE = {
     { href:'galleria.html',  label:'Galleria',   foot:'Sivusto' },
     { href:'serveri.html',   label:'Serveri',    foot:'Yhteisö' },
     { href:'kartta.html',    label:'Kartta',     foot:'Yhteisö' },
-    { href:'projektit.html', label:'Projektit',  foot:'Yhteisö' },
+    { href:'projektit.html', label:'Dokumentit', foot:'Yhteisö' },
     { href:'tietoa.html',    label:'Tietoa',     foot:'Sivusto' }
+  ],
+
+  /* ===================================================================
+     GOOGLE DOCS -LINKIT  (näkyvät sivulla projektit.html)
+     -------------------------------------------------------------------
+     Lisää uusi linkki kopioimalla yksi rivi alta.
+       name : otsikko kortissa
+       desc : lyhyt kuvaus
+       url  : Google Docsin / Sheetsin / Driven osoite (liitä tähän)
+       type : 'doc' | 'sheet' | 'slide' | 'form' | 'drive'
+     =================================================================== */
+  docs: [
+    { type:'sheet', name:'Kirjanpito — päätilikirja',
+      desc:'Kaikki tulot ja menot yhdessä taulukossa, kuukausittain eriteltynä.',
+      url:'#' },
+    { type:'sheet', name:'Kuukausiraportti',
+      desc:'Yhteenveto kuukauden saldosta ja isoimmista eristä.',
+      url:'#' },
+    { type:'drive', name:'Kuitit ja tositteet',
+      desc:'Skannatut kuitit ja laskut Drive-kansiossa päivämäärän mukaan.',
+      url:'#' },
+    { type:'doc',   name:'Projektisuunnitelma',
+      desc:'Tavoitteet, aikataulu ja vastuut. Päivitetään viikoittain.',
+      url:'#' },
+    { type:'doc',   name:'Tehtävälista',
+      desc:'Mitä on tekemättä, kuka tekee ja mihin mennessä.',
+      url:'#' },
+    { type:'doc',   name:'Videoideat',
+      desc:'Kerätyt ideat ja käsikirjoitusluonnokset tuleviin jaksoihin.',
+      url:'#' },
+    { type:'slide', name:'Yhteistyöesittely',
+      desc:'Kanavan esittelydiat yhteistyökumppaneille.',
+      url:'#' },
+    { type:'drive', name:'Materiaalipankki',
+      desc:'Kansikuvat, musiikit ja raakamateriaali yhdessä paikassa.',
+      url:'#' }
   ]
+};
+
+/* Google-dokumenttityyppien ulkoasu */
+const DOC_TYPES = {
+  doc:   { ico:'📄', tag:'Google Docs',   cls:'tag--sky' },
+  sheet: { ico:'📊', tag:'Google Sheets', cls:'' },
+  slide: { ico:'📽️', tag:'Google Slides', cls:'tag--gold' },
+  form:  { ico:'📝', tag:'Google Forms',  cls:'tag--sky' },
+  drive: { ico:'🗂️', tag:'Google Drive',  cls:'tag--dim' }
 };
 
 /* --------------------------------------------------------------- */
@@ -113,6 +158,24 @@ const SITE = {
   });
   nav.querySelectorAll('.nav__links a').forEach(a =>
     a.addEventListener('click', () => nav.classList.remove('is-open')));
+
+  /* Google Docs -korttien renderöinti (projektit.html) */
+  const dg = document.getElementById('docs-grid');
+  if (dg) {
+    dg.innerHTML = SITE.docs.map(d => {
+      const t = DOC_TYPES[d.type] || DOC_TYPES.doc;
+      const ext = d.url && d.url !== '#';
+      return `
+      <a class="card card--link tilt doc-card" data-tags="${d.type}"
+         href="${d.url}"${ext ? ' target="_blank" rel="noopener"' : ''} data-reveal>
+        <div class="card__ico">${t.ico}</div>
+        <span class="tag ${t.cls}">${t.tag}</span>
+        <h3 style="margin-top:12px">${d.name}</h3>
+        <p>${d.desc}</p>
+        <span class="card__link">${ext ? 'Avaa dokumentti' : 'Lisää linkki site.js:ään'} <span>→</span></span>
+      </a>`;
+    }).join('');
+  }
 
   /* täydennä data-site-* paikkamerkit sivuilla */
   document.querySelectorAll('[data-site]').forEach(el => {
