@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Maailmankartta | K-S-P-K Minecraft Official</title>
-<meta name="description" content="uNmINeD-renderoity interaktiivinen kartta K-S-P-K Minecraft -serverin maailmasta, paiva- ja yokuvana.">
+<meta name="description" content="Selattava kartta K-S-P-K Minecraft -serverin maailmasta, paiva- ja yokuvana.">
 <meta property="og:title" content="Maailmankartta | K-S-P-K Minecraft Official">
-<meta property="og:description" content="uNmINeD-renderoity interaktiivinen kartta K-S-P-K Minecraft -serverin maailmasta, paiva- ja yokuvana.">
+<meta property="og:description" content="Selattava kartta K-S-P-K Minecraft -serverin maailmasta, paiva- ja yokuvana.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#060a08">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
@@ -19,20 +19,28 @@
 <a class="skip" href="#main">Siirry sisältöön</a>
 <main id="main">
 
+<!-- =====================================================================
+     KARTTASIVU
+     Kun uNmINeD-renderöinnit ovat valmiit, kopioi ne kansioihin
+     kartta/paiva/ ja kartta/yo/ — sivu vaihtaa automaattisesti
+     "tulossa"-tilasta oikeaan karttaan, mitään ei tarvitse muuttaa täällä.
+     Tekniset ohjeet ja koko­rajat: kartta/README.md
+     ===================================================================== -->
+
 <section class="page-head">
   <div class="wrap">
     <span class="eyebrow" data-reveal>uNmINeD</span>
     <h1 data-reveal><span class="grad-text">Maailmankartta</span></h1>
     <p class="lead" data-reveal>
-      Serverin maailma renderöitynä selainkartaksi. Zoomaa, panoroi ja etsi tutut rakennukset.
-      Vaihda päivä- ja yökuvan välillä alta.
+      Koko serverin maailma selattavana karttana — zoomaa, panoroi ja etsi tutut
+      rakennukset. Päivä- ja yökuvana.
     </p>
   </div>
 </section>
 
 <section style="padding-top:0">
   <div class="wrap">
-    <div class="map-toolbar" data-reveal>
+    <div class="map-toolbar" data-reveal hidden id="map-tools">
       <button class="btn btn--sm btn--solid" type="button" data-map="day">☀️ Päiväkuva</button>
       <button class="btn btn--sm" type="button" data-map="night">🌙 Yökuva</button>
       <a class="btn btn--sm btn--ghost" id="map-open" href="#" target="_blank" rel="noopener">Avaa koko näytölle</a>
@@ -42,13 +50,13 @@
     <div class="map-frame" data-reveal="zoom">
       <iframe id="map-frame" src="about:blank" title="K-S-P-K maailmankartta (uNmINeD)"></iframe>
       <div class="map-placeholder" id="map-ph" hidden>
-        <div style="font-size:2.6rem">🗺️</div>
-        <h3 style="margin:0" id="map-ph-title">Karttaa ei ole vielä ladattu</h3>
-        <p class="muted" style="max-width:48ch;margin:0">
-          Kopioi uNmINeD-renderöinnin koko kansion sisältö (<code>index.html</code>, <code>lib/</code>,
-          <code>tiles/</code>, <code>playerimages/</code>) kansioon
-          <code id="map-ph-path">kartta/paiva/</code>.
+        <div style="font-size:2.8rem">🗺️</div>
+        <h3 style="margin:0">Kartta on tulossa</h3>
+        <p class="muted" style="max-width:46ch;margin:0">
+          Maailma on renderöity, mutta kartta odottaa vielä siirtoa palvelimelle.
+          Se aukeaa tähän heti kun on valmis — ei erillistä linkkiä eikä kirjautumista.
         </p>
+        <span class="tag tag--gold" style="margin-top:6px">Työn alla</span>
       </div>
     </div>
   </div>
@@ -56,65 +64,67 @@
 
 <section style="padding-top:0">
   <div class="wrap">
-    <div class="section-head" data-reveal><span class="eyebrow">Ohje</span><h2>Miten kartat viedään tänne</h2></div>
-    <div class="grid g-3">
-      <div class="card" data-reveal>
-        <div class="card__ico">1️⃣</div><h3>Renderöi uNmINeD:llä</h3>
-        <p>Aja uNmINeD ja valitse web-kartan export. Lopputulos on kansio, jossa on
-           <code>index.html</code> ja sen tarvitsemat alikansiot.</p>
-      </div>
-      <div class="card" data-reveal>
-        <div class="card__ico">2️⃣</div><h3>Kopioi omiin kansioihinsa</h3>
-        <p>Päiväkuva kansioon <code>kartta/paiva/</code> ja yökuva kansioon
-           <code>kartta/yo/</code>. Siirrä <b>koko kansion sisältö</b> — pelkkä
-           <code>index.html</code> ei riitä, sillä polut ovat suhteellisia.</p>
-      </div>
-      <div class="card" data-reveal>
-        <div class="card__ico">3️⃣</div><h3>Valmis</h3>
-        <p>Kartat näkyvät heti tällä sivulla, ja kaverisi pääsevät niihin samasta
-           osoitteesta kuin muillekin sivuille — ei erillistä kirjautumista.</p>
-      </div>
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">Mikä kartta</span>
+      <h2>Mitä kartalta näkee</h2>
     </div>
-
-    <div class="notice" style="margin-top:28px" data-reveal>
-      <b>Koko on tässä se juju:</b> <code>tiles/</code>-kansiossa on tyypillisesti tuhansia
-      pieniä kuvia. GitHubin selainlatauksella voi viedä enintään 100 tiedostoa kerrallaan,
-      joten iso kartta kannattaa siirtää GitHub Desktopilla tai <code>git</code>-komennolla.
-      GitHub Pagesin raja julkaistulle sivustolle on 1 Gt.
+    <div class="grid g-3">
+      <div class="card tilt" data-reveal>
+        <div class="card__ico">🔍</div><h3>Zoomattava yleiskuva</h3>
+        <p>Koko maailma ylhäältä päin. Zoomaa ulos nähdäksesi mittakaavan tai
+           sisään yksittäisiin rakennuksiin asti.</p>
+      </div>
+      <div class="card tilt" data-reveal>
+        <div class="card__ico">🌗</div><h3>Päivä ja yö</h3>
+        <p>Kaksi renderöintiä samasta maailmasta. Yökuvassa valaistut rakennukset
+           erottuvat pimeästä maastosta.</p>
+      </div>
+      <div class="card tilt" data-reveal>
+        <div class="card__ico">📈</div><h3>Maailma kasvaa</h3>
+        <p>Kartta päivitetään aina isompien rakennusprojektien jälkeen, joten
+           siitä näkee miten serveri on kehittynyt.</p>
+      </div>
     </div>
   </div>
 </section>
 
 <script>
 (function(){
-  var f  = document.getElementById('map-frame');
-  var ph = document.getElementById('map-ph');
-  var phPath = document.getElementById('map-ph-path');
-  var open = document.getElementById('map-open');
-  var paths = { day: (window.SITE && SITE.mapDay) || 'kartta/paiva/index.html',
-                night:(window.SITE && SITE.mapNight)|| 'kartta/yo/index.html' };
+  var f     = document.getElementById('map-frame');
+  var ph    = document.getElementById('map-ph');
+  var tools = document.getElementById('map-tools');
+  var open  = document.getElementById('map-open');
+  var paths = { day:  (window.SITE && SITE.mapDay)   || 'kartta/paiva/index.html',
+                night:(window.SITE && SITE.mapNight) || 'kartta/yo/index.html' };
   var current = 'day';
+
+  function exists(url){
+    return fetch(url, { method:'HEAD' }).then(function(r){ return r.ok; }).catch(function(){ return false; });
+  }
 
   function show(which){
     current = which;
     var url = paths[which];
     open.href = url;
-    phPath.textContent = url.replace(/index\.html$/, '');
     document.querySelectorAll('[data-map]').forEach(function(b){
       b.classList.toggle('btn--solid', b.dataset.map === which);
     });
-    fetch(url, { method:'HEAD' })
-      .then(function(r){ if(!r.ok) throw 0;
-        ph.hidden = true; f.style.visibility = ''; f.src = url; })
-      .catch(function(){
-        ph.hidden = false; f.style.visibility = 'hidden'; f.src = 'about:blank'; });
+    exists(url).then(function(ok){
+      if (ok) { ph.hidden = true;  f.style.visibility = '';        f.src = url; }
+      else    { ph.hidden = false; f.style.visibility = 'hidden';  f.src = 'about:blank'; }
+    });
   }
 
   document.querySelectorAll('[data-map]').forEach(function(b){
     b.addEventListener('click', function(){ show(b.dataset.map); });
   });
   document.getElementById('map-reload').addEventListener('click', function(){ show(current); });
-  show('day');
+
+  // Näytä päivä/yö-napit vasta kun vähintään toinen kartta on olemassa
+  Promise.all([exists(paths.day), exists(paths.night)]).then(function(r){
+    if (r[0] || r[1]) { tools.hidden = false; show(r[0] ? 'day' : 'night'); }
+    else { ph.hidden = false; f.style.visibility = 'hidden'; }
+  });
 })();
 </script>
 </main>
