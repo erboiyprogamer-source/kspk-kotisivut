@@ -1,7 +1,7 @@
 # K-S-P-K Minecraft Official — kotisivut
 
 Staattinen sivusto kanavalle: videot, galleria, serveri, uNmINeD-maailmankartta
-sekä Dogs-projektien linkit ja kirjanpito.
+sekä Google Docs -linkit ja kirjanpito.
 
 Ei build-vaihetta, ei riippuvuuksia — pelkkää HTML/CSS/JS.
 
@@ -13,13 +13,13 @@ videot.html         Videot + suodattimet
 galleria.html       Kuvagalleria + lightbox
 serveri.html        Serverin IP, säännöt, aikajana
 kartta.html         uNmINeD-kartta upotettuna
-projektit.html      Dogs-projektien linkit + kirjanpitotaulukko
+projektit.html      Google Docs -linkit + kirjanpitotaulukko
 tietoa.html         Kanavan esittely + yhteydenottolomake
 404.html            Virhesivu
 _template.html      Pohja uusille sivuille
 
 assets/css/style.css   Kaikki tyylit
-assets/js/site.js      ASETUKSET + jaettu navi & footer
+assets/js/site.js      ASETUKSET + Google Docs -linkit + jaettu navi & footer
 assets/js/main.js      Scroll-animaatiot ja efektit
 assets/img/            Kuvat (nyt paikkamerkkejä)
 kartta/                uNmINeD-export tähän
@@ -29,6 +29,17 @@ kartta/                uNmINeD-export tähän
 
 Kaikki perusasetukset ovat yhdessä paikassa: **`assets/js/site.js`**
 → kanavan nimi, YouTube-linkki, Discord, serverin IP, sähköposti.
+
+### Google Docs -linkkien lisääminen
+
+Samassa tiedostossa on lista `SITE.docs`. Lisää rivi:
+
+```js
+{ type:'doc', name:'Otsikko', desc:'Lyhyt kuvaus', url:'https://docs.google.com/...' }
+```
+
+`type` on `doc`, `sheet`, `slide`, `form` tai `drive` — se valitsee ikonin ja
+merkin. Kortti ilmestyy sivulle `projektit.html` automaattisesti.
 
 ### Uuden sivun lisääminen
 
