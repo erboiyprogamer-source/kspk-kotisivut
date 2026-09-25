@@ -20,7 +20,9 @@ const SITE = {
   tiktok:    '#',
   email:     'erboiy22@gmail.com',
   serverIp:  'play.kspk.fi',                          // ← vaihda oikeaan IP:hen
-  mapPath:   'kartta/index.html',                     // uNmINeD-kartan sijainti
+  // uNmINeD-kartat. Kumpikin on oma kansionsa jossa on index.html + lib/ + tiles/
+  mapDay:    'kartta/paiva/index.html',
+  mapNight:  'kartta/yo/index.html',
 
   pages: [
     { href:'index.html',     label:'Etusivu',    foot:'Sivusto' },
