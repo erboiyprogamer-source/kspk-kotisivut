@@ -28,7 +28,7 @@ kartta/                uNmINeD-export tähän
 ## Muokkaus
 
 Kaikki perusasetukset ovat yhdessä paikassa: **`assets/js/site.js`**
-→ kanavan nimi, YouTube-linkki, Discord, serverin IP, sähköposti.
+→ kanavan nimi, YouTube-linkki, sähköpostiosoitteet, kartat ja tapahtumat.
 
 ### Google Docs -linkkien lisääminen
 
