@@ -17,8 +17,8 @@ var UnminedSharedPins = {
   // --- Jaettu tallennus (Supabase) ---------------------------------
   // Tyhjina merkit tallentuvat vain omaan selaimeen (ei jakoa).
   // Taytä nama niin merkit nakyvat kaikille sivun katsojille.
-  supabaseUrl : '',            // esim. 'https://abcdefgh.supabase.co'
-  supabaseKey : '',            // julkinen anon/publishable-avain
+  supabaseUrl : 'https://zfgwjxtruqoacxtkqprp.supabase.co',            // esim. 'https://abcdefgh.supabase.co'
+  supabaseKey : 'sb_publishable_MwLjfXP5LCtZe8tZ3IIf7w_5a3zqoKc',            // julkinen anon/publishable-avain
   table       : 'pins',
 
   // --- Kayttooikeudet ----------------------------------------------
