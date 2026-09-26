@@ -542,23 +542,74 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       if (hit) openPop(hit.get('pin')); else closePop();
     });
 
-    /* --- kolmoisnapautus / kolmoisklikkaus --- */
+    /* --- kolmoisnapautus / kolmoisklikkaus ------------------------------
+       Mobiilikorjaus: kahden sormen zoomaus ei saa enaa vahingossa
+       kaynnistaa merkin lisaysta. Siksi:
+         - vain yksi sormi kerrallaan kelpaa (moni kosketus nollaa sarjan)
+         - napautus ei kelpaa jos sormi liikkui (= panorointi tai zoomaus)
+         - kaikkien kolmen napautuksen on osuttava samaan pieneen alueeseen,
+           ei pelkastaan ensimmaisen ja viimeisen
+         - napautus saa kestaa korkeintaan 300 ms                          */
     var taps = [];
-    map.getViewport().addEventListener('pointerup', function (e) {
+    var live = 0;            // kuinka monta sormea/osoitinta alhaalla
+    var multi = false;       // oliko sarjassa valissa monikosketus
+    var down = null;         // meneillaan olevan napautuksen aloitus
+    var TAP_R = 22;          // sallittu liike yhden napautuksen aikana (px)
+    var SEQ_R = 26;          // kaikkien napautusten max-etaisyys ensimmaisesta
+    var TAP_MS = 300;        // yksi napautus saa kestaa tama
+    var SEQ_MS = 800;        // koko kolmoisnapautus tassa ajassa
+    var vp = map.getViewport();
+
+    function reset() { taps = []; multi = false; }
+
+    vp.addEventListener('pointerdown', function (e) {
+      live++;
+      if (live > 1) { multi = true; reset(); down = null; return; }
+      down = { t: Date.now(), x: e.clientX, y: e.clientY, id: e.pointerId };
+    });
+
+    function endPointer(e, ok) {
+      live = Math.max(0, live - 1);
+      var d = down;
+      down = null;
+      if (live > 0) { multi = true; reset(); return; }   // sormia viela alhaalla
+      if (!ok || multi || !d || d.id !== e.pointerId) { multi = false; reset(); return; }
+
       var now = Date.now();
-      taps = taps.filter(function (t) { return now - t.t < 700; });
+      // liikkuiko sormi napautuksen aikana, tai kestiko se liian kauan?
+      if (now - d.t > TAP_MS ||
+          Math.abs(e.clientX - d.x) > TAP_R || Math.abs(e.clientY - d.y) > TAP_R) {
+        reset(); return;
+      }
+
+      taps = taps.filter(function (t) { return now - t.t < SEQ_MS; });
       taps.push({ t: now, x: e.clientX, y: e.clientY });
-      if (taps.length >= 3) {
-        var a = taps[0], c = taps[taps.length - 1];
-        if (Math.abs(a.x - c.x) < 34 && Math.abs(a.y - c.y) < 34) {
-          taps = [];
-          closePop();
-          var r = map.getViewport().getBoundingClientRect();
-          var px = [c.x - r.left, c.y - r.top];
-          addAt(map.getCoordinateFromPixel(px), px);
+
+      // kaikkien napautusten on osuttava samaan pieneen alueeseen
+      var a = taps[0];
+      for (var i = 1; i < taps.length; i++) {
+        if (Math.abs(taps[i].x - a.x) > SEQ_R || Math.abs(taps[i].y - a.y) > SEQ_R) {
+          taps = [taps[taps.length - 1]];
+          return;
         }
       }
-    });
+
+      if (taps.length >= 3) {
+        var c = taps[taps.length - 1];
+        reset();
+        closePop();
+        var r = vp.getBoundingClientRect();
+        var px = [c.x - r.left, c.y - r.top];
+        addAt(map.getCoordinateFromPixel(px), px);
+      }
+    }
+
+    vp.addEventListener('pointerup',     function (e) { endPointer(e, true);  });
+    vp.addEventListener('pointercancel', function (e) { endPointer(e, false); });
+    // selaimen oma pinch-zoom / vierityssele -> unohda sarja
+    vp.addEventListener('touchmove', function (e) {
+      if (e.touches && e.touches.length > 1) { multi = true; reset(); }
+    }, { passive: true });
 
     /* --- oikean klikkauksen valikko --- */
     var menu = null;
