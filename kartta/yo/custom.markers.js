@@ -10,8 +10,8 @@
      - Oikean alanurkan tyokalunappi       ->  dev-tila (yllapitokoodi)
 
    Oikeudet:
-     - Merkin lisaaminen vaatii pelinimen ja tunnussanan
-     - Oman merkin muokkaus/poisto: sama pelinimi + tunnussana
+     - Merkin lisaaminen vaatii pelinimen ja pelaajan omaa salasanaa
+     - Oman merkin muokkaus/poisto: sama pelinimi + salasana
      - Dev-tila: kaikki oikeudet kaikkiin merkkeihin
    ===================================================================== */
 
@@ -23,7 +23,7 @@ var UnminedSharedPins = {
   table       : 'pins',
 
   // --- Kayttooikeudet ----------------------------------------------
-  // Tunnussana ja yllapitokoodi EIVAT ole taalla. Ne ovat Supabasen
+  // Salasanat ja yllapitokoodi EIVAT ole taalla. Ne ovat Supabasen
   // secrets-taulussa, jota anon-avaimella ei voi lukea. Kaikki kirjoitus
   // kulkee pin_add / pin_edit / pin_delete -funktioiden kautta, jotka
   // tarkistavat koodin ja whitelistin palvelimella.
@@ -75,16 +75,16 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   /* Palvelinfunktioiden virheet suomeksi */
   function errText(e) {
     var m = String((e && e.message) || e || '');
-    if (m.indexOf('BAD_PASSWORD')    > -1) return 'Vaara tunnussana';
+    if (m.indexOf('BAD_PASSWORD')    > -1) return 'Vaara salasana';
     if (m.indexOf('NOT_WHITELISTED') > -1) return 'Pelinimi ei ole sallittujen listalla';
-    if (m.indexOf('NO_RIGHTS')       > -1) return 'Ei oikeuksia — tarkista tunnussana ja pelinimi';
+    if (m.indexOf('NO_RIGHTS')       > -1) return 'Ei oikeuksia — tarkista salasana ja pelinimi';
     if (m.indexOf('NO_AUTHOR')       > -1) return 'Pelinimi puuttuu';
     if (m.indexOf('NOT_FOUND')       > -1) return 'Merkkia ei loytynyt';
     return 'Toiminto ei onnistunut';
   }
 
-  /* Pelinimi + tunnussana muokkausta/poistoa varten.
-     Dev-tilassa yllapitokoodi kelpaa tunnussanaksi. */
+  /* Pelinimi + oma salasana muokkausta/poistoa varten.
+     Dev-tilassa yllapitokoodi kelpaa salasanaksi. */
   function creds(pin) {
     if (isDev() && devCode()) {
       return { pass: devCode(), author: savedName() || (pin && pin.author) || 'dev' };
@@ -97,7 +97,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     }
     var pw = savedPass();
     if (!pw) {
-      pw = prompt('Tunnussana:');
+      pw = prompt('Salasanasi:');
       if (pw === null || pw === '') return null;
       savePass(pw);
     }
@@ -330,8 +330,8 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       '<label>Vari</label><div class="kspk-colors" id="kp-c" role="radiogroup"></div>' +
 
       '<label>Pelinimesi *</label><input id="kp-a" maxlength="24" placeholder="Minecraft-nimesi">' +
-      '<label>Tunnussana *</label><input id="kp-p" type="password" placeholder="' +
-        (isDev() ? 'Tyhja = yllapitokoodi' : 'Yhteinen tunnussana') + '">' +
+      '<label>Salasanasi *</label><input id="kp-p" type="password" placeholder="' +
+        (isDev() ? 'Tyhja = yllapitokoodi' : 'Oma salasanasi') + '">' +
       (isDev() ? '<div class="kspk-hint">Dev-tila paalla — voit muokata ja poistaa kaikkien merkkeja.</div>' : '') +
       (!isDev() && WHITELIST && WHITELIST.length
         ? '<div class="kspk-hint">Sallitut pelinimet: ' + esc(WHITELIST.join(', ')) + '</div>' : '') +
@@ -399,7 +399,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       if (!t) { toast('Otsikko puuttuu', false); $('#kp-t').focus(); return; }
       if (!a) { toast('Pelinimi puuttuu', false); $('#kp-a').focus(); return; }
       if (!pw && isDev()) pw = devCode();
-      if (!pw) { toast('Tunnussana puuttuu', false); $('#kp-p').focus(); return; }
+      if (!pw) { toast('Salasana puuttuu', false); $('#kp-p').focus(); return; }
       if (!onWhitelist(a)) {
         toast('Pelinimi "' + a + '" ei ole sallittujen listalla', false); $('#kp-a').focus(); return;
       }
