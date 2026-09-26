@@ -74,6 +74,7 @@
       <div class="dv-tabs" role="tablist">
         <button class="dv-tab on" data-t="wl" role="tab">Pelaajat</button>
         <button class="dv-tab" data-t="ln" role="tab">Linkit</button>
+        <button class="dv-tab" data-t="ev" role="tab">Eventit</button>
         <button class="dv-tab" data-t="tx" role="tab">Tekstit</button>
       </div>
 
@@ -96,6 +97,18 @@
         <p class="dv-hint">Nämä kortit näkyvät sivulla <a href="projektit.html">Dokumentit</a>. Tyhjä lista = sivulla näkyy site.js:n oma lista.</p>
         <div id="ln-list" style="display:grid;gap:12px"></div>
         <div class="dv-bar"><button class="dv-b" id="ln-add">Lisää linkki</button></div>
+      </div>
+
+      <!-- EVENTIT -->
+      <div class="dv-pane" id="p-ev">
+        <p class="dv-hint">
+          Nämä näkyvät <a href="index.html">etusivun</a> keltaisessa tapahtumaruudussa. Countdown lasketaan
+          suoraan kävijän selaimessa annetusta ajankohdasta — se ei tee yhtäkään palvelinpyyntöä, joten
+          tapahtumaruutu ei kuormita Supabasea lainkaan. Ajankohta annetaan Suomen aikaa.
+          Poista ruksi kohdasta "Näkyvissä" jos haluat piilottaa tapahtuman julkaisematta sitä uudelleen.
+        </p>
+        <div id="ev-list" style="display:grid;gap:12px"></div>
+        <div class="dv-bar"><button class="dv-b" id="ev-add">Lisää tapahtuma</button></div>
       </div>
 
       <!-- TEKSTIT -->
@@ -125,7 +138,7 @@
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var lock = $('dv-lock'), app = $('dv-app');
-  var state = { players: [], links: [], texts: {} };
+  var state = { players: [], links: [], texts: {}, events: [] };
 
   /* Salasanageneraattori: kaksi sanaa ja numero — helppo sanoa kaverille */
   var SANAT = ['kivi','tammi','routa','lumi','kaira','halko','nuotio','ahven','sammal','petaja',
@@ -188,7 +201,13 @@
       });
       state.links = (s.links || []).slice();
       state.texts = Object.assign({}, s.texts || {});
-      drawWl(); drawLn(); drawTx();
+      state.events = [];
+      if (state.texts['@events']) {
+        try { state.events = JSON.parse(state.texts['@events']) || []; } catch (e) { state.events = []; }
+      }
+      if (!state.events.length && window.SITE && SITE.events) state.events = JSON.parse(JSON.stringify(SITE.events));
+      delete state.texts['@events'];
+      drawWl(); drawLn(); drawTx(); drawEv();
       msg('');
     }).catch(function () { msg('Haku ei onnistunut', 'bad'); });
   }
@@ -266,6 +285,75 @@
     drawLn();
   };
 
+  /* --- eventit --- */
+  function isoToLocal(iso) {                 // ISO -> <input type=datetime-local>
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    var f = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Helsinki',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false });
+    return f.format(d).replace(' ', 'T');
+  }
+  function localToIso(v) {                   // Suomen aika -> ISO + oikea siirtymä
+    if (!v) return '';
+    var m = v.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (!m) return '';
+    var guess = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+    for (var k = 0; k < 2; k++) {            // selvita onko kesa- vai talviaika
+      var off = fiOffset(guess);
+      guess = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - off * 60000;
+    }
+    var o = fiOffset(guess), sg = o < 0 ? '-' : '+', ao = Math.abs(o);
+    return m[1] + '-' + m[2] + '-' + m[3] + 'T' + m[4] + ':' + m[5] + ':00' +
+           sg + pad2(Math.floor(ao / 60)) + ':' + pad2(ao % 60);
+  }
+  function pad2(n) { return ('0' + n).slice(-2); }
+  function fiOffset(ts) {                    // Helsingin UTC-siirtyma minuutteina
+    var d = new Date(ts);
+    var s = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Helsinki', timeZoneName: 'longOffset' })
+              .format(d).match(/GMT([+-])(\d{2}):(\d{2})/);
+    return s ? (s[1] === '-' ? -1 : 1) * (+s[2] * 60 + +s[3]) : 120;
+  }
+
+  function drawEv() {
+    var box = $('ev-list');
+    box.innerHTML = '';
+    if (!state.events.length) box.innerHTML = '<p class="dv-hint">Ei tapahtumia. Lisää alta.</p>';
+    state.events.forEach(function (ev, i) {
+      var d = document.createElement('div');
+      d.className = 'dv-row';
+      d.innerHTML =
+        '<label class="dv-f"><span>OTSIKKO</span><input class="dv" data-k="title"></label>' +
+        '<label class="dv-f"><span>TUNNISTE (pieni keltainen lappu)</span><input class="dv" data-k="badge"></label>' +
+        '<label class="dv-f"><span>KUVAUS</span><textarea class="dv" data-k="text"></textarea></label>' +
+        '<label class="dv-f"><span>AJANKOHTA (Suomen aikaa)</span><input class="dv" type="datetime-local" data-r="dt"></label>' +
+        '<div class="dv-bar" style="margin-top:10px">' +
+          '<label style="display:flex;gap:7px;align-items:center;font-size:.9rem">' +
+            '<input type="checkbox" data-r="on"> Näkyvissä sivulla</label>' +
+          '<button class="dv-b dv-b--danger">Poista</button>' +
+        '</div>';
+      [].forEach.call(d.querySelectorAll('[data-k]'), function (f) {
+        f.value = ev[f.dataset.k] || '';
+        f.oninput = function () { state.events[i][f.dataset.k] = f.value; };
+      });
+      var dt = d.querySelector('[data-r="dt"]');
+      dt.value = isoToLocal(ev.iso || '');
+      dt.onchange = function () {
+        state.events[i].iso = localToIso(dt.value);
+        state.events[i].when = '';
+      };
+      var on = d.querySelector('[data-r="on"]');
+      on.checked = ev.on !== false;
+      on.onchange = function () { state.events[i].on = on.checked; };
+      d.querySelector('button').onclick = function () { state.events.splice(i, 1); drawEv(); };
+      box.appendChild(d);
+    });
+  }
+  $('ev-add').onclick = function () {
+    state.events.push({ on: true, badge: 'Tapahtuma', title: 'Uusi tapahtuma', text: '', iso: '', when: '' });
+    drawEv();
+  };
+
   /* --- tekstit --- */
   function drawTx() {
     var box = $('tx-list');
@@ -310,14 +398,16 @@
     var ln = state.links.filter(function (l) { return (l.name || '').trim(); });
     var tx = {};
     Object.keys(state.texts).forEach(function (k) {
-      if (k && k.indexOf('.uusi-') !== 0) tx[k] = state.texts[k];
+      if (k && k.indexOf('.uusi-') !== 0 && k !== '@events') tx[k] = state.texts[k];
     });
+    var evs = state.events.filter(function (e) { return (e.title || '').trim() || (e.text || '').trim(); });
+    if (evs.length) tx['@events'] = JSON.stringify(evs);
     msg('Tallennetaan…');
     KSPK.rpc('players_save', { p_code: KSPK.code(), p_players: pl })
       .then(function () { return KSPK.save({ links: ln, texts: tx }); })
       .then(function () {
       state.players = pl; state.links = ln; state.texts = tx;
-      drawWl(); drawLn(); drawTx();
+      drawWl(); drawLn(); drawTx(); drawEv();
       msg('Tallennettu — näkyy kaikille heti', 'ok');
     }).catch(function (e) {
       var m = String((e && e.message) || e);
