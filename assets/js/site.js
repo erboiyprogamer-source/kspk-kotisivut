@@ -466,13 +466,15 @@ window.KSPK = KSPK;
 
   var st = document.createElement('style');
   st.textContent = ''
-    + '.kspk-coffee{position:fixed;right:16px;bottom:16px;z-index:90;display:inline-flex;align-items:center;'
-    + 'gap:8px;padding:11px 16px;border:0;border-radius:999px;cursor:pointer;font:inherit;font-size:.9rem;'
+    + '.kspk-coffee{position:absolute;right:var(--pad,20px);top:calc(var(--nav-h,72px) + 8px);z-index:40;display:inline-flex;align-items:center;'
+    + 'gap:6px;padding:6px 11px;border:0;border-radius:999px;cursor:pointer;font:inherit;font-size:.74rem;'
     + 'font-weight:600;color:#241a00;background:linear-gradient(135deg,#ffd166,#ffb020);'
-    + 'box-shadow:0 12px 30px -12px rgba(255,180,32,.8);transition:transform .18s ease}'
-    + '.kspk-coffee:hover{transform:translateY(-2px)}'
+    + 'box-shadow:0 8px 20px -10px rgba(255,180,32,.8);transition:transform .18s ease}'
+    + '.kspk-coffee:hover{transform:translateY(-1px)}'
     + '.kspk-coffee:focus-visible{outline:2px solid #fff;outline-offset:3px}'
-    + '@media (max-width:640px){.kspk-coffee{right:12px;bottom:12px;padding:10px 14px;font-size:.84rem}}'
+    + '@media (max-width:900px){.kspk-coffee{top:calc(var(--nav-h,64px) + 8px)}}'
+    + '@media (max-width:640px){.kspk-coffee{padding:5px 10px;font-size:.7rem}}'
+    + '@media (max-width:420px){.kspk-coffee span{display:inline}.kspk-coffee{padding:5px 9px;font-size:.66rem;border-radius:999px}}'
     + '.kspk-sup{position:fixed;inset:0;z-index:120;display:none;padding:18px;overflow:auto;'
     + '-webkit-overflow-scrolling:touch;background:rgba(3,7,5,.72);backdrop-filter:blur(3px)}'
     + '.kspk-sup.on{display:block}'
@@ -498,7 +500,7 @@ window.KSPK = KSPK;
   var btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'kspk-coffee';
-  btn.innerHTML = '☕ <span>Buy us a coffee — tue KSPK:ta!</span>';
+  btn.innerHTML = '☕ <span>Tue KSPK:ta</span>';
 
   var mod = document.createElement('div');
   mod.className = 'kspk-sup';
