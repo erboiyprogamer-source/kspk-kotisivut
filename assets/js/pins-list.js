@@ -166,7 +166,7 @@
     if (isDev()) {
       setDev(false); setDevCode(''); $dev.classList.remove('on');
       tellMap({ kspk: 'dev-state', on: false });
-      render();
+      load();
     } else {
       var c = prompt('Yllapitokoodi:');
       if (c === null || c === '') return;
@@ -174,7 +174,7 @@
         if (ok !== true) { alert('Vaara koodi'); return; }
         setDev(true); setDevCode(c); $dev.classList.add('on');
         tellMap({ kspk: 'dev-state', on: true, code: c });
-        render();
+        load();
       }).catch(function () { alert('Tarkistus ei onnistunut'); });
     }
   };
@@ -266,7 +266,7 @@
       setDev(!!d.on);
       if (d.code) setDevCode(d.code); else if (!d.on) setDevCode('');
       $dev.classList.toggle('on', !!d.on);
-      render();
+      load();
     }
   });
 
@@ -274,7 +274,7 @@
   window.addEventListener('kspk-dev', function () {
     $dev.classList.toggle('on', isDev());
     tellMap({ kspk: 'dev-state', on: isDev(), code: devCode() });
-    render();
+    load();
   });
 
   load();
