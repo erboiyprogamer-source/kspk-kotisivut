@@ -1,13 +1,13 @@
 /* =====================================================================
    K-S-P-K — karttamerkkien lista (kartta.html)
    Nayttaa kaikki merkit kartan alla: sijainti, viesti, lisaaja.
-   Omat merkit (pelinimi + tunnussana) voi piilottaa ja poistaa,
+   Omat merkit (pelinimi + oma salasana) voi piilottaa ja poistaa,
    dev-koodilla kaikki.
    ===================================================================== */
 (function () {
   'use strict';
 
-  /* Tunnussana ja yllapitokoodi ovat Supabasen secrets-taulussa, eivat
+  /* Salasanat ja yllapitokoodi ovat Supabasen puolella, eivat
      taalla. Kaikki kirjoitus kulkee pin_edit / pin_delete -funktioiden
      kautta, jotka tarkistavat oikeudet palvelimella. */
   var CFG = {
@@ -65,15 +65,15 @@
 
   function errText(e) {
     var m = String((e && e.message) || e || '');
-    if (m.indexOf('BAD_PASSWORD')    > -1) return 'Vaara tunnussana';
+    if (m.indexOf('BAD_PASSWORD')    > -1) return 'Vaara salasana';
     if (m.indexOf('NOT_WHITELISTED') > -1) return 'Pelinimi ei ole sallittujen listalla';
-    if (m.indexOf('NO_RIGHTS')       > -1) return 'Ei oikeuksia — tarkista tunnussana ja pelinimi';
+    if (m.indexOf('NO_RIGHTS')       > -1) return 'Ei oikeuksia — tarkista salasana ja pelinimi';
     if (m.indexOf('NO_AUTHOR')       > -1) return 'Pelinimi puuttuu';
     if (m.indexOf('NOT_FOUND')       > -1) return 'Merkkia ei loytynyt';
     return 'Toiminto ei onnistunut';
   }
 
-  /* Pelinimi + tunnussana. Dev-tilassa yllapitokoodi kelpaa. */
+  /* Pelinimi + oma salasana. Dev-tilassa yllapitokoodi kelpaa. */
   function creds(pin) {
     if (isDev() && devCode()) {
       return { pass: devCode(), author: get(LS_NAME) || (pin && pin.author) || 'dev' };
@@ -81,7 +81,7 @@
     var a = get(LS_NAME);
     if (!a) { alert('Kirjoita ensin pelinimesi ylle.'); return null; }
     var pw = get(LS_PASS);
-    if (!pw) { alert('Kirjoita ensin tunnussana ylle.'); return null; }
+    if (!pw) { alert('Kirjoita ensin oma salasanasi ylle.'); return null; }
     return { pass: pw, author: a };
   }
 
@@ -141,7 +141,7 @@
     '<div class="pl-head">' +
       '<div class="pl-auth">' +
         '<label class="pl-f"><span>PELINIMI</span><input id="pl-name" maxlength="24" placeholder="Minecraft-nimesi"></label>' +
-        '<label class="pl-f"><span>TUNNUSSANA</span><input id="pl-pass" type="password" placeholder="Yhteinen tunnussana"></label>' +
+        '<label class="pl-f"><span>SALASANA</span><input id="pl-pass" type="password" placeholder="Oma salasanasi"></label>' +
       '</div>' +
       '<div style="display:flex;gap:8px">' +
         '<button class="pl-b" id="pl-reload">Paivita</button>' +
