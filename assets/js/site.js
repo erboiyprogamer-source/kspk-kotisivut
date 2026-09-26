@@ -199,3 +199,161 @@ function icon(n){
   }[n] || '';
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${p}"/></svg>`;
 }
+
+/* =====================================================================
+   DEV — kirjautuminen joka sivun alalaidasta + sivuston asetukset
+   ---------------------------------------------------------------------
+   Yllapitokoodi tarkistetaan palvelimella (Supabase-funktio is_admin).
+   Koodi elaa vain valilehden sessionStoragessa, ei koskaan repossa.
+   Asetukset (whitelist, linkit, tekstit) haetaan settings-taulusta ja
+   niita muokataan sivulla dev.html.
+   ===================================================================== */
+var KSPK = (function () {
+  var SS_DEV  = 'kspk.pins.dev';
+  var SS_CODE = 'kspk.pins.devcode';
+  var SB = { url: 'https://zfgwjxtruqoacxtkqprp.supabase.co', key: 'sb_publishable_MwLjfXP5LCtZe8tZ3IIf7w_5a3zqoKc' };
+
+  function isDev() { try { return sessionStorage.getItem(SS_DEV) === '1'; } catch (e) { return false; } }
+  function code()  { try { return sessionStorage.getItem(SS_CODE) || ''; } catch (e) { return ''; } }
+  function setDev(on, c) {
+    try {
+      if (on) { sessionStorage.setItem(SS_DEV, '1'); if (c) sessionStorage.setItem(SS_CODE, c); }
+      else { sessionStorage.removeItem(SS_DEV); sessionStorage.removeItem(SS_CODE); }
+    } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent('kspk-dev', { detail: { on: !!on } })); } catch (e) {}
+  }
+  function rest(path, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({
+      apikey: SB.key, Authorization: 'Bearer ' + SB.key, 'Content-Type': 'application/json'
+    }, opts.headers || {});
+    return fetch(SB.url + '/rest/v1/' + path, opts);
+  }
+  function rpc(fn, body) {
+    return rest('rpc/' + fn, { method: 'POST', body: JSON.stringify(body || {}) })
+      .then(function (r) {
+        return r.text().then(function (txt) {
+          var data = null;
+          try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
+          if (!r.ok) throw new Error((data && (data.message || data.error || data.hint)) || txt || ('HTTP ' + r.status));
+          return data;
+        });
+      });
+  }
+  function settings() {
+    return rest('settings?select=whitelist,links,texts&id=eq.1')
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (rows) { return rows[0] || {}; })
+      .catch(function () { return {}; });
+  }
+  function login(c) {
+    return rpc('is_admin', { p_code: c }).then(function (ok) {
+      if (ok !== true) return false;
+      setDev(true, c);
+      return true;
+    });
+  }
+  function save(patch) {
+    var c = code();
+    if (!c) return Promise.reject(new Error('NO_CODE'));
+    return settings().then(function (cur) {
+      return rpc('settings_save', {
+        p_code: c,
+        p_whitelist: patch.whitelist !== undefined ? patch.whitelist : (cur.whitelist || []),
+        p_links:     patch.links     !== undefined ? patch.links     : (cur.links || []),
+        p_texts:     patch.texts     !== undefined ? patch.texts     : (cur.texts || {})
+      });
+    });
+  }
+  return { isDev: isDev, code: code, setDev: setDev, rest: rest, rpc: rpc,
+           settings: settings, login: login, save: save };
+})();
+window.KSPK = KSPK;
+
+/* --- asetusten soveltaminen: dokumenttilinkit ja tekstit ------------- */
+(function applySettings() {
+  function docCards(list) {
+    var dg = document.getElementById('docs-grid');
+    if (!dg || !list || !list.length) return;
+    dg.innerHTML = list.map(function (d) {
+      var t = DOC_TYPES[d.type] || DOC_TYPES.doc;
+      var ext = d.url && d.url !== '#';
+      return '<a class="card card--link tilt doc-card" data-tags="' + (d.type || 'doc') + '" href="' + (d.url || '#') + '"' +
+             (ext ? ' target="_blank" rel="noopener"' : '') + ' data-reveal>' +
+             '<div class="card__ico">' + t.ico + '</div>' +
+             '<span class="tag ' + t.cls + '">' + t.tag + '</span>' +
+             '<h3 style="margin-top:12px">' + (d.name || '') + '</h3>' +
+             '<p>' + (d.desc || '') + '</p>' +
+             '<span class="card__link">' + (ext ? 'Avaa dokumentti' : 'Lisaa linkki dev-asetuksista') + ' <span>&rarr;</span></span></a>';
+    }).join('');
+  }
+  KSPK.settings().then(function (s) {
+    docCards(s.links);
+    if (s.texts) {
+      Object.keys(s.texts).forEach(function (sel) {
+        var nodes;
+        try { nodes = document.querySelectorAll(sel); } catch (e) { return; }
+        [].forEach.call(nodes, function (n) { n.innerHTML = s.texts[sel]; });
+      });
+    }
+  });
+})();
+
+/* --- dev-palkki footeriin ------------------------------------------- */
+(function devBar() {
+  var st = document.createElement('style');
+  st.textContent = ''
+    + '.kspk-devbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.82rem}'
+    + '.kspk-devbar a,.kspk-devbar button{font:inherit;font-size:.82rem;color:var(--muted,#9db3a6);'
+    + 'background:none;border:0;padding:0;cursor:pointer;text-decoration:none;border-bottom:1px dotted transparent}'
+    + '.kspk-devbar a:hover,.kspk-devbar button:hover{color:var(--green,#3ef08a);border-bottom-color:currentColor}'
+    + '.kspk-devbar .on{color:#ffd166}'
+    + '.kspk-devbox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'
+    + '.kspk-devbox input{padding:7px 10px;border-radius:9px;font:inherit;font-size:.82rem;width:150px;'
+    + 'background:rgba(8,14,11,.75);border:1px solid var(--line,rgba(255,255,255,.14));color:var(--text,#eaf3ee)}'
+    + '.kspk-devbox input:focus{outline:none;border-color:var(--green,#3ef08a)}'
+    + '.kspk-devbox .go{border:1px solid var(--line,rgba(255,255,255,.18));border-radius:9px;padding:6px 11px}';
+  document.head.appendChild(st);
+
+  var bottom = document.querySelector('.footer__bottom');
+  if (!bottom) return;
+  var bar = document.createElement('span');
+  bar.className = 'kspk-devbar';
+  bottom.appendChild(bar);
+
+  function paint() {
+    if (KSPK.isDev()) {
+      bar.innerHTML = '<span class="on">&#128295; Dev p&auml;&auml;ll&auml;</span>'
+        + '<a href="dev.html">Asetukset</a>'
+        + '<button type="button" data-a="out">Kirjaudu ulos</button>';
+      bar.querySelector('[data-a="out"]').onclick = function () { KSPK.setDev(false); paint(); };
+    } else {
+      bar.innerHTML = '<button type="button" data-a="in">Dev</button>';
+      bar.querySelector('[data-a="in"]').onclick = openBox;
+    }
+  }
+  function openBox() {
+    bar.innerHTML = '<span class="kspk-devbox">'
+      + '<input type="password" placeholder="Yll&auml;pitokoodi" id="kspk-devcode">'
+      + '<button type="button" class="go" data-a="ok">Kirjaudu</button>'
+      + '<button type="button" data-a="no">Peruuta</button></span>';
+    var inp = bar.querySelector('#kspk-devcode');
+    inp.focus();
+    function go() {
+      var c = inp.value;
+      if (!c) { inp.focus(); return; }
+      inp.disabled = true;
+      KSPK.login(c).then(function (ok) {
+        if (ok) { paint(); return; }
+        inp.disabled = false; inp.value = ''; inp.placeholder = 'Väärä koodi'; inp.focus();
+      }).catch(function () {
+        inp.disabled = false; inp.placeholder = 'Ei yhteyttä'; inp.focus();
+      });
+    }
+    bar.querySelector('[data-a="ok"]').onclick = go;
+    bar.querySelector('[data-a="no"]').onclick = paint;
+    inp.onkeydown = function (e) { if (e.key === 'Enter') go(); if (e.key === 'Escape') paint(); };
+  }
+  window.addEventListener('kspk-dev', paint);
+  paint();
+})();

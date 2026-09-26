@@ -7,17 +7,19 @@
 (function () {
   'use strict';
 
+  /* Tunnussana ja yllapitokoodi ovat Supabasen secrets-taulussa, eivat
+     taalla. Kaikki kirjoitus kulkee pin_edit / pin_delete -funktioiden
+     kautta, jotka tarkistavat oikeudet palvelimella. */
   var CFG = {
     url  : 'https://zfgwjxtruqoacxtkqprp.supabase.co',
     key  : 'sb_publishable_MwLjfXP5LCtZe8tZ3IIf7w_5a3zqoKc',
-    table: 'pins',
-    pass : '538140123456789',
-    dev  : '538140155'
+    table: 'pins'
   };
 
   var LS_NAME = 'kspk.pins.name';
   var LS_PASS = 'kspk.pins.pass';
   var SS_DEV  = 'kspk.pins.dev';
+  var SS_CODE = 'kspk.pins.devcode';
 
   var root = document.getElementById('pin-list');
   if (!root) return;
@@ -34,6 +36,8 @@
   function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
   function isDev() { try { return sessionStorage.getItem(SS_DEV) === '1'; } catch (e) { return false; } }
   function setDev(v) { try { v ? sessionStorage.setItem(SS_DEV,'1') : sessionStorage.removeItem(SS_DEV); } catch (e) {} }
+  function devCode() { try { return sessionStorage.getItem(SS_CODE) || ''; } catch (e) { return ''; } }
+  function setDevCode(c) { try { c ? sessionStorage.setItem(SS_CODE, c) : sessionStorage.removeItem(SS_CODE); } catch (e) {} }
 
   function rest(path, opts) {
     opts = opts || {};
@@ -43,10 +47,50 @@
     return fetch(CFG.url + '/rest/v1/' + path, opts);
   }
 
+  /* Kirjoitus palvelinfunktion kautta */
+  function rpc(fn, body) {
+    return rest('rpc/' + fn, { method: 'POST', body: JSON.stringify(body || {}) })
+      .then(function (r) {
+        return r.text().then(function (txt) {
+          var data = null;
+          try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
+          if (!r.ok) {
+            var msg = (data && (data.message || data.error || data.hint)) || txt || ('HTTP ' + r.status);
+            throw new Error(msg);
+          }
+          return data;
+        });
+      });
+  }
+
+  function errText(e) {
+    var m = String((e && e.message) || e || '');
+    if (m.indexOf('BAD_PASSWORD')    > -1) return 'Vaara tunnussana';
+    if (m.indexOf('NOT_WHITELISTED') > -1) return 'Pelinimi ei ole sallittujen listalla';
+    if (m.indexOf('NO_RIGHTS')       > -1) return 'Ei oikeuksia — tama on toisen merkki';
+    if (m.indexOf('NO_AUTHOR')       > -1) return 'Pelinimi puuttuu';
+    if (m.indexOf('NOT_FOUND')       > -1) return 'Merkkia ei loytynyt';
+    return 'Toiminto ei onnistunut';
+  }
+
+  /* Pelinimi + tunnussana. Dev-tilassa yllapitokoodi kelpaa. */
+  function creds(pin) {
+    if (isDev() && devCode()) {
+      return { pass: devCode(), author: get(LS_NAME) || (pin && pin.author) || 'dev' };
+    }
+    var a = get(LS_NAME);
+    if (!a) { alert('Kirjoita ensin pelinimesi ylle.'); return null; }
+    var pw = get(LS_PASS);
+    if (!pw) { alert('Kirjoita ensin tunnussana ylle.'); return null; }
+    return { pass: pw, author: a };
+  }
+
+  /* Naytetaan napit sille, joka voi periaatteessa muokata.
+     Lopullinen tarkistus tehdaan palvelimella. */
   function mayEdit(p) {
     if (isDev()) return true;
     var n = get(LS_NAME), pw = get(LS_PASS);
-    return !!n && pw === CFG.pass && n.toLowerCase() === String(p.author || '').toLowerCase();
+    return !!n && !!pw && n.toLowerCase() === String(p.author || '').toLowerCase();
   }
 
   function tellMap(msg) {
@@ -120,16 +164,19 @@
 
   $dev.onclick = function () {
     if (isDev()) {
-      setDev(false); $dev.classList.remove('on');
+      setDev(false); setDevCode(''); $dev.classList.remove('on');
       tellMap({ kspk: 'dev-state', on: false });
+      render();
     } else {
       var c = prompt('Yllapitokoodi:');
-      if (c === null) return;
-      if (c !== CFG.dev) { alert('Vaara koodi'); return; }
-      setDev(true); $dev.classList.add('on');
-      tellMap({ kspk: 'dev-state', on: true });
+      if (c === null || c === '') return;
+      rpc('is_admin', { p_code: c }).then(function (ok) {
+        if (ok !== true) { alert('Vaara koodi'); return; }
+        setDev(true); setDevCode(c); $dev.classList.add('on');
+        tellMap({ kspk: 'dev-state', on: true, code: c });
+        render();
+      }).catch(function () { alert('Tarkistus ei onnistunut'); });
     }
-    render();
   };
   document.getElementById('pl-reload').onclick = load;
 
@@ -169,22 +216,26 @@
       var h = c.querySelector('[data-a="hide"]');
       if (h) h.onclick = function () {
         var nv = !p.hidden;
-        rest(CFG.table + '?id=eq.' + encodeURIComponent(p.id), {
-          method: 'PATCH', body: JSON.stringify({ hidden: nv })
-        }).then(function (r) {
-          if (!r.ok) throw 0;
+        var c = creds(p);
+        if (!c) return;
+        rpc('pin_edit', {
+          p_pass: c.pass, p_author: c.author, p_id: p.id,
+          p_title: null, p_message: null, p_color: null,
+          p_x: null, p_z: null, p_hidden: nv
+        }).then(function () {
           p.hidden = nv; render(); tellMap({ kspk: 'pins-reload' });
-        }).catch(function () { alert('Ei onnistunut'); });
+        }).catch(function (e) { alert(errText(e)); });
       };
       var d = c.querySelector('[data-a="del"]');
       if (d) d.onclick = function () {
         if (!confirm('Poistetaanko merkki "' + p.title + '"? Tata ei voi perua.')) return;
-        rest(CFG.table + '?id=eq.' + encodeURIComponent(p.id), { method: 'DELETE' })
-          .then(function (r) {
-            if (!r.ok) throw 0;
+        var c = creds(p);
+        if (!c) return;
+        rpc('pin_delete', { p_pass: c.pass, p_author: c.author, p_id: p.id })
+          .then(function () {
             rows = rows.filter(function (o) { return o.id !== p.id; });
             render(); tellMap({ kspk: 'pins-reload' });
-          }).catch(function () { alert('Poisto epaonnistui'); });
+          }).catch(function (e) { alert(errText(e)); });
       };
 
       $grid.appendChild(c);
@@ -199,7 +250,22 @@
   }
 
   window.addEventListener('message', function (e) {
-    if (e.data && e.data.kspk === 'pins-changed') load();
+    var d = e.data;
+    if (!d || !d.kspk) return;
+    if (d.kspk === 'pins-changed') load();
+    if (d.kspk === 'dev-state') {
+      setDev(!!d.on);
+      if (d.code) setDevCode(d.code); else if (!d.on) setDevCode('');
+      $dev.classList.toggle('on', !!d.on);
+      render();
+    }
+  });
+
+  /* Footerin dev-kirjautuminen (site.js) ilmoittaa muutoksesta */
+  window.addEventListener('kspk-dev', function () {
+    $dev.classList.toggle('on', isDev());
+    tellMap({ kspk: 'dev-state', on: isDev(), code: devCode() });
+    render();
   });
 
   load();
