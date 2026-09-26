@@ -146,12 +146,23 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         return JSON.parse(localStorage.getItem(LS_LOCAL) || '[]');
       } catch (e) { return []; }
     },
-    list: function () {
-      if (!SHARED) return Promise.resolve(this.local());
+    plain: function () {
       return fetch(this.base() + '/rest/v1/' + CFG.table + '?select=*&order=created_at.asc', {
         headers: { 'apikey': CFG.supabaseKey, 'Authorization': 'Bearer ' + CFG.supabaseKey }
       }).then(function (r) { return r.ok ? r.json() : []; })
         .catch(function () { return []; });
+    },
+    list: function () {
+      if (!SHARED) return Promise.resolve(this.local());
+      var self = this;
+      /* Piilotetut merkit eivat tule API:sta lapi lainkaan — dev hakee
+         ne erillisella funktiolla, joka tarkistaa koodin palvelimella. */
+      if (isDev() && devCode()) {
+        return this.rpc('pins_all', { p_code: devCode() })
+          .then(function (rows) { return rows || []; })
+          .catch(function () { return self.plain(); });
+      }
+      return this.plain();
     },
     add: function (pin, c) {
       if (!SHARED) {
@@ -363,7 +374,14 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     function onEsc(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } }
     document.addEventListener('keydown', onEsc);
     $('#kp-x2').onclick = close;
-    wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
+    /* Taustaklikkaus sulkee vain jos painallus ALKOI taustalta. Nain
+       tekstin maalaaminen lomakkeen sisalla ei enaa sulje lomaketta. */
+    var downOnWrap = false;
+    wrap.addEventListener('pointerdown', function (e) { downOnWrap = (e.target === wrap); });
+    wrap.addEventListener('click', function (e) {
+      if (e.target === wrap && downOnWrap) close();
+      downOnWrap = false;
+    });
 
     $('#kp-ok').onclick = function () {
       var t = $('#kp-t').value.trim();
