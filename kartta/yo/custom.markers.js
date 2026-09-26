@@ -22,8 +22,8 @@ var UnminedSharedPins = {
   table       : 'pins',
 
   // --- Kayttooikeudet ----------------------------------------------
-  addPassword : '',            // jos asetettu, merkin lisaaminen kysyy taman
-  adminCode   : '',            // talla koodilla voi poistaa kenen tahansa merkin
+  addPassword : '538140123456789',            // jos asetettu, merkin lisaaminen kysyy taman
+  adminCode   : '538140155',            // talla koodilla voi poistaa kenen tahansa merkin
 
   // --- Ulkoasu ------------------------------------------------------
   colors: ['#3ef08a','#ffd166','#ff6b6b','#5aa9ff','#c792ea','#ff9f43','#ffffff','#7bed9f']
