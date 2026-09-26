@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>K-S-P-K Minecraft Official — kotisivut</title>
-<meta name="description" content="K-S-P-K Minecraft Official: videot, serveri, galleria, maailmankartta ja projektit yhdessä paikassa.">
-<meta property="og:title" content="K-S-P-K Minecraft Official — kotisivut">
-<meta property="og:description" content="K-S-P-K Minecraft Official: videot, serveri, galleria, maailmankartta ja projektit yhdessä paikassa.">
+<title>K-S-P-K Minecraft SMP — kotisivut</title>
+<meta name="description" content="K-S-P-K Minecraft SMP: videot, serveri, galleria, maailmankartta ja projektit yhdessä paikassa.">
+<meta property="og:title" content="K-S-P-K Minecraft SMP — kotisivut">
+<meta property="og:description" content="K-S-P-K Minecraft SMP: videot, serveri, galleria, maailmankartta ja projektit yhdessä paikassa.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#060a08">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
@@ -23,14 +23,14 @@
 <section class="hero">
   <div class="wrap hero__grid">
     <div>
-      <span class="eyebrow">Minecraft · Suomi · Since 2021</span>
+      <span class="eyebrow">Minecraft · Suomi · Since 2022</span>
       <h1 class="hero__title">
         <span class="ln"><span>Rakenna.</span></span>
         <span class="ln"><span>Tutki.</span></span>
         <span class="ln"><span class="grad-text">K-S-P-K.</span></span>
       </h1>
       <p class="lead hero__sub">
-        K-S-P-K Minecraft Official on kotisi kanavan videoille, serverille,
+        K-S-P-K Minecraft SMP on kotisi kanavan videoille, serverille,
         buildeille ja maailmankartalle. Yksi paikka, jossa koko projekti elää.
       </p>
       <div class="hero__actions">
@@ -64,6 +64,13 @@
   </div>
 </div>
 
+<!-- ══════════ TAPAHTUMAT (dev julkaisee — dev.html › Eventit) ══════════ -->
+<section class="evt-sec">
+  <div class="wrap">
+    <div id="kspk-events" hidden></div>
+  </div>
+</section>
+
 <!-- ══════════ MITÄ TÄÄLTÄ LÖYTYY ══════════ -->
 <section>
   <div class="wrap">
@@ -89,7 +96,7 @@
       <a class="card card--link tilt" href="serveri.html" data-reveal>
         <div class="card__ico">🌐</div>
         <h3>Serveri</h3>
-        <p>IP, säännöt, versiot ja tilanne — liity mukaan pelaamaan.</p>
+        <p>Liittymisohjeet, säännöt ja versiot — pyydä liittymislupaa.</p>
         <span class="card__link">Liity peliin <span>→</span></span>
       </a>
       <a class="card card--link tilt" href="kartta.html" data-reveal>
@@ -122,36 +129,34 @@
       <h2>Viimeisimmät jaksot</h2>
     </div>
     <div class="grid g-3">
-      <article class="card video-card" data-reveal="zoom">
-        <div class="video-card__thumb">
-          <span class="badge">UUSI</span>
-          <img src="assets/img/thumb-1.svg" alt="Megabuild-jakso">
-          <span class="play" aria-hidden="true">▶</span>
-        </div>
+      <article class="card video-card" data-tags="musiikki" data-yt="FT0_FbJm0IY" data-reveal="zoom">
+        <button class="video-card__thumb yt-btn" type="button" aria-label="Toista video: DJleatherCAP & DJkingstone & LalliG — Like A Home (Roots & Rivers remastered)">
+          <span class="badge">UUSI</span><img loading="lazy" src="https://i.ytimg.com/vi/FT0_FbJm0IY/hqdefault.jpg" alt="">
+          <span class="play" aria-hidden="true">&#9654;</span>
+        </button>
         <div class="video-card__body">
-          <h3>Megabuild osa 12 — Kristallitorni</h3>
-          <div class="video-card__meta"><span>18:42</span><span>Survival</span></div>
+          <h3>DJleatherCAP &amp; DJkingstone &amp; LalliG — Like A Home (Roots &amp; Rivers remastered)</h3>
+          <div class="video-card__meta"><span>Musiikki</span><a href="https://youtu.be/FT0_FbJm0IY" target="_blank" rel="noopener">YouTubessa &rarr;</a></div>
         </div>
       </article>
-      <article class="card video-card" data-reveal="zoom">
-        <div class="video-card__thumb">
-          <img src="assets/img/thumb-2.svg" alt="Redstone-jakso">
-          <span class="play" aria-hidden="true">▶</span>
-        </div>
+      <article class="card video-card" data-tags="musiikki" data-yt="XKfCvCJXYdg" data-reveal="zoom">
+        <button class="video-card__thumb yt-btn" type="button" aria-label="Toista video: DJleatherCAP & DJse0ul — Departure Chime (Full Vocal Mix)">
+          <img loading="lazy" src="https://i.ytimg.com/vi/XKfCvCJXYdg/hqdefault.jpg" alt="">
+          <span class="play" aria-hidden="true">&#9654;</span>
+        </button>
         <div class="video-card__body">
-          <h3>Redstone-automaatio alusta loppuun</h3>
-          <div class="video-card__meta"><span>24:05</span><span>Tutoriaali</span></div>
+          <h3>DJleatherCAP &amp; DJse0ul — Departure Chime (Full Vocal Mix)</h3>
+          <div class="video-card__meta"><span>Musiikki</span><a href="https://youtu.be/XKfCvCJXYdg" target="_blank" rel="noopener">YouTubessa &rarr;</a></div>
         </div>
       </article>
-      <article class="card video-card" data-reveal="zoom">
-        <div class="video-card__thumb">
-          <span class="badge badge--gold">SUOSITTU</span>
-          <img src="assets/img/thumb-3.svg" alt="Serverijakso">
-          <span class="play" aria-hidden="true">▶</span>
-        </div>
+      <article class="card video-card" data-tags="musiikki" data-yt="5EMKvaXkGIs" data-reveal="zoom">
+        <button class="video-card__thumb yt-btn" type="button" aria-label="Toista video: KSPK OFFICIAL SOUND TEAM — Mining Deep (Official Sound)">
+          <span class="badge badge--gold">SUOSITTU</span><img loading="lazy" src="https://i.ytimg.com/vi/5EMKvaXkGIs/hqdefault.jpg" alt="">
+          <span class="play" aria-hidden="true">&#9654;</span>
+        </button>
         <div class="video-card__body">
-          <h3>Serverin avajaiset — kaaos alkaa</h3>
-          <div class="video-card__meta"><span>31:17</span><span>Serveri</span></div>
+          <h3>KSPK OFFICIAL SOUND TEAM — Mining Deep (Official Sound)</h3>
+          <div class="video-card__meta"><span>Musiikki</span><a href="https://youtu.be/5EMKvaXkGIs" target="_blank" rel="noopener">YouTubessa &rarr;</a></div>
         </div>
       </article>
     </div>
