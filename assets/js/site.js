@@ -303,7 +303,9 @@ window.KSPK = KSPK;
 (function devBar() {
   var st = document.createElement('style');
   st.textContent = ''
-    + '.kspk-devbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.82rem}'
+    + '.footer__bottom{flex-wrap:wrap}'
+    + '.kspk-devbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.82rem;'
+    + 'flex-basis:100%;justify-content:flex-start;margin-top:4px;padding-right:72px}'
     + '.kspk-devbar a,.kspk-devbar button{font:inherit;font-size:.82rem;color:var(--muted,#9db3a6);'
     + 'background:none;border:0;padding:0;cursor:pointer;text-decoration:none;border-bottom:1px dotted transparent}'
     + '.kspk-devbar a:hover,.kspk-devbar button:hover{color:var(--green,#3ef08a);border-bottom-color:currentColor}'
