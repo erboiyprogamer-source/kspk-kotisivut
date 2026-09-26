@@ -217,6 +217,11 @@
   });
   frame.addEventListener('mouseleave', deactivate);
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape') deactivate(); });
+  // Esc kartan sisalla (iframe) -> kartta ilmoittaa siita tanne
+  window.addEventListener('message', function(e){
+    if (e.origin !== location.origin) return;
+    if (e.data && e.data.kspk === 'map-escape') deactivate();
+  });
   // Kosketuslaitteet: lukko palaa kun kosketetaan kartan ulkopuolelle
   document.addEventListener('pointerdown', function(e){
     if (live && !frame.contains(e.target)) deactivate();
