@@ -92,6 +92,7 @@
     <div class="map-toolbar" data-reveal hidden id="map-tools">
       <button class="btn btn--sm btn--solid" type="button" data-map="day">☀️ Päiväkuva</button>
       <button class="btn btn--sm" type="button" data-map="night">🌙 Yökuva</button>
+      <button class="btn btn--sm" type="button" data-map="k5">🔍 1:1 tarkka</button>
       <a class="btn btn--sm btn--ghost" id="map-open" href="#" target="_blank" rel="noopener">Avaa koko näytölle</a>
       <button class="btn btn--sm btn--ghost" type="button" id="map-reload">Lataa uudelleen</button>
     </div>
@@ -154,7 +155,8 @@
   var tools = document.getElementById('map-tools');
   var open  = document.getElementById('map-open');
   var paths = { day:  (window.SITE && SITE.mapDay)   || 'kartta/paiva/index.html',
-                night:(window.SITE && SITE.mapNight) || 'kartta/yo/index.html' };
+                night:(window.SITE && SITE.mapNight) || 'kartta/yo/index.html',
+                k5:   (window.SITE && SITE.map5k)    || 'kartta/5k/index.html' };
   var current = 'day';
 
   function exists(url){
@@ -233,8 +235,14 @@
   syncLock();
 
   // Näytä päivä/yö-napit vasta kun vähintään toinen kartta on olemassa
-  Promise.all([exists(paths.day), exists(paths.night)]).then(function(r){
-    if (r[0] || r[1]) { tools.hidden = false; show(r[0] ? 'day' : 'night'); }
+  var keys = ['day','night','k5'];
+  Promise.all(keys.map(function(k){ return exists(paths[k]); })).then(function(r){
+    keys.forEach(function(k,i){
+      var btn = document.querySelector('[data-map="'+k+'"]');
+      if (btn && !r[i]) btn.hidden = true;        // nappi piiloon jos karttaa ei ole
+    });
+    var first = keys[r.indexOf(true)];
+    if (first) { tools.hidden = false; show(first); }
     else { ph.hidden = false; f.style.visibility = 'hidden'; }
   });
 })();
