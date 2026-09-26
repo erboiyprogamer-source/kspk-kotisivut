@@ -571,7 +571,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     dev.title = 'Dev-tila';
     dev.onclick = function () {
       if (isDev()) {
-        setDev(false); setDevCode(''); dev.classList.remove('on'); draw(); announce();
+        setDev(false); setDevCode(''); dev.classList.remove('on'); refresh(); announce();
         tellParentDev(false);
         toast('Dev-tila pois paalta');
       } else {
@@ -580,7 +580,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         if (code === null || code === '') return;
         Store.rpc('is_admin', { p_code: code }).then(function (ok) {
           if (ok !== true) { toast('Vaara koodi', false); return; }
-          setDev(true); setDevCode(code); dev.classList.add('on'); draw(); announce();
+          setDev(true); setDevCode(code); dev.classList.add('on'); refresh(); announce();
           tellParentDev(true);
           toast('Dev-tila paalla — kaikki merkit hallittavissa');
         }).catch(function () { toast('Tarkistus ei onnistunut', false); });
@@ -631,7 +631,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       if (d.kspk === 'dev-state') {
         setDev(!!d.on);
         if (d.code) setDevCode(d.code); else if (!d.on) setDevCode('');
-        dev.classList.toggle('on', !!d.on); draw();
+        dev.classList.toggle('on', !!d.on); refresh();
       }
     });
 
