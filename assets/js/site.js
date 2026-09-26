@@ -15,14 +15,13 @@ const SITE = {
   name:      'K-S-P-K',
   full:      'K-S-P-K Minecraft SMP',
   tagline:   'Minecraft-sisältöä suomeksi',
-  youtube:   'https://www.youtube.com/@K-S-P-K_Minecraft_Official',      // ← vaihda oikeaan URLiin
-  discord:   '#',
-  tiktok:    '#',
-  email:     'kasapeka.official@gmail.com',
-  serverIp:  'play.kspk.fi',                          // ← vaihda oikeaan IP:hen
-  // uNmINeD-kartat. Kumpikin on oma kansionsa jossa on index.html + lib/ + tiles/
+  youtube:   'https://www.youtube.com/@K-S-P-K_Minecraft_Official',
+  email:     'kasapeka.official@gmail.com',      // yleinen yhteydenotto + liittymispyynnöt
+  support:   'kasapeka.support@gmail.com',       // tuki- ja supportviestit
+  // uNmINeD-kartat. Jokainen on oma kansionsa jossa on index.html + lib/ + tiles/
   mapDay:    'kartta/paiva/index.html',
   mapNight:  'kartta/yo/index.html',
+  map5k:     'kartta/5k/index.html',
 
   pages: [
     { href:'index.html',     label:'Etusivu',    foot:'Sivusto' },
@@ -35,39 +34,47 @@ const SITE = {
   ],
 
   /* ===================================================================
+     TAPAHTUMAT  (keltainen ruutu etusivulla)
+     -------------------------------------------------------------------
+     Dev voi julkaista, muokata ja piilottaa nämä sivulla dev.html
+     (välilehti "Eventit"). Tämä lista on vain varasisältö siltä varalta
+     ettei asetuksia ole vielä tallennettu.
+       on    : näkyykö ruutu
+       badge : pieni tunniste ruudun ylälaidassa
+       title : otsikko
+       text  : kuvaus
+       iso   : tapahtuman hetki. Countdown lasketaan tästä selaimessa —
+               EI yhtään palvelinpyyntöä, joten se ei kuormita mitään.
+               Muoto: 2027-03-04T17:55:00+02:00  (+02:00 = Suomen talviaika,
+               kesäaikaan +03:00)
+     =================================================================== */
+  events: [
+    { on: true,
+      badge: 'Juhlavuosi',
+      title: 'KASAPEKA täyttää 5 vuotta!',
+      text:  'Viisi vuotta rakentamista, serveriä ja videoita. Juhlitaan yhdessä — merkkaa päivä kalenteriin jo nyt.',
+      iso:   '2027-03-04T17:55:00+02:00',
+      when:  '4.3.2027 klo 17:55 Suomen aikaa' }
+  ],
+
+  /* ===================================================================
      GOOGLE DOCS -LINKIT  (näkyvät sivulla projektit.html)
      -------------------------------------------------------------------
-     Lisää uusi linkki kopioimalla yksi rivi alta.
-       name : otsikko kortissa
-       desc : lyhyt kuvaus
-       url  : Google Docsin / Sheetsin / Driven osoite (liitä tähän)
-       type : 'doc' | 'sheet' | 'slide' | 'form' | 'drive'
+     Dev voi lisätä ja muokata näitä sivulla dev.html (välilehti "Linkit").
      =================================================================== */
   docs: [
-    { type:'sheet', name:'Kirjanpito — päätilikirja',
-      desc:'Kaikki tulot ja menot yhdessä taulukossa, kuukausittain eriteltynä.',
-      url:'#' },
-    { type:'sheet', name:'Kuukausiraportti',
-      desc:'Yhteenveto kuukauden saldosta ja isoimmista eristä.',
-      url:'#' },
-    { type:'drive', name:'Kuitit ja tositteet',
-      desc:'Skannatut kuitit ja laskut Drive-kansiossa päivämäärän mukaan.',
-      url:'#' },
-    { type:'doc',   name:'Projektisuunnitelma',
-      desc:'Tavoitteet, aikataulu ja vastuut. Päivitetään viikoittain.',
-      url:'#' },
-    { type:'doc',   name:'Tehtävälista',
-      desc:'Mitä on tekemättä, kuka tekee ja mihin mennessä.',
-      url:'#' },
-    { type:'doc',   name:'Videoideat',
-      desc:'Kerätyt ideat ja käsikirjoitusluonnokset tuleviin jaksoihin.',
-      url:'#' },
-    { type:'slide', name:'Yhteistyöesittely',
-      desc:'Kanavan esittelydiat yhteistyökumppaneille.',
-      url:'#' },
-    { type:'drive', name:'Materiaalipankki',
-      desc:'Kansikuvat, musiikit ja raakamateriaali yhdessä paikassa.',
-      url:'#' }
+    { type:'doc', name:'Muistiinpanot',
+      desc:'Yhteinen muistiinpanovihko: päätökset, ideat ja avoimet kysymykset.',
+      url:'https://docs.google.com/document/d/1viOlvNQ0ZzFE7PGuFv0WTckZlAbC2y5KuRuq9ftW26s/edit' },
+    { type:'doc', name:'Videoideat',
+      desc:'Ideapankki tuleville videoille — mitä on työn alla ja mitä jo julkaistu.',
+      url:'https://docs.google.com/document/d/1YF1bAxuwioZk9SqnQjrdZIf_h_qjF9yEb-eoYsPn4C4/edit' },
+    { type:'doc', name:'Serveriprojektit ja tehtävälista',
+      desc:'Mitä serverillä rakennetaan, kuka tekee ja mihin mennessä.',
+      url:'https://docs.google.com/document/d/1nNChKcaJO4lIYsJUTvFiGERBCXUfnKI_9EZBwq_a_ug/edit' },
+    { type:'doc', name:'Tapahtumat ja aikataulu',
+      desc:'Tulevat tapahtumat ja juhlapäivät — samat jotka näkyvät etusivun tapahtumaruudussa.',
+      url:'https://docs.google.com/document/d/12wYYRjaOHw0prvTeoTThPj4EvZbeQ5brqQ0SlcsBNX4/edit' }
   ]
 };
 
@@ -95,7 +102,7 @@ const DOC_TYPES = {
     <div class="nav__inner">
       <a class="brand" href="index.html" aria-label="${SITE.full} — etusivu">
         <span class="brand__mark" aria-hidden="true">K</span>
-        <span class="brand__txt"><b>${SITE.name}</b><span>Minecraft Official</span></span>
+        <span class="brand__txt"><b>${SITE.name}</b><span>Minecraft SMP</span></span>
       </a>
       <nav aria-label="Päävalikko">
         <ul class="nav__links">${links}</ul>
@@ -126,7 +133,7 @@ const DOC_TYPES = {
         <div class="footer__brand" data-reveal>
           <a class="brand" href="index.html" style="margin-bottom:18px">
             <span class="brand__mark" aria-hidden="true">K</span>
-            <span class="brand__txt"><b>${SITE.name}</b><span>Minecraft Official</span></span>
+            <span class="brand__txt"><b>${SITE.name}</b><span>Minecraft SMP</span></span>
           </a>
           <p class="muted" style="max-width:38ch;font-size:.92rem">
             ${SITE.tagline}. Buildeja, serveriprojekteja ja pelituokioita —
@@ -134,8 +141,6 @@ const DOC_TYPES = {
           </p>
           <div class="socials">
             <a href="${SITE.youtube}" target="_blank" rel="noopener" aria-label="YouTube">${icon('yt')}</a>
-            <a href="${SITE.discord}" aria-label="Discord">${icon('dc')}</a>
-            <a href="${SITE.tiktok}" aria-label="TikTok">${icon('tt')}</a>
             <a href="mailto:${SITE.email}" aria-label="Sähköposti">${icon('mail')}</a>
           </div>
         </div>
@@ -193,8 +198,6 @@ const DOC_TYPES = {
 function icon(n){
   const p = {
     yt:'M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.3 3.6-6.3 3.6Z',
-    dc:'M20.3 4.4A19 19 0 0 0 15.7 3l-.2.4a17 17 0 0 1 4.1 1.4 15 15 0 0 0-11.2 0A17 17 0 0 1 12.5 3.4L12.3 3a19 19 0 0 0-4.6 1.4C4.3 9.3 3.4 14 3.9 18.7A19 19 0 0 0 9.6 21l.9-1.7a12 12 0 0 1-2-1l.5-.4a13.5 13.5 0 0 0 10 0l.5.4a12 12 0 0 1-2 1L18.4 21a19 19 0 0 0 5.7-2.3c.6-5.4-.9-10.1-3.8-14.3ZM9.4 15.7c-1.1 0-2-1-2-2.3s.9-2.3 2-2.3 2 1 2 2.3-.9 2.3-2 2.3Zm5.2 0c-1.1 0-2-1-2-2.3s.9-2.3 2-2.3 2 1 2 2.3-.9 2.3-2 2.3Z',
-    tt:'M16.6 2h-3v13.4a2.6 2.6 0 1 1-2.2-2.6v-3a5.6 5.6 0 1 0 5.2 5.6V9a7.5 7.5 0 0 0 4.4 1.4V7.3a4.5 4.5 0 0 1-4.4-5.3Z',
     mail:'M2 5h20v14H2V5Zm2 2v.3l8 5 8-5V7H4Zm16 10V9.6l-8 5-8-5V17h16Z'
   }[n] || '';
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${p}"/></svg>`;
@@ -291,6 +294,12 @@ window.KSPK = KSPK;
     docCards(s.links);
     if (s.texts) {
       Object.keys(s.texts).forEach(function (sel) {
+        if (sel === '@events') {                 // tapahtumat, ei CSS-valitsin
+          var list = null;
+          try { list = JSON.parse(s.texts[sel]); } catch (e) { list = null; }
+          if (list && list.length !== undefined) window.KSPK_renderEvents(list);
+          return;
+        }
         var nodes;
         try { nodes = document.querySelectorAll(sel); } catch (e) { return; }
         [].forEach.call(nodes, function (n) { n.innerHTML = s.texts[sel]; });
@@ -358,4 +367,221 @@ window.KSPK = KSPK;
   }
   window.addEventListener('kspk-dev', paint);
   paint();
+})();
+
+
+/* =====================================================================
+   TAPAHTUMARUUTU + REAALIAIKAINEN COUNTDOWN
+   ---------------------------------------------------------------------
+   Renderöi keltaisen tapahtumaruudun elementtiin #kspk-events (etusivu).
+   Countdown lasketaan pelkästään selaimen kellosta suhteessa tapahtuman
+   ISO-aikaleimaan, jossa on aikavyöhyke mukana. Siksi se näyttää saman
+   jäljellä olevan ajan kaikille avaajille maailmassa, eikä tee yhtäkään
+   verkkopyyntöä — Supabasen kuormitus on nolla.
+   ===================================================================== */
+(function events() {
+  var box = document.getElementById('kspk-events');
+  if (!box) return;
+
+  var esc = function (t) {
+    return String(t == null ? '' : t)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+  var timer = null;
+
+  function fmtWhen(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    try {
+      return d.toLocaleString('fi-FI', {
+        day: 'numeric', month: 'numeric', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Helsinki'
+      }) + ' Suomen aikaa';
+    } catch (e) { return iso; }
+  }
+
+  function render(list) {
+    if (timer) { clearInterval(timer); timer = null; }
+    var live = (list || []).filter(function (e) { return e && e.on !== false && (e.title || e.text); });
+    if (!live.length) { box.innerHTML = ''; box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = live.map(function (e, i) {
+      var t = e.iso ? Date.parse(e.iso) : NaN;
+      return '<article class="evt" data-reveal>'
+        + (e.badge ? '<span class="evt__badge">' + esc(e.badge) + '</span>' : '')
+        + '<h3 class="evt__title">' + esc(e.title || '') + '</h3>'
+        + (e.text ? '<p class="evt__text">' + esc(e.text) + '</p>' : '')
+        + (isNaN(t) ? '' :
+            '<div class="evt__cd" data-at="' + t + '" role="timer" aria-live="off">'
+          + '<div><b data-u="d">–</b><span>päivää</span></div>'
+          + '<div><b data-u="h">–</b><span>tuntia</span></div>'
+          + '<div><b data-u="m">–</b><span>min</span></div>'
+          + '<div><b data-u="s">–</b><span>sek</span></div></div>'
+          + '<p class="evt__when">' + esc(e.when || fmtWhen(e.iso)) + '</p>')
+        + '</article>';
+    }).join('');
+    tick();
+    timer = setInterval(tick, 1000);
+  }
+
+  function tick() {
+    var cds = box.querySelectorAll('.evt__cd');
+    for (var i = 0; i < cds.length; i++) {
+      var cd = cds[i];
+      var left = Number(cd.dataset.at) - Date.now();
+      if (left <= 0) {
+        cd.classList.add('is-now');
+        cd.innerHTML = '<div class="evt__now">🎉 Tapahtuma on alkanut!</div>';
+        continue;
+      }
+      var s2 = Math.floor(left / 1000);
+      var d = Math.floor(s2 / 86400), h = Math.floor(s2 % 86400 / 3600),
+          m = Math.floor(s2 % 3600 / 60), sec = s2 % 60;
+      var set = function (u, v) {
+        var n = cd.querySelector('[data-u="' + u + '"]');
+        if (n) n.textContent = v;
+      };
+      set('d', d); set('h', ('0' + h).slice(-2));
+      set('m', ('0' + m).slice(-2)); set('s', ('0' + sec).slice(-2));
+    }
+  }
+
+  window.KSPK_renderEvents = render;     // dev-asetukset voivat korvata listan
+  render(SITE.events);                   // näytä varasisältö heti, ennen verkkohakua
+})();
+
+/* =====================================================================
+   TUE KSPK:TA — kulmanappi + ikkuna
+   ===================================================================== */
+(function support() {
+  if (document.body.dataset.noSupport === '1') return;
+
+  var TO   = SITE.support || SITE.email;
+  var SUBJ = 'Palaute ja tuki — K-S-P-K';
+  var BODY = 'Moi K-S-P-K!\n\n'
+    + 'Palautteeni sivustosta / kanavasta / serveristä:\n\n\n'
+    + 'Olisin kiinnostunut tukemaan toimintaanne: kyllä / ei\n\n'
+    + 'Idea johon tuki voisi mennä (kanavan, serverin tai yleisön kasvattamiseksi):\n\n\n'
+    + 'Terveisin,\n';
+
+  var st = document.createElement('style');
+  st.textContent = ''
+    + '.kspk-coffee{position:fixed;right:16px;bottom:16px;z-index:90;display:inline-flex;align-items:center;'
+    + 'gap:8px;padding:11px 16px;border:0;border-radius:999px;cursor:pointer;font:inherit;font-size:.9rem;'
+    + 'font-weight:600;color:#241a00;background:linear-gradient(135deg,#ffd166,#ffb020);'
+    + 'box-shadow:0 12px 30px -12px rgba(255,180,32,.8);transition:transform .18s ease}'
+    + '.kspk-coffee:hover{transform:translateY(-2px)}'
+    + '.kspk-coffee:focus-visible{outline:2px solid #fff;outline-offset:3px}'
+    + '@media (max-width:640px){.kspk-coffee{right:12px;bottom:12px;padding:10px 14px;font-size:.84rem}}'
+    + '.kspk-sup{position:fixed;inset:0;z-index:120;display:none;padding:18px;overflow:auto;'
+    + '-webkit-overflow-scrolling:touch;background:rgba(3,7,5,.72);backdrop-filter:blur(3px)}'
+    + '.kspk-sup.on{display:block}'
+    + '.kspk-sup__in{max-width:620px;margin:6vh auto 40px;border-radius:18px;padding:26px;'
+    + 'background:#0b120e;border:1px solid rgba(255,209,102,.35);box-shadow:0 30px 70px -30px #000}'
+    + '.kspk-sup h2{margin:0 0 6px;font-size:1.35rem;color:#ffd166}'
+    + '.kspk-sup p{margin:0 0 12px;font-size:.95rem;line-height:1.6}'
+    + '.kspk-sup ul{margin:0 0 14px;padding-left:20px;font-size:.93rem;line-height:1.65}'
+    + '.kspk-sup__mail{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0;padding:12px 14px;'
+    + 'border-radius:12px;background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.25)}'
+    + '.kspk-sup__mail code{font-size:.95rem;word-break:break-all;color:#ffe9b0}'
+    + '.kspk-sup__acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}'
+    + '.kspk-sup__b{font:inherit;font-size:.9rem;font-weight:600;padding:11px 16px;border-radius:11px;'
+    + 'cursor:pointer;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;text-decoration:none;'
+    + 'display:inline-flex;align-items:center;gap:7px}'
+    + '.kspk-sup__b--y{background:linear-gradient(135deg,#ffd166,#ffb020);color:#241a00;border-color:transparent}'
+    + '.kspk-sup__eco{margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1);'
+    + 'font-size:.88rem;line-height:1.65;color:#b9cdc0}'
+    + '.kspk-sup__x{float:right;background:none;border:0;color:inherit;font-size:1.5rem;line-height:1;'
+    + 'cursor:pointer;padding:0 4px;margin:-6px -4px 0 0}';
+  document.head.appendChild(st);
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'kspk-coffee';
+  btn.innerHTML = '☕ <span>Buy us a coffee — tue KSPK:ta!</span>';
+
+  var mod = document.createElement('div');
+  mod.className = 'kspk-sup';
+  mod.setAttribute('role', 'dialog');
+  mod.setAttribute('aria-modal', 'true');
+  mod.setAttribute('aria-label', 'Tue KSPK:ta');
+  mod.innerHTML = ''
+    + '<div class="kspk-sup__in">'
+    + '<button type="button" class="kspk-sup__x" data-a="x" aria-label="Sulje">&times;</button>'
+    + '<h2>☕ Support K-S-P-K by donating!</h2>'
+    + '<p>Emme kerää rahaa sivuston kautta emmekä pyydä korttitietoja missään. '
+    + 'Tuki hoidetaan ihan sähköpostilla, ihmiseltä ihmiselle.</p>'
+    + '<p><b>Laita meille sähköpostia ja kerro:</b></p>'
+    + '<ul>'
+    + '<li>palautetta sivustosta, kanavasta tai serveristä</li>'
+    + '<li>olisitko kiinnostunut tukemaan toimintaamme — silloin voimme antaa sinulle tilinumeron, johon tuen voi siirtää</li>'
+    + '<li>jos haluat, kerro myös oma ideasi siitä mihin tukiraha kannattaisi käyttää: kanavan tai serverin kehittämiseen vai yleisön kasvattamiseen</li>'
+    + '</ul>'
+    + '<div class="kspk-sup__mail"><span>Osoite:</span><code id="kspk-sup-mail"></code></div>'
+    + '<div class="kspk-sup__acts">'
+    + '<button type="button" class="kspk-sup__b" data-a="copy">📋 Kopioi osoite</button>'
+    + '<a class="kspk-sup__b kspk-sup__b--y" data-a="gmail" href="#" target="_blank" rel="noopener">✉️ Avaa Gmail valmiilla viestillä</a>'
+    + '<a class="kspk-sup__b" data-a="mailto" href="#">Avaa oma sähköpostiohjelma</a>'
+    + '</div>'
+    + '<p class="kspk-sup__eco">🌱 <b>Lupauksemme tuesta:</b> käytämme jokaisen saamamme euron huolella ja '
+    + 'ainoastaan tämän projektin kehittämiseen — kanavaan, serveriin ja sivustoon. Valintamme teemme '
+    + 'ajatellen mahdollisimman vähäisiä ilmastopäästöjä, ja pääideanamme on kestävän kehityksen '
+    + 'edistäminen. Ilmoitamme tukijoillemme aika ajoin myös oman hiilikädenjälkemme.</p>'
+    + '</div>';
+
+  document.body.appendChild(btn);
+  document.body.appendChild(mod);
+
+  mod.querySelector('#kspk-sup-mail').textContent = TO;
+  var q = function (k, v) { return k + '=' + encodeURIComponent(v); };
+  mod.querySelector('[data-a="gmail"]').href =
+    'https://mail.google.com/mail/?view=cm&fs=1&' + q('to', TO) + '&' + q('su', SUBJ) + '&' + q('body', BODY);
+  mod.querySelector('[data-a="mailto"]').href =
+    'mailto:' + TO + '?' + q('subject', SUBJ) + '&' + q('body', BODY);
+
+  function open()  { mod.classList.add('on'); document.documentElement.style.overflow = 'hidden'; }
+  function close() { mod.classList.remove('on'); document.documentElement.style.overflow = ''; }
+  btn.onclick = open;
+  mod.addEventListener('click', function (e) {
+    if (e.target === mod || e.target.dataset.a === 'x') close();
+    if (e.target.dataset.a === 'copy') {
+      try {
+        navigator.clipboard.writeText(TO);
+        e.target.textContent = '✅ Kopioitu!';
+        setTimeout(function () { e.target.textContent = '📋 Kopioi osoite'; }, 1800);
+      } catch (err) {}
+    }
+    if (e.target.dataset.a === 'gmail' || e.target.dataset.a === 'mailto') close();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && mod.classList.contains('on')) close();
+  });
+
+  // sivun omat "tue meitä" -napit avaavat saman ikkunan
+  [].forEach.call(document.querySelectorAll('[data-support]'), function (a) {
+    a.addEventListener('click', function (e) { e.preventDefault(); open(); });
+  });
+})();
+
+/* =====================================================================
+   KEVYT YOUTUBE-UPOTUS
+   ---------------------------------------------------------------------
+   Kortti näyttää aluksi vain kansikuvan. Vasta klikkauksesta ladataan
+   YouTube-soitin — sivu pysyy nopeana myös mobiilissa.
+   ===================================================================== */
+(function ytLite() {
+  [].forEach.call(document.querySelectorAll('[data-yt]'), function (card) {
+    var btn = card.querySelector('.yt-btn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var id = card.dataset.yt;
+      var w = document.createElement('div');
+      w.className = 'video-card__thumb is-playing';
+      w.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id +
+        '?autoplay=1&rel=0" title="YouTube-video" loading="lazy" allowfullscreen ' +
+        'allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" ' +
+        'referrerpolicy="strict-origin-when-cross-origin" frameborder="0"></iframe>';
+      btn.replaceWith(w);
+    });
+  });
 })();
