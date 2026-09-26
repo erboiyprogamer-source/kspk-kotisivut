@@ -72,18 +72,22 @@
 
     <div id="dv-app" hidden>
       <div class="dv-tabs" role="tablist">
-        <button class="dv-tab on" data-t="wl" role="tab">Whitelist</button>
+        <button class="dv-tab on" data-t="wl" role="tab">Pelaajat</button>
         <button class="dv-tab" data-t="ln" role="tab">Linkit</button>
         <button class="dv-tab" data-t="tx" role="tab">Tekstit</button>
       </div>
 
-      <!-- WHITELIST -->
+      <!-- PELAAJAT -->
       <div class="dv-pane on" id="p-wl">
-        <p class="dv-hint">Vain näillä pelinimillä voi lisätä karttamerkkejä. Tyhjä lista = ei rajoitusta.</p>
+        <p class="dv-hint">
+          Jokaisella pelaajalla on oma salasana. Vain tällä listalla olevat voivat lisätä merkkejä, ja
+          jokainen voi muokata ja poistaa vain omia merkkejään. Salasanat ovat Supabasessa — ne eivät näy
+          sivuston koodissa eivätkä toisille pelaajille. Ylläpitokoodilla pääsee käsiksi kaikkiin merkkeihin.
+        </p>
         <div id="wl-list" style="display:grid;gap:10px"></div>
         <div class="dv-bar">
           <input class="dv" id="wl-new" maxlength="24" placeholder="Uusi pelinimi" style="max-width:240px">
-          <button class="dv-b" id="wl-add">Lisää</button>
+          <button class="dv-b" id="wl-add">Lisää pelaaja</button>
         </div>
       </div>
 
@@ -121,7 +125,20 @@
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var lock = $('dv-lock'), app = $('dv-app');
-  var state = { whitelist: [], links: [], texts: {} };
+  var state = { players: [], links: [], texts: {} };
+
+  /* Salasanageneraattori: kaksi sanaa ja numero — helppo sanoa kaverille */
+  var SANAT = ['kivi','tammi','routa','lumi','kaira','halko','nuotio','ahven','sammal','petaja',
+               'kuusi','hilla','vaahtera','norppa','kotka','ilves','poro','rautu','myrsky','usva',
+               'kallio','jaala','hanki','aalto','sumu','salama','koski','nokka','tuisku','kelo'];
+  function arvoSalasana() {
+    var a = new Uint32Array(3);
+    if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(a);
+    else { a[0] = Math.random() * 1e9; a[1] = Math.random() * 1e9; a[2] = Math.random() * 1e9; }
+    var i = a[0] % SANAT.length, j = a[1] % SANAT.length;
+    if (j === i) j = (j + 1) % SANAT.length;
+    return SANAT[i] + '-' + SANAT[j] + '-' + (1000 + (a[2] % 9000));
+  }
 
   function msg(t, kind) {
     var m = $('dv-msg');
@@ -161,8 +178,14 @@
   /* --- haku --- */
   function load() {
     msg('Haetaan…');
-    KSPK.settings().then(function (s) {
-      state.whitelist = (s.whitelist || []).slice();
+    Promise.all([
+      KSPK.settings(),
+      KSPK.rpc('players_get', { p_code: KSPK.code() }).catch(function () { return []; })
+    ]).then(function (res) {
+      var s = res[0] || {};
+      state.players = (res[1] || []).map(function (p) {
+        return { name: p.name || '', password: p.password || '' };
+      });
       state.links = (s.links || []).slice();
       state.texts = Object.assign({}, s.texts || {});
       drawWl(); drawLn(); drawTx();
@@ -171,27 +194,40 @@
   }
   $('dv-reload').onclick = load;
 
-  /* --- whitelist --- */
+  /* --- pelaajat --- */
   function drawWl() {
     var box = $('wl-list');
     box.innerHTML = '';
-    if (!state.whitelist.length) {
-      box.innerHTML = '<p class="dv-hint">Lista on tyhjä — kaikki pelinimet sallitaan.</p>';
+    if (!state.players.length) {
+      box.innerHTML = '<p class="dv-hint">Ei pelaajia — kukaan ei voi lisätä merkkejä. Lisää pelaaja alta.</p>';
     }
-    state.whitelist.forEach(function (n, i) {
+    state.players.forEach(function (p, i) {
       var d = document.createElement('div');
-      d.className = 'dv-row cols2';
-      d.innerHTML = '<input class="dv" maxlength="24" value=""><button class="dv-b dv-b--danger">Poista</button>';
-      d.querySelector('input').value = n;
-      d.querySelector('input').oninput = function () { state.whitelist[i] = this.value.trim(); };
-      d.querySelector('button').onclick = function () { state.whitelist.splice(i, 1); drawWl(); };
+      d.className = 'dv-row cols4';
+      d.innerHTML =
+        '<label class="dv-f" style="grid-column:span 2"><span>PELINIMI</span>' +
+          '<input class="dv" data-k="name" maxlength="24"></label>' +
+        '<label class="dv-f"><span>SALASANA</span><input class="dv" data-k="password"></label>' +
+        '<div style="display:flex;gap:7px;margin-top:18px">' +
+          '<button class="dv-b" data-a="uusi">Arvo uusi</button>' +
+          '<button class="dv-b dv-b--danger" data-a="pois">Poista</button>' +
+        '</div>';
+      [].forEach.call(d.querySelectorAll('[data-k]'), function (x) {
+        x.value = p[x.dataset.k] || '';
+        x.oninput = function () { state.players[i][x.dataset.k] = x.value.trim(); };
+      });
+      d.querySelector('[data-a="uusi"]').onclick = function () {
+        state.players[i].password = arvoSalasana();
+        drawWl();
+      };
+      d.querySelector('[data-a="pois"]').onclick = function () { state.players.splice(i, 1); drawWl(); };
       box.appendChild(d);
     });
   }
   $('wl-add').onclick = function () {
     var v = $('wl-new').value.trim();
     if (!v) return;
-    state.whitelist.push(v);
+    state.players.push({ name: v, password: arvoSalasana() });
     $('wl-new').value = '';
     drawWl();
   };
@@ -268,15 +304,19 @@
 
   /* --- tallennus --- */
   $('dv-save').onclick = function () {
-    var wl = state.whitelist.map(function (s) { return String(s).trim(); }).filter(Boolean);
+    var pl = state.players.map(function (p) {
+      return { name: String(p.name || '').trim(), password: String(p.password || '').trim() };
+    }).filter(function (p) { return p.name && p.password; });
     var ln = state.links.filter(function (l) { return (l.name || '').trim(); });
     var tx = {};
     Object.keys(state.texts).forEach(function (k) {
       if (k && k.indexOf('.uusi-') !== 0) tx[k] = state.texts[k];
     });
     msg('Tallennetaan…');
-    KSPK.save({ whitelist: wl, links: ln, texts: tx }).then(function () {
-      state.whitelist = wl; state.links = ln; state.texts = tx;
+    KSPK.rpc('players_save', { p_code: KSPK.code(), p_players: pl })
+      .then(function () { return KSPK.save({ links: ln, texts: tx }); })
+      .then(function () {
+      state.players = pl; state.links = ln; state.texts = tx;
       drawWl(); drawLn(); drawTx();
       msg('Tallennettu — näkyy kaikille heti', 'ok');
     }).catch(function (e) {
