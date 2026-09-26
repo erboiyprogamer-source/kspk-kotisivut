@@ -23,8 +23,10 @@ var UnminedSharedPins = {
   table       : 'pins',
 
   // --- Kayttooikeudet ----------------------------------------------
-  addPassword : '538140123456789',   // vaaditaan aina merkkia lisatessa/muokatessa
-  adminCode   : '538140155',         // dev-tila: kaikki oikeudet kaikkiin
+  // Tunnussana ja yllapitokoodi EIVAT ole taalla. Ne ovat Supabasen
+  // secrets-taulussa, jota anon-avaimella ei voi lukea. Kaikki kirjoitus
+  // kulkee pin_add / pin_edit / pin_delete -funktioiden kautta, jotka
+  // tarkistavat koodin ja whitelistin palvelimella.
 
   // --- Selaimen oma zoom --------------------------------------------
   allowBrowserZoom: false,
@@ -45,7 +47,9 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   var WHITELIST = null;      // null = ei viela ladattu, [] = ei rajoitusta
   var LS_LOCAL = 'kspk.pins.local';
   var LS_NAME  = 'kspk.pins.name';
+  var LS_PASS  = 'kspk.pins.pass';
   var SS_DEV   = 'kspk.pins.dev';
+  var SS_CODE  = 'kspk.pins.devcode';
 
   /* ---------- apurit ---------- */
   function el(tag, cls, html) {
@@ -61,7 +65,44 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   }
   function isDev() { try { return sessionStorage.getItem(SS_DEV) === '1'; } catch (e) { return false; } }
   function setDev(v) { try { v ? sessionStorage.setItem(SS_DEV,'1') : sessionStorage.removeItem(SS_DEV); } catch (e) {} }
+  function devCode()  { try { return sessionStorage.getItem(SS_CODE) || ''; } catch (e) { return ''; } }
+  function setDevCode(c) { try { c ? sessionStorage.setItem(SS_CODE, c) : sessionStorage.removeItem(SS_CODE); } catch (e) {} }
   function savedName() { try { return localStorage.getItem(LS_NAME) || ''; } catch (e) { return ''; } }
+  function saveName(n) { try { localStorage.setItem(LS_NAME, n); } catch (e) {} }
+  function savedPass() { try { return localStorage.getItem(LS_PASS) || ''; } catch (e) { return ''; } }
+  function savePass(p) { try { localStorage.setItem(LS_PASS, p); } catch (e) {} }
+
+  /* Palvelinfunktioiden virheet suomeksi */
+  function errText(e) {
+    var m = String((e && e.message) || e || '');
+    if (m.indexOf('BAD_PASSWORD')    > -1) return 'Vaara tunnussana';
+    if (m.indexOf('NOT_WHITELISTED') > -1) return 'Pelinimi ei ole sallittujen listalla';
+    if (m.indexOf('NO_RIGHTS')       > -1) return 'Ei oikeuksia — tama on toisen merkki';
+    if (m.indexOf('NO_AUTHOR')       > -1) return 'Pelinimi puuttuu';
+    if (m.indexOf('NOT_FOUND')       > -1) return 'Merkkia ei loytynyt';
+    return 'Toiminto ei onnistunut';
+  }
+
+  /* Pelinimi + tunnussana muokkausta/poistoa varten.
+     Dev-tilassa yllapitokoodi kelpaa tunnussanaksi. */
+  function creds(pin) {
+    if (isDev() && devCode()) {
+      return { pass: devCode(), author: savedName() || (pin && pin.author) || 'dev' };
+    }
+    var a = savedName();
+    if (!a) {
+      a = (prompt('Pelinimesi:') || '').trim();
+      if (!a) return null;
+      saveName(a);
+    }
+    var pw = savedPass();
+    if (!pw) {
+      pw = prompt('Tunnussana:');
+      if (pw === null || pw === '') return null;
+      savePass(pw);
+    }
+    return { pass: pw, author: a };
+  }
 
   function toast(msg, ok) {
     if (typeof Toastify === 'function') {
@@ -74,15 +115,31 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
   /* ---------- tallennus ---------- */
   var Store = {
-    rest: function (path, opts) {
-      opts = opts || {};
-      opts.headers = Object.assign({
+    base: function () { return CFG.supabaseUrl.replace(/\/$/, ''); },
+    head: function () {
+      return {
         'apikey': CFG.supabaseKey,
         'Authorization': 'Bearer ' + CFG.supabaseKey,
         'Content-Type': 'application/json'
-      }, opts.headers || {});
-      return fetch(CFG.supabaseUrl.replace(/\/$/, '') + '/rest/v1/' + path, opts);
+      };
     },
+    /* Kaikki kirjoitus kulkee taalta: palvelin tarkistaa koodin */
+    rpc: function (fn, body) {
+      return fetch(this.base() + '/rest/v1/rpc/' + fn, {
+        method: 'POST', headers: this.head(), body: JSON.stringify(body || {})
+      }).then(function (r) {
+        return r.text().then(function (txt) {
+          var data = null;
+          try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
+          if (!r.ok) {
+            var msg = (data && (data.message || data.error || data.hint)) || txt || ('HTTP ' + r.status);
+            throw new Error(msg);
+          }
+          return data;
+        });
+      });
+    },
+    one: function (d) { return Array.isArray(d) ? d[0] : d; },
     local: function (rows) {
       try {
         if (rows) { localStorage.setItem(LS_LOCAL, JSON.stringify(rows)); return rows; }
@@ -91,42 +148,43 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     },
     list: function () {
       if (!SHARED) return Promise.resolve(this.local());
-      return this.rest(CFG.table + '?select=*&order=created_at.asc')
-        .then(function (r) { return r.ok ? r.json() : []; })
+      return fetch(this.base() + '/rest/v1/' + CFG.table + '?select=*&order=created_at.asc', {
+        headers: { 'apikey': CFG.supabaseKey, 'Authorization': 'Bearer ' + CFG.supabaseKey }
+      }).then(function (r) { return r.ok ? r.json() : []; })
         .catch(function () { return []; });
     },
-    add: function (pin) {
+    add: function (pin, c) {
       if (!SHARED) {
         pin.id = 'local-' + Date.now();
         var a = this.local(); a.push(pin); this.local(a);
         return Promise.resolve(pin);
       }
-      return this.rest(CFG.table, {
-        method: 'POST',
-        headers: { 'Prefer': 'return=representation' },
-        body: JSON.stringify(pin)
-      }).then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json().then(function (rows) { return rows[0]; });
-      });
+      var self = this;
+      return this.rpc('pin_add', {
+        p_pass: c.pass, p_author: c.author,
+        p_title: pin.title, p_message: pin.message || '',
+        p_color: pin.color, p_x: pin.x, p_z: pin.z
+      }).then(function (d) { return self.one(d); });
     },
-    update: function (id, patch) {
+    update: function (id, patch, c) {
       if (!SHARED) {
         var a = this.local().map(function (p) { return String(p.id) === String(id) ? Object.assign(p, patch) : p; });
         this.local(a);
         return Promise.resolve();
       }
-      return this.rest(CFG.table + '?id=eq.' + encodeURIComponent(id), {
-        method: 'PATCH', body: JSON.stringify(patch)
-      }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); });
+      var v = function (k) { return patch[k] === undefined ? null : patch[k]; };
+      return this.rpc('pin_edit', {
+        p_pass: c.pass, p_author: c.author, p_id: id,
+        p_title: v('title'), p_message: v('message'), p_color: v('color'),
+        p_x: v('x'), p_z: v('z'), p_hidden: v('hidden')
+      });
     },
-    remove: function (id) {
+    remove: function (id, c) {
       if (!SHARED) {
         this.local(this.local().filter(function (p) { return String(p.id) !== String(id); }));
         return Promise.resolve();
       }
-      return this.rest(CFG.table + '?id=eq.' + encodeURIComponent(id), { method: 'DELETE' })
-        .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); });
+      return this.rpc('pin_delete', { p_pass: c.pass, p_author: c.author, p_id: id });
     }
   };
 
@@ -147,6 +205,9 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
   function announce() {
     try { window.parent.postMessage({ kspk: 'pins-changed' }, '*'); } catch (e) {}
+  }
+  function tellParentDev(on) {
+    try { window.parent.postMessage({ kspk: 'dev-state', on: !!on }, '*'); } catch (e) {}
   }
 
   /* ---------- tyylit ---------- */
@@ -254,7 +315,8 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       '<label>Vari</label><div class="kspk-colors" id="kp-c" role="radiogroup"></div>' +
 
       '<label>Pelinimesi *</label><input id="kp-a" maxlength="24" placeholder="Minecraft-nimesi">' +
-      '<label>Tunnussana *</label><input id="kp-p" type="password" placeholder="Yhteinen tunnussana">' +
+      '<label>Tunnussana *</label><input id="kp-p" type="password" placeholder="' +
+        (isDev() ? 'Tyhja = yllapitokoodi' : 'Yhteinen tunnussana') + '">' +
       (isDev() ? '<div class="kspk-hint">Dev-tila paalla — voit muokata ja poistaa kaikkien merkkeja.</div>' : '') +
       (!isDev() && WHITELIST && WHITELIST.length
         ? '<div class="kspk-hint">Sallitut pelinimet: ' + esc(WHITELIST.join(', ')) + '</div>' : '') +
@@ -272,6 +334,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     $('#kp-x').value = Math.round(edit ? p.x : opts.x);
     $('#kp-z').value = Math.round(edit ? p.z : opts.z);
     $('#kp-a').value = edit ? (p.author || '') : savedName();
+    $('#kp-p').value = isDev() ? '' : savedPass();
 
     var cbox = $('#kp-c');
     CFG.colors.forEach(function (c) {
@@ -308,7 +371,8 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       var pw = $('#kp-p').value;
       if (!t) { toast('Otsikko puuttuu', false); $('#kp-t').focus(); return; }
       if (!a) { toast('Pelinimi puuttuu', false); $('#kp-a').focus(); return; }
-      if (pw !== CFG.addPassword) { toast('Vaara tunnussana', false); $('#kp-p').focus(); return; }
+      if (!pw && isDev()) pw = devCode();
+      if (!pw) { toast('Tunnussana puuttuu', false); $('#kp-p').focus(); return; }
       if (!onWhitelist(a)) {
         toast('Pelinimi "' + a + '" ei ole sallittujen listalla', false); $('#kp-a').focus(); return;
       }
@@ -319,9 +383,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       var z = parseInt($('#kp-z').value, 10);
       if (isNaN(x) || isNaN(z)) { toast('Koordinaatit puuttuvat', false); return; }
 
-      try { localStorage.setItem(LS_NAME, a); } catch (e) {}
+      saveName(a);
+      if (!isDev() || pw !== devCode()) savePass(pw);
       close();
-      done({ x: x, z: z, title: t, message: $('#kp-m').value.trim(), author: a, color: color });
+      done({ x: x, z: z, title: t, message: $('#kp-m').value.trim(), author: a, color: color },
+           { pass: pw, author: a });
     };
   }
 
@@ -380,11 +446,13 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     function addAt(coordinate, pixel) {
       var b = toBlock(coordinate);
       if (pixel) ripple(pixel);
-      pinForm({ mode: 'add', x: b[0], z: b[1], centre: centre }, function (pin) {
-        Store.add(pin).then(function (saved) {
-          rows.push(saved); draw(); announce();
+      pinForm({ mode: 'add', x: b[0], z: b[1], centre: centre }, function (pin, c) {
+        Store.add(pin, c).then(function (saved) {
+          if (saved) rows.push(saved);
+          draw(); announce();
           toast(SHARED ? 'Merkki lisatty — nakyy kaikille' : 'Merkki lisatty (vain tassa selaimessa)');
-        }).catch(function () { toast('Tallennus epaonnistui', false); });
+          if (SHARED) refresh();
+        }).catch(function (e) { toast(errText(e), false); });
       });
     }
 
@@ -410,25 +478,29 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
       popEl.querySelector('#kp-e').onclick = function () {
         closePop();
-        pinForm({ mode: 'edit', pin: p, centre: centre }, function (v) {
-          Store.update(p.id, v).then(function () {
+        pinForm({ mode: 'edit', pin: p, centre: centre }, function (v, c) {
+          Store.update(p.id, v, c).then(function () {
             Object.assign(p, v); draw(); announce(); toast('Merkki paivitetty');
-          }).catch(function () { toast('Paivitys epaonnistui', false); });
+          }).catch(function (e) { toast(errText(e), false); });
         });
       };
       popEl.querySelector('#kp-h').onclick = function () {
         var nv = !p.hidden;
-        Store.update(p.id, { hidden: nv }).then(function () {
+        var c = creds(p);
+        if (!c) return;
+        Store.update(p.id, { hidden: nv }, c).then(function () {
           p.hidden = nv; draw(); closePop(); announce();
           toast(nv ? 'Merkki piilotettu' : 'Merkki taas nakyvissa');
-        }).catch(function () { toast('Ei onnistunut', false); });
+        }).catch(function (e) { toast(errText(e), false); });
       };
       popEl.querySelector('#kp-d').onclick = function () {
         if (!confirm('Poistetaanko merkki "' + p.title + '"? Tata ei voi perua.')) return;
-        Store.remove(p.id).then(function () {
+        var c = creds(p);
+        if (!c) return;
+        Store.remove(p.id, c).then(function () {
           rows = rows.filter(function (o) { return o.id !== p.id; });
           draw(); closePop(); announce(); toast('Merkki poistettu');
-        }).catch(function () { toast('Poisto epaonnistui', false); });
+        }).catch(function (e) { toast(errText(e), false); });
       };
     }
 
@@ -481,14 +553,19 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     dev.title = 'Dev-tila';
     dev.onclick = function () {
       if (isDev()) {
-        setDev(false); dev.classList.remove('on'); draw(); announce();
+        setDev(false); setDevCode(''); dev.classList.remove('on'); draw(); announce();
+        tellParentDev(false);
         toast('Dev-tila pois paalta');
       } else {
+        if (!SHARED) { toast('Ei yhteytta palvelimeen', false); return; }
         var code = prompt('Yllapitokoodi:');
-        if (code === null) return;
-        if (code !== CFG.adminCode) { toast('Vaara koodi', false); return; }
-        setDev(true); dev.classList.add('on'); draw(); announce();
-        toast('Dev-tila paalla — kaikki merkit hallittavissa');
+        if (code === null || code === '') return;
+        Store.rpc('is_admin', { p_code: code }).then(function (ok) {
+          if (ok !== true) { toast('Vaara koodi', false); return; }
+          setDev(true); setDevCode(code); dev.classList.add('on'); draw(); announce();
+          tellParentDev(true);
+          toast('Dev-tila paalla — kaikki merkit hallittavissa');
+        }).catch(function () { toast('Tarkistus ei onnistunut', false); });
       }
     };
     map.getViewport().appendChild(dev);
@@ -533,7 +610,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         var p = rows.filter(function (o) { return String(o.id) === String(d.id); })[0];
         if (p) { map.getView().animate({ center: toView(p.x, p.z), duration: 500 }); openPop(p); }
       }
-      if (d.kspk === 'dev-state') { setDev(!!d.on); dev.classList.toggle('on', !!d.on); draw(); }
+      if (d.kspk === 'dev-state') {
+        setDev(!!d.on);
+        if (d.code) setDevCode(d.code); else if (!d.on) setDevCode('');
+        dev.classList.toggle('on', !!d.on); draw();
+      }
     });
 
     loadWhitelist();
