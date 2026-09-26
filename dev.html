@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="fi" class="is-loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dev-asetukset | K-S-P-K</title>
+<meta name="description" content="Sivuston yllapitoasetukset: sallitut pelinimet, dokumenttilinkit ja tekstit.">
+<meta name="robots" content="noindex">
+<meta property="og:title" content="Dev-asetukset | K-S-P-K">
+<meta property="og:description" content="Sivuston yllapitoasetukset.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#060a08">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .dv-lock{max-width:440px;margin:0 auto;display:grid;gap:14px;text-align:center}
+  .dv-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+  .dv-tab{font:inherit;font-size:.9rem;padding:9px 16px;border-radius:999px;cursor:pointer;
+    background:rgba(255,255,255,.05);border:1px solid var(--line,rgba(255,255,255,.14));color:inherit}
+  .dv-tab:hover{background:rgba(255,255,255,.1)}
+  .dv-tab.on{background:var(--green,#3ef08a);border-color:var(--green,#3ef08a);color:#04140b;font-weight:600}
+  .dv-pane{display:none;gap:16px}
+  .dv-pane.on{display:grid}
+  .dv-row{display:grid;gap:10px;padding:14px 16px;border-radius:14px;
+    background:rgba(8,14,11,.6);border:1px solid var(--line,rgba(255,255,255,.12))}
+  .dv-row.cols2{grid-template-columns:1fr auto;align-items:center}
+  .dv-row.cols4{grid-template-columns:120px 1fr 1fr auto;align-items:start}
+  @media (max-width:760px){.dv-row.cols4{grid-template-columns:1fr}}
+  .dv-f{display:grid;gap:5px}
+  .dv-f span{font-size:11px;letter-spacing:.05em;color:var(--muted,#9db3a6)}
+  input.dv,select.dv,textarea.dv{width:100%;padding:9px 12px;border-radius:10px;font:inherit;font-size:.9rem;
+    background:rgba(8,14,11,.75);border:1px solid var(--line,rgba(255,255,255,.14));color:var(--text,#eaf3ee)}
+  textarea.dv{min-height:66px;resize:vertical}
+  input.dv:focus,select.dv:focus,textarea.dv:focus{outline:none;border-color:var(--green,#3ef08a)}
+  .dv-b{font:inherit;font-size:.85rem;padding:8px 14px;border-radius:10px;cursor:pointer;
+    background:rgba(255,255,255,.05);border:1px solid var(--line,rgba(255,255,255,.16));color:inherit}
+  .dv-b:hover{background:rgba(255,255,255,.12)}
+  .dv-b--danger{border-color:rgba(255,107,107,.45);color:#ff8f8f}
+  .dv-b--primary{background:var(--green,#3ef08a);border-color:var(--green,#3ef08a);color:#04140b;font-weight:600}
+  .dv-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .dv-msg{font-size:.88rem;color:var(--muted,#9db3a6)}
+  .dv-msg.ok{color:var(--green,#3ef08a)}
+  .dv-msg.bad{color:#ff8f8f}
+  .dv-hint{font-size:.85rem;color:var(--muted,#9db3a6);line-height:1.6}
+  .dv-hint code{background:rgba(255,255,255,.07);padding:1px 6px;border-radius:6px;font-size:.82rem}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Siirry sisältöön</a>
+<main id="main">
+
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>Ylläpito</span>
+    <h1 data-reveal>Dev-<span class="grad-text">asetukset</span></h1>
+    <p class="lead" data-reveal>Sallitut pelinimet, dokumenttilinkit ja sivuston tekstit. Muutokset näkyvät heti — ei committeja.</p>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+
+    <div id="dv-lock" class="dv-lock" hidden>
+      <p class="lead">Tämä sivu on ylläpitoa varten.</p>
+      <input class="dv" id="dv-code" type="password" placeholder="Ylläpitokoodi">
+      <button class="dv-b dv-b--primary" id="dv-login">Kirjaudu</button>
+      <p class="dv-msg" id="dv-lockmsg"></p>
+    </div>
+
+    <div id="dv-app" hidden>
+      <div class="dv-tabs" role="tablist">
+        <button class="dv-tab on" data-t="wl" role="tab">Whitelist</button>
+        <button class="dv-tab" data-t="ln" role="tab">Linkit</button>
+        <button class="dv-tab" data-t="tx" role="tab">Tekstit</button>
+      </div>
+
+      <!-- WHITELIST -->
+      <div class="dv-pane on" id="p-wl">
+        <p class="dv-hint">Vain näillä pelinimillä voi lisätä karttamerkkejä. Tyhjä lista = ei rajoitusta.</p>
+        <div id="wl-list" style="display:grid;gap:10px"></div>
+        <div class="dv-bar">
+          <input class="dv" id="wl-new" maxlength="24" placeholder="Uusi pelinimi" style="max-width:240px">
+          <button class="dv-b" id="wl-add">Lisää</button>
+        </div>
+      </div>
+
+      <!-- LINKIT -->
+      <div class="dv-pane" id="p-ln">
+        <p class="dv-hint">Nämä kortit näkyvät sivulla <a href="projektit.html">Dokumentit</a>. Tyhjä lista = sivulla näkyy site.js:n oma lista.</p>
+        <div id="ln-list" style="display:grid;gap:12px"></div>
+        <div class="dv-bar"><button class="dv-b" id="ln-add">Lisää linkki</button></div>
+      </div>
+
+      <!-- TEKSTIT -->
+      <div class="dv-pane" id="p-tx">
+        <p class="dv-hint">
+          Vasemmalle CSS-valitsin, oikealle uusi sisältö. Teksti korvataan kaikilla sivuilla heti latauksessa.
+          Esimerkkejä: <code>.page-head h1</code> · <code>#main .lead</code> · <code>[data-kspk="iskulause"]</code><br>
+          Valitsimen voi katsoa selaimen kehitystyökaluilla (oikea klikkaus &rarr; Tarkastele). HTML on sallittu, esim. <code>&lt;span class="grad-text"&gt;sana&lt;/span&gt;</code>.
+        </p>
+        <div id="tx-list" style="display:grid;gap:12px"></div>
+        <div class="dv-bar"><button class="dv-b" id="tx-add">Lisää teksti</button></div>
+      </div>
+
+      <div class="dv-bar" style="margin-top:26px">
+        <button class="dv-b dv-b--primary" id="dv-save">Tallenna kaikki</button>
+        <button class="dv-b" id="dv-reload">Hae uudelleen</button>
+        <span class="dv-msg" id="dv-msg"></span>
+      </div>
+    </div>
+
+  </div>
+</section>
+</main>
+<script src="assets/js/site.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var lock = $('dv-lock'), app = $('dv-app');
+  var state = { whitelist: [], links: [], texts: {} };
+
+  function msg(t, kind) {
+    var m = $('dv-msg');
+    m.textContent = t || '';
+    m.className = 'dv-msg' + (kind ? ' ' + kind : '');
+  }
+
+  /* --- kirjautuminen --- */
+  function show() {
+    var on = window.KSPK && KSPK.isDev();
+    lock.hidden = !!on;
+    app.hidden = !on;
+    if (on) load();
+  }
+  $('dv-login').onclick = function () {
+    var c = $('dv-code').value;
+    if (!c) return;
+    $('dv-lockmsg').textContent = 'Tarkistetaan…';
+    KSPK.login(c).then(function (ok) {
+      $('dv-lockmsg').textContent = ok ? '' : 'Väärä koodi';
+      if (ok) show();
+    }).catch(function () { $('dv-lockmsg').textContent = 'Ei yhteyttä palvelimeen'; });
+  };
+  $('dv-code').onkeydown = function (e) { if (e.key === 'Enter') $('dv-login').click(); };
+  window.addEventListener('kspk-dev', show);
+
+  /* --- välilehdet --- */
+  [].forEach.call(document.querySelectorAll('.dv-tab'), function (b) {
+    b.onclick = function () {
+      [].forEach.call(document.querySelectorAll('.dv-tab'), function (o) { o.classList.remove('on'); });
+      [].forEach.call(document.querySelectorAll('.dv-pane'), function (o) { o.classList.remove('on'); });
+      b.classList.add('on');
+      $('p-' + b.dataset.t).classList.add('on');
+    };
+  });
+
+  /* --- haku --- */
+  function load() {
+    msg('Haetaan…');
+    KSPK.settings().then(function (s) {
+      state.whitelist = (s.whitelist || []).slice();
+      state.links = (s.links || []).slice();
+      state.texts = Object.assign({}, s.texts || {});
+      drawWl(); drawLn(); drawTx();
+      msg('');
+    }).catch(function () { msg('Haku ei onnistunut', 'bad'); });
+  }
+  $('dv-reload').onclick = load;
+
+  /* --- whitelist --- */
+  function drawWl() {
+    var box = $('wl-list');
+    box.innerHTML = '';
+    if (!state.whitelist.length) {
+      box.innerHTML = '<p class="dv-hint">Lista on tyhjä — kaikki pelinimet sallitaan.</p>';
+    }
+    state.whitelist.forEach(function (n, i) {
+      var d = document.createElement('div');
+      d.className = 'dv-row cols2';
+      d.innerHTML = '<input class="dv" maxlength="24" value=""><button class="dv-b dv-b--danger">Poista</button>';
+      d.querySelector('input').value = n;
+      d.querySelector('input').oninput = function () { state.whitelist[i] = this.value.trim(); };
+      d.querySelector('button').onclick = function () { state.whitelist.splice(i, 1); drawWl(); };
+      box.appendChild(d);
+    });
+  }
+  $('wl-add').onclick = function () {
+    var v = $('wl-new').value.trim();
+    if (!v) return;
+    state.whitelist.push(v);
+    $('wl-new').value = '';
+    drawWl();
+  };
+  $('wl-new').onkeydown = function (e) { if (e.key === 'Enter') $('wl-add').click(); };
+
+  /* --- linkit --- */
+  var TYPES = ['doc', 'sheet', 'slide', 'form', 'drive'];
+  function drawLn() {
+    var box = $('ln-list');
+    box.innerHTML = '';
+    if (!state.links.length) box.innerHTML = '<p class="dv-hint">Ei linkkejä. Lisää alta.</p>';
+    state.links.forEach(function (l, i) {
+      var d = document.createElement('div');
+      d.className = 'dv-row cols4';
+      d.innerHTML =
+        '<label class="dv-f"><span>TYYPPI</span><select class="dv">' +
+          TYPES.map(function (t) { return '<option value="' + t + '">' + t + '</option>'; }).join('') +
+        '</select></label>' +
+        '<label class="dv-f"><span>NIMI</span><input class="dv" data-k="name"></label>' +
+        '<label class="dv-f"><span>URL</span><input class="dv" data-k="url" placeholder="https://…"></label>' +
+        '<button class="dv-b dv-b--danger" style="margin-top:18px">Poista</button>' +
+        '<label class="dv-f" style="grid-column:1/-1"><span>KUVAUS</span><textarea class="dv" data-k="desc"></textarea></label>';
+      var sel = d.querySelector('select');
+      sel.value = TYPES.indexOf(l.type) > -1 ? l.type : 'doc';
+      sel.onchange = function () { state.links[i].type = sel.value; };
+      [].forEach.call(d.querySelectorAll('[data-k]'), function (f) {
+        f.value = l[f.dataset.k] || '';
+        f.oninput = function () { state.links[i][f.dataset.k] = f.value; };
+      });
+      d.querySelector('button').onclick = function () { state.links.splice(i, 1); drawLn(); };
+      box.appendChild(d);
+    });
+  }
+  $('ln-add').onclick = function () {
+    state.links.push({ type: 'doc', name: 'Uusi dokumentti', desc: '', url: '' });
+    drawLn();
+  };
+
+  /* --- tekstit --- */
+  function drawTx() {
+    var box = $('tx-list');
+    box.innerHTML = '';
+    var keys = Object.keys(state.texts);
+    if (!keys.length) box.innerHTML = '<p class="dv-hint">Ei tekstimuutoksia. Lisää alta.</p>';
+    keys.forEach(function (k) {
+      var d = document.createElement('div');
+      d.className = 'dv-row';
+      d.innerHTML =
+        '<label class="dv-f"><span>CSS-VALITSIN</span><input class="dv" data-r="sel"></label>' +
+        '<label class="dv-f"><span>SISÄLTÖ</span><textarea class="dv" data-r="val"></textarea></label>' +
+        '<div class="dv-bar"><button class="dv-b dv-b--danger">Poista</button></div>';
+      var si = d.querySelector('[data-r="sel"]'), vi = d.querySelector('[data-r="val"]');
+      si.value = k; vi.value = state.texts[k];
+      si.dataset.old = k;
+      si.onchange = function () {
+        var old = si.dataset.old, nw = si.value.trim();
+        if (!nw || nw === old) { si.value = old; return; }
+        var v = state.texts[old];
+        delete state.texts[old];
+        state.texts[nw] = v;
+        si.dataset.old = nw;
+      };
+      vi.oninput = function () { state.texts[si.dataset.old] = vi.value; };
+      d.querySelector('button').onclick = function () { delete state.texts[si.dataset.old]; drawTx(); };
+      box.appendChild(d);
+    });
+  }
+  $('tx-add').onclick = function () {
+    var n = 1;
+    while (state.texts['.uusi-' + n] !== undefined) n++;
+    state.texts['.uusi-' + n] = 'Kirjoita teksti';
+    drawTx();
+  };
+
+  /* --- tallennus --- */
+  $('dv-save').onclick = function () {
+    var wl = state.whitelist.map(function (s) { return String(s).trim(); }).filter(Boolean);
+    var ln = state.links.filter(function (l) { return (l.name || '').trim(); });
+    var tx = {};
+    Object.keys(state.texts).forEach(function (k) {
+      if (k && k.indexOf('.uusi-') !== 0) tx[k] = state.texts[k];
+    });
+    msg('Tallennetaan…');
+    KSPK.save({ whitelist: wl, links: ln, texts: tx }).then(function () {
+      state.whitelist = wl; state.links = ln; state.texts = tx;
+      drawWl(); drawLn(); drawTx();
+      msg('Tallennettu — näkyy kaikille heti', 'ok');
+    }).catch(function (e) {
+      var m = String((e && e.message) || e);
+      msg(m.indexOf('NO_RIGHTS') > -1 || m.indexOf('BAD') > -1 ? 'Ylläpitokoodi ei kelpaa' : 'Tallennus ei onnistunut', 'bad');
+    });
+  };
+
+  show();
+})();
+</script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
