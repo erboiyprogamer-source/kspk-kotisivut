@@ -67,7 +67,7 @@
     var m = String((e && e.message) || e || '');
     if (m.indexOf('BAD_PASSWORD')    > -1) return 'Vaara tunnussana';
     if (m.indexOf('NOT_WHITELISTED') > -1) return 'Pelinimi ei ole sallittujen listalla';
-    if (m.indexOf('NO_RIGHTS')       > -1) return 'Ei oikeuksia — tama on toisen merkki';
+    if (m.indexOf('NO_RIGHTS')       > -1) return 'Ei oikeuksia — tarkista tunnussana ja pelinimi';
     if (m.indexOf('NO_AUTHOR')       > -1) return 'Pelinimi puuttuu';
     if (m.indexOf('NOT_FOUND')       > -1) return 'Merkkia ei loytynyt';
     return 'Toiminto ei onnistunut';
