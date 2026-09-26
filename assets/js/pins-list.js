@@ -242,11 +242,20 @@
     });
   }
 
-  function load() {
+  function plainLoad() {
     return rest(CFG.table + '?select=*&order=created_at.desc')
-      .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (r) { rows = r || []; render(); })
-      .catch(function () { rows = []; render(); });
+      .then(function (r) { return r.ok ? r.json() : []; });
+  }
+  function load() {
+    /* Piilotetut merkit eivat tule API:sta lapi — dev hakee ne
+       pins_all-funktiolla, joka tarkistaa koodin palvelimella. */
+    var p = (isDev() && devCode())
+      ? rpc('pins_all', { p_code: devCode() })
+          .then(function (r) { return (r || []).slice().reverse(); })
+          .catch(plainLoad)
+      : plainLoad();
+    return p.then(function (r) { rows = r || []; render(); })
+            .catch(function () { rows = []; render(); });
   }
 
   window.addEventListener('message', function (e) {
