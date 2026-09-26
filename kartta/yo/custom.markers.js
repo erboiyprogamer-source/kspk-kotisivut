@@ -362,6 +362,38 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       map.getViewport().appendChild(badge);
     }
 
+    /* --- Esc: takaisin sivulle -------------------------------------
+       Kokonaan omassa ikkunassa Esc vie takaisin kartta.html-sivulle.
+       Sivun sisaan upotettuna (iframe) Esc vapauttaa kartan, jolloin
+       sivu skrollaa taas normaalisti. --- */
+    var embedded = (function(){ try { return window.self !== window.top; } catch (e) { return true; } })();
+
+    function backToSite(){
+      var ref = document.referrer || '';
+      if (ref && ref.indexOf(location.origin) === 0 && history.length > 1) history.back();
+      else location.href = '../../kartta.html';
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' && e.key !== 'Esc') return;
+      if (document.querySelector('.kspk-card')) return;   // lomake sulkee itse
+      if (overlay.getPosition()) { closePop(); return; }  // ensin kupla kiinni
+      if (embedded) {
+        try { window.parent.postMessage({ kspk: 'map-escape' }, '*'); } catch (err) {}
+      } else {
+        backToSite();
+      }
+    });
+
+    if (!embedded) {
+      var hint = el('div', 'kspk-badge kspk-esc', 'Esc = takaisin sivulle');
+      hint.style.left = 'auto';
+      hint.style.right = '10px';
+      map.getViewport().appendChild(hint);
+      setTimeout(function(){ hint.style.transition = 'opacity .6s'; hint.style.opacity = '0'; }, 6000);
+      setTimeout(function(){ hint.remove(); }, 7000);
+    }
+
     refresh();
     if (SHARED) setInterval(refresh, 30000);
   }
