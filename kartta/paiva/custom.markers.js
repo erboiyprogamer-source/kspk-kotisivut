@@ -220,6 +220,10 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   function tellParentDev(on) {
     try { window.parent.postMessage({ kspk: 'dev-state', on: !!on }, '*'); } catch (e) {}
   }
+  /* Emosivun vierityslukko ei saa palata kun tassa on lomake tai kupla auki */
+  function tellParentBusy(on) {
+    try { window.parent.postMessage({ kspk: 'map-busy', on: !!on }, '*'); } catch (e) {}
+  }
 
   /* ---------- tyylit ---------- */
   function injectCss() {
@@ -338,6 +342,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       '</div>';
     wrap.appendChild(card);
     document.body.appendChild(wrap);
+    tellParentBusy(true);
 
     var $ = function (id) { return card.querySelector(id); };
     $('#kp-t').value = p.title || '';
@@ -370,7 +375,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     };
 
     setTimeout(function () { $('#kp-t').focus(); }, 30);
-    function close() { wrap.remove(); document.removeEventListener('keydown', onEsc); }
+    function close() {
+      wrap.remove();
+      document.removeEventListener('keydown', onEsc);
+      tellParentBusy(false);
+    }
     function onEsc(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } }
     document.addEventListener('keydown', onEsc);
     $('#kp-x2').onclick = close;
@@ -431,7 +440,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     var popEl = el('div');
     var overlay = new olns.Overlay({ element: popEl, positioning: 'bottom-center', stopEvent: true });
     map.addOverlay(overlay);
-    function closePop() { popEl.innerHTML = ''; popEl.className = ''; overlay.setPosition(undefined); }
+    function closePop() {
+      popEl.innerHTML = ''; popEl.className = '';
+      overlay.setPosition(undefined);
+      tellParentBusy(false);
+    }
 
     function toView(x, z) { return olns.proj.transform([x, z], unmined.dataProjection, unmined.viewProjection); }
     function toBlock(c)   { return olns.proj.transform(c, unmined.viewProjection, unmined.dataProjection); }
@@ -478,6 +491,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     function openPop(p) {
       var can = mayEdit(p);
       popEl.className = 'kspk-pop';
+      tellParentBusy(true);
       popEl.innerHTML =
         '<h4><span class="dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' + esc(p.title) +
           (p.hidden ? '<span class="kspk-tag">piilotettu</span>' : '') + '</h4>' +
