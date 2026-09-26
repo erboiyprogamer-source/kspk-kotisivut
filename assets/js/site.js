@@ -13,12 +13,12 @@
 
 const SITE = {
   name:      'K-S-P-K',
-  full:      'K-S-P-K Minecraft Official',
+  full:      'K-S-P-K Minecraft SMP',
   tagline:   'Minecraft-sisältöä suomeksi',
-  youtube:   'https://www.youtube.com/@K-S-P-K',      // ← vaihda oikeaan URLiin
+  youtube:   'https://www.youtube.com/@K-S-P-K_Minecraft_Official',      // ← vaihda oikeaan URLiin
   discord:   '#',
   tiktok:    '#',
-  email:     'erboiy22@gmail.com',
+  email:     'kasapeka.official@gmail.com',
   serverIp:  'play.kspk.fi',                          // ← vaihda oikeaan IP:hen
   // uNmINeD-kartat. Kumpikin on oma kansionsa jossa on index.html + lib/ + tiles/
   mapDay:    'kartta/paiva/index.html',
