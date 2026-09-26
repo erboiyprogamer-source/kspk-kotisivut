@@ -25,6 +25,11 @@ var UnminedSharedPins = {
   addPassword : '538140123456789',            // jos asetettu, merkin lisaaminen kysyy taman
   adminCode   : '538140155',            // talla koodilla voi poistaa kenen tahansa merkin
 
+  // --- Selaimen oma zoom --------------------------------------------
+  // true = Ctrl + hiiren rulla (ja pinch) zoomaa selainikkunaa normaalisti,
+  //        kuten muillakin sivuilla. Kartan oma zoom toimii ilman Ctrl:ia.
+  allowBrowserZoom: true,
+
   // --- Ulkoasu ------------------------------------------------------
   colors: ['#3ef08a','#ffd166','#ff6b6b','#5aa9ff','#c792ea','#ff9f43','#ffffff','#7bed9f']
 };
@@ -360,6 +365,23 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     if (!SHARED) {
       var badge = el('div', 'kspk-badge', 'Merkit tallentuvat vain tahan selaimeen');
       map.getViewport().appendChild(badge);
+    }
+
+    /* --- Selaimen oma zoom (Ctrl + rulla) ---------------------------
+       OpenLayers kuuntelee rullaa ja kutsuu preventDefault(), mika estaa
+       selaimen oman zoomin. Pysaytetaan Ctrl-rulla jo kaappausvaiheessa
+       ennen kuin kartta nakee sen -- selain saa hoitaa zoomauksen itse. */
+    if (CFG.allowBrowserZoom) {
+      var vp = document.querySelector('meta[name="viewport"]');
+      if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
+
+      window.addEventListener('wheel', function (e) {
+        if (e.ctrlKey) e.stopPropagation();
+      }, { capture: true, passive: false });
+
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) {
+        window.addEventListener(t, function (e) { e.stopPropagation(); }, true);
+      });
     }
 
     /* --- Esc: takaisin sivulle -------------------------------------
