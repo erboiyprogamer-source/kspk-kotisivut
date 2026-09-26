@@ -195,6 +195,7 @@
   var frame = f.parentNode;              // .map-frame
   var lock  = document.getElementById('map-lock');
   var live  = false;
+  var busy  = false;   // kartan sisalla on auki lomake tai kupla
 
   function activate(ev){
     if (live || !ph.hidden) return;
@@ -212,8 +213,11 @@
     }
   }
 
-  function deactivate(){
+  function deactivate(force){
     if (!live) return;
+    /* Jos kartan sisalla on auki lomake tai kupla, lukkoa ei palauteta —
+       muuten lukkokerros jaisi lomakkeen paalle eika siihen paasisi. */
+    if (busy && !force) return;
     live = false;
     frame.classList.remove('is-live');
     lock.hidden = !ph.hidden;
@@ -223,16 +227,32 @@
   lock.addEventListener('keydown', function(e){
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
   });
-  frame.addEventListener('mouseleave', deactivate);
-  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') deactivate(); });
+  frame.addEventListener('mouseleave', function(){ deactivate(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') deactivate(true); });
+
+  /* Varmistus: iframen paalla ollessa emosivu ei saa hiiritapahtumia
+     lainkaan, joten mouseleave voi jaada tulematta (esim. selaimen oma
+     ehdotuslista vie hiiren valilla pois). Heti kun hiiri nakyy taas
+     sivulla kartan ulkopuolella, lukko palaa. */
+  document.addEventListener('pointermove', function(e){
+    if (!live) return;
+    var r = frame.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right ||
+        e.clientY < r.top  || e.clientY > r.bottom) deactivate();
+  }, true);
+  /* Valilehden vaihto tai ikkunasta poistuminen -> lukko palaa */
+  document.addEventListener('visibilitychange', function(){ if (document.hidden) deactivate(true); });
+
   // Esc kartan sisalla (iframe) -> kartta ilmoittaa siita tanne
   window.addEventListener('message', function(e){
     if (e.origin !== location.origin) return;
-    if (e.data && e.data.kspk === 'map-escape') deactivate();
+    if (!e.data || !e.data.kspk) return;
+    if (e.data.kspk === 'map-escape') { busy = false; deactivate(true); }
+    if (e.data.kspk === 'map-busy')   { busy = !!e.data.on; }
   });
   // Kosketuslaitteet: lukko palaa kun kosketetaan kartan ulkopuolelle
   document.addEventListener('pointerdown', function(e){
-    if (live && !frame.contains(e.target)) deactivate();
+    if (live && !frame.contains(e.target)) deactivate(true);
   }, true);
 
   // Lukko näkyy vain kun oikea kartta on ladattuna (ei "tulossa"-tilassa)
