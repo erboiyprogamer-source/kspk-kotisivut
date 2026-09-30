@@ -473,6 +473,9 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + '.kspk-card .row{display:flex;gap:9px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}'
       + '.kspk-hint{margin:14px 0 0;padding:10px 12px;border-radius:10px;font-size:12.5px;'
       + 'background:rgba(62,240,138,.08);border:1px solid rgba(62,240,138,.22);color:#b9f5d2}'
+      + '.kspk-coord{position:absolute;top:10px;right:10px;z-index:46;padding:6px 12px;border-radius:9px;'
+      + 'background:rgba(10,18,14,.85);color:#9db3a6;border:1px solid rgba(255,255,255,.16);'
+      + 'font:12px/1.3 ui-monospace,monospace;pointer-events:none;white-space:nowrap}'
       + '.kspk-badge{position:absolute;left:10px;bottom:10px;z-index:40;padding:6px 11px;border-radius:999px;'
       + 'background:rgba(10,18,14,.85);color:#9db3a6;border:1px solid rgba(255,255,255,.14);'
       + 'font:12px system-ui,sans-serif;pointer-events:none}'
@@ -1007,6 +1010,20 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         addAt(map.getEventCoordinate(e), null);
       });
     }
+
+    /* --- kursorin koordinaatit (oikea ylanurkka) -----------------------
+       uNmINeDin oma ol.control.MousePosition ei nayta arvoja luotettavasti
+       tassa upotuksessa, joten piirretaan oma, taatusti toimiva laatikko. */
+    var coordEl = el('div', 'kspk-coord', 'X: — &nbsp; Z: —');
+    map.getViewport().appendChild(coordEl);
+    map.on('pointermove', function (evt) {
+      if (evt.dragging) return;
+      var b = toBlock(evt.coordinate);
+      coordEl.innerHTML = 'X: ' + Math.round(b[0]) + ' &nbsp; Z: ' + Math.round(b[1]);
+    });
+    map.getViewport().addEventListener('pointerleave', function () {
+      coordEl.innerHTML = 'X: — &nbsp; Z: —';
+    });
 
     /* --- dev-nappi --- */
     var dev = el('div', 'kspk-dev' + (isDev() ? ' on' : ''), '&#128295;');
