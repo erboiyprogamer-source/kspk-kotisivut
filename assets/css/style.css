@@ -160,15 +160,25 @@ section{position:relative;padding:clamp(70px,9vw,130px) 0}
 
 .brand{display:flex;align-items:center;gap:12px;margin-right:auto}
 .brand__mark{
-  width:38px;height:38px;flex:none;border-radius:9px;overflow:hidden;
-  background:#0a120e;
+  position:relative;
+  width:38px;height:38px;flex:none;
   display:grid;place-items:center;
   font-family:var(--font-pixel);font-size:.62rem;color:#04170c;
-  box-shadow:0 0 22px -4px var(--green), inset 0 -3px 0 rgba(0,0,0,.28);
-  transition:transform .4s var(--ease-out),box-shadow .4s;
+  transition:transform .4s var(--ease-out);
 }
-.brand__mark img{width:100%;height:100%;object-fit:cover;display:block}
-.brand:hover .brand__mark{transform:rotate(-8deg) scale(1.08);box-shadow:0 0 34px -2px var(--green)}
+.brand__mark::before{
+  content:'';
+  position:absolute;inset:-9px;
+  border-radius:50%;
+  background:radial-gradient(circle, rgba(62,240,138,.65) 0%, rgba(62,240,138,.28) 45%, rgba(62,240,138,0) 72%);
+  filter:blur(4px);
+  opacity:.75;
+  z-index:-1;
+  transition:opacity .4s var(--ease-out),transform .4s var(--ease-out);
+}
+.brand__mark img{width:100%;height:100%;object-fit:contain;display:block;position:relative}
+.brand:hover .brand__mark{transform:rotate(-8deg) scale(1.08)}
+.brand:hover .brand__mark::before{opacity:1;transform:scale(1.18)}
 .brand__txt{display:flex;flex-direction:column;line-height:1.1}
 .brand__txt b{font-family:var(--font-pixel);font-size:.68rem;letter-spacing:.02em}
 .brand__txt span{font-size:.64rem;color:var(--muted);letter-spacing:.24em;text-transform:uppercase}
@@ -480,6 +490,73 @@ html.ready .hero__stats{animation:fadeUp .9s var(--ease-out) .7s forwards}
   transition:background .2s,transform .2s;
 }
 .gallery__del:hover{background:rgba(220,60,60,.9);transform:scale(1.08)}
+.gallery__action{
+  position:absolute;top:8px;left:8px;z-index:3;
+  height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--line-strong,rgba(255,255,255,.18));
+  background:rgba(6,10,8,.78);color:var(--green,#3ef08a);font-size:.95rem;line-height:1;
+  display:grid;place-items:center;cursor:pointer;pointer-events:auto;
+  transition:background .2s,transform .2s;
+}
+.gallery__action:hover{background:rgba(62,240,138,.22);transform:scale(1.05)}
+.gallery__action + .gallery__action{left:auto;right:44px}
+.gallery__promoted .gallery__edit{left:8px;right:auto}
+.gallery__promoted .gallery__unfeature{left:52px;right:auto}
+
+/* ---------- 13c. Sivuston oma galleria — suurennettu scroll-nakyma ---------- */
+.fviewer{
+  position:fixed;inset:0;z-index:130;overflow-y:auto;overscroll-behavior:contain;
+  background:#040705;opacity:0;pointer-events:none;transition:opacity .3s;
+}
+.fviewer.is-open{opacity:1;pointer-events:auto}
+.fviewer__close{
+  position:fixed;top:22px;right:22px;z-index:5;width:44px;height:44px;border-radius:12px;
+  border:1px solid var(--line);background:rgba(62,240,138,.1);backdrop-filter:blur(8px);cursor:pointer;
+  display:grid;place-items:center;color:var(--green);font-size:1.2rem;
+}
+.fviewer__hero{
+  position:relative;min-height:100vh;display:grid;place-items:center;padding:32px;
+  background:radial-gradient(circle at 50% 30%,rgba(62,240,138,.08),transparent 60%),#060a08;
+}
+.fviewer__hero img{max-width:min(92vw,1100px);max-height:88vh;border-radius:16px;box-shadow:var(--shadow);object-fit:contain}
+.fviewer__hint{
+  position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
+  font-size:.8rem;letter-spacing:.06em;color:var(--muted);
+  animation:fviewer-bob 1.8s ease-in-out infinite;transition:opacity .3s;
+}
+.fviewer.scrolled .fviewer__hint{opacity:0}
+@keyframes fviewer-bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,6px)}}
+.fviewer__body{max-width:720px;margin:0 auto;padding:56px var(--pad) 100px}
+.fviewer__cap{font-size:1.08rem;line-height:1.75;color:#dcefe4;white-space:pre-wrap}
+.fviewer__why{
+  margin-top:38px;padding:22px 24px;border-radius:16px;
+  background:rgba(62,240,138,.07);border:1px solid rgba(62,240,138,.25);
+}
+.fviewer__why h3{font-size:.95rem;color:var(--green);margin-bottom:.6em}
+.fviewer__why p{font-size:1rem;line-height:1.7;color:#dcefe4;white-space:pre-wrap}
+
+/* ---------- 13d. Dev: siirra/muokkaa sivuston omaksi -modaali ---------- */
+.fpromote{
+  position:fixed;inset:0;z-index:140;display:grid;place-items:center;padding:var(--pad);
+  background:rgba(3,6,5,.86);backdrop-filter:blur(10px);
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.fpromote.is-open{opacity:1;pointer-events:auto}
+.fpromote__box{
+  width:min(560px,100%);padding:26px 26px 22px;border-radius:18px;
+  background:rgba(12,20,16,.96);border:1px solid var(--line-strong,rgba(255,255,255,.16));
+  box-shadow:var(--shadow);display:grid;gap:14px;
+}
+.fpromote__box h3{font-size:1.15rem}
+.fpromote__lead{font-size:.86rem;color:var(--muted);line-height:1.5}
+.fpromote__box label{display:grid;gap:6px;font-size:.8rem;color:var(--muted);letter-spacing:.02em}
+.fpromote__box textarea{
+  font:inherit;font-size:.92rem;padding:10px 12px;border-radius:10px;resize:vertical;
+  background:rgba(8,14,11,.7);border:1px solid var(--line,rgba(255,255,255,.12));color:var(--text,#eaf3ee);
+}
+.fpromote__box textarea:focus{outline:none;border-color:var(--green,#3ef08a)}
+.fpromote__status{font-size:.85rem;min-height:1.2em;color:var(--muted)}
+.fpromote__status.bad{color:#ff8f8f}
+.fpromote__actions{display:flex;gap:10px;justify-content:flex-end}
 
 /* ---------- 13b. Oma galleriakuva -lomake ---------- */
 .gup{padding:20px 22px;border-radius:16px;background:rgba(8,14,11,.6);
