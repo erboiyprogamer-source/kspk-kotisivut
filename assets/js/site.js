@@ -23,14 +23,17 @@ const SITE = {
   mapNight:  'kartta/yo/index.html',
   map5k:     'kartta/5k/index.html',
 
+  /* nav:'muut' -> nakyy ylapalkissa "Muut"-pudotusvalikon alla erillisen
+     linkin sijaan (Serveri, Dokumentit, Tietoa). Footer nakyttaa nama
+     edelleen omina sarakkeinaan (foot-kentta), tama ei muuta sita. */
   pages: [
     { href:'index.html',     label:'Etusivu',    foot:'Sivusto' },
-    { href:'videot.html',    label:'Videot',     foot:'Sivusto' },
-    { href:'galleria.html',  label:'Galleria',   foot:'Sivusto' },
-    { href:'serveri.html',   label:'Serveri',    foot:'Yhteisö' },
     { href:'kartta.html',    label:'Kartta',     foot:'Yhteisö' },
-    { href:'projektit.html', label:'Dokumentit', foot:'Yhteisö' },
-    { href:'tietoa.html',    label:'Tietoa',     foot:'Sivusto' }
+    { href:'galleria.html',  label:'Galleria',   foot:'Sivusto' },
+    { href:'videot.html',    label:'Videot',     foot:'Sivusto' },
+    { href:'serveri.html',   label:'Serveri',    foot:'Yhteisö', nav:'muut' },
+    { href:'projektit.html', label:'Dokumentit', foot:'Yhteisö', nav:'muut' },
+    { href:'tietoa.html',    label:'Tietoa',     foot:'Sivusto', nav:'muut' }
   ],
 
   events: [
@@ -75,9 +78,20 @@ const DOC_TYPES = {
 (function buildChrome(){
   const path = location.pathname.split('/').pop() || 'index.html';
 
-  const links = SITE.pages.filter(p => !p.hidden).map(p =>
+  const visible  = SITE.pages.filter(p => !p.hidden);
+  const topPages = visible.filter(p => p.nav !== 'muut');
+  const muutPages = visible.filter(p => p.nav === 'muut');
+  const muutActive = muutPages.some(p => p.href === path);
+
+  const links = topPages.map(p =>
     `<li><a href="${p.href}"${p.href === path ? ' aria-current="page"' : ''}>${p.label}</a></li>`
-  ).join('');
+  ).join('') + (muutPages.length ? `
+    <li class="nav__drop${muutActive ? ' is-active' : ''}">
+      <button type="button" class="nav__drop-btn" aria-haspopup="true" aria-expanded="false">Muut ${icon('chev')}</button>
+      <ul class="nav__drop-menu">
+        ${muutPages.map(p => `<li><a href="${p.href}"${p.href === path ? ' aria-current="page"' : ''}>${p.label}</a></li>`).join('')}
+      </ul>
+    </li>` : '');
 
   const nav = document.createElement('header');
   nav.className = 'nav';
@@ -147,6 +161,21 @@ const DOC_TYPES = {
   nav.querySelectorAll('.nav__links a').forEach(a =>
     a.addEventListener('click', () => nav.classList.remove('is-open')));
 
+  /* "Muut"-pudotusvalikko: klikkaus avaa/sulkee, klikkaus ulkopuolelle tai
+     Escape sulkee, linkin valinta sulkee myos (kattaa yllaolevan). */
+  const dropLi = nav.querySelector('.nav__drop');
+  if (dropLi) {
+    const dropBtn = dropLi.querySelector('.nav__drop-btn');
+    const closeDrop = () => { dropLi.classList.remove('is-open'); dropBtn.setAttribute('aria-expanded', 'false'); };
+    dropBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = dropLi.classList.toggle('is-open');
+      dropBtn.setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('click', (e) => { if (!dropLi.contains(e.target)) closeDrop(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrop(); });
+  }
+
   const dg = document.getElementById('docs-grid');
   if (dg) {
     dg.innerHTML = SITE.docs.map(d => {
@@ -177,7 +206,8 @@ const DOC_TYPES = {
 function icon(n){
   const p = {
     yt:'M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.3 3.6-6.3 3.6Z',
-    mail:'M2 5h20v14H2V5Zm2 2v.3l8 5 8-5V7H4Zm16 10V9.6l-8 5-8-5V17h16Z'
+    mail:'M2 5h20v14H2V5Zm2 2v.3l8 5 8-5V7H4Zm16 10V9.6l-8 5-8-5V17h16Z',
+    chev:'M6.7 8.7 12 14l5.3-5.3 1.4 1.4L12 16.8 5.3 10.1Z'
   }[n] || '';
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${p}"/></svg>`;
 }

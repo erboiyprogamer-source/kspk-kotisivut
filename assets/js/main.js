@@ -247,15 +247,4 @@
     window.open(gmailUrl, '_blank', 'noopener');
     toast('Avataan Gmail uuteen välilehteen…');
   });
-
-  /* ---------- 11. Taulukon summat (kirjanpito) ---------- */
-  $$('[data-sum-table]').forEach(t => {
-    let sum = 0;
-    $$('tbody td.num[data-amount]', t).forEach(td => sum += parseFloat(td.dataset.amount) || 0);
-    const out = $('[data-sum-out]', t);
-    if (out) {
-      out.textContent = (sum >= 0 ? '+' : '') + sum.toFixed(2).replace('.', ',') + ' €';
-      out.classList.add(sum >= 0 ? 'pos' : 'neg');
-    }
-  });
 })();

@@ -187,6 +187,29 @@ section{position:relative;padding:clamp(70px,9vw,130px) 0}
 .nav__links a:hover::after,.nav__links a[aria-current="page"]::after{transform:scaleX(1)}
 .nav__links a[aria-current="page"]{color:var(--green)}
 
+/* "Muut"-pudotusvalikko (Serveri / Dokumentit / Tietoa) */
+.nav__drop{position:relative}
+.nav__drop-btn{
+  display:flex;align-items:center;gap:5px;padding:9px 14px;border-radius:9px;border:0;
+  background:transparent;font:inherit;font-size:.9rem;color:#c2d9cd;cursor:pointer;
+  transition:color .25s,background .25s;
+}
+.nav__drop-btn svg{width:11px;height:11px;fill:currentColor;transition:transform .25s var(--ease-out)}
+.nav__drop-btn:hover{color:#fff;background:rgba(62,240,138,.07)}
+.nav__drop.is-active>.nav__drop-btn{color:var(--green)}
+.nav__drop.is-open>.nav__drop-btn svg{transform:rotate(180deg)}
+.nav__drop-menu{
+  position:absolute;top:calc(100% + 6px);left:0;min-width:170px;list-style:none;margin:0;padding:6px;
+  background:rgba(10,16,13,.97);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 18px 40px -12px rgba(0,0,0,.55);
+  opacity:0;transform:translateY(-6px);pointer-events:none;
+  transition:opacity .2s var(--ease-out),transform .2s var(--ease-out);
+}
+.nav__drop.is-open .nav__drop-menu{opacity:1;transform:none;pointer-events:auto}
+.nav__drop-menu a{display:block;padding:9px 12px;border-radius:8px;font-size:.88rem;color:#c2d9cd}
+.nav__drop-menu a:hover{color:#fff;background:rgba(62,240,138,.09)}
+.nav__drop-menu a[aria-current="page"]{color:var(--green)}
+
 .nav__toggle{
   display:none;width:42px;height:42px;border:1px solid var(--line);
   background:rgba(62,240,138,.06);border-radius:10px;cursor:pointer;
@@ -217,6 +240,16 @@ section{position:relative;padding:clamp(70px,9vw,130px) 0}
   .nav__links a{padding:13px 12px;font-size:1rem}
   .nav__links a::after{display:none}
   .nav__cta{display:none}
+  /* Mobiilissa "Muut" avautuu paikallaan listan sisaan, ei kelluvana */
+  .nav__drop-btn{width:100%;padding:13px 12px;font-size:1rem;justify-content:space-between}
+  .nav__drop-menu{
+    position:static;min-width:0;margin-top:2px;padding:0 0 0 10px;
+    background:transparent;border:0;box-shadow:none;backdrop-filter:none;
+    max-height:0;opacity:1;transform:none;overflow:hidden;
+    transition:max-height .3s var(--ease-out);
+  }
+  .nav__drop.is-open .nav__drop-menu{max-height:220px}
+  .nav__drop-menu a{padding:11px 12px;font-size:.95rem}
 }
 
 /* ---------- 6. Napit ---------- */
