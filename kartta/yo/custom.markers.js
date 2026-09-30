@@ -76,14 +76,59 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   var SS_CODE  = 'kspk.pins.devcode';
   var LS_VIEW  = 'kspk.pins.view';   // Kohta 7: henkilokohtainen nakyma (vain tama selain)
 
-  /* Kohta 6: 5 valittavaa symbolia karttamerkeille (piste = oletus) */
+  /* Kohta 6: 5 valittavaa symbolia karttamerkeille (piste = oletus).
+     Kohta 25: + 12 uutta muotoa (talo, paakallo, miekat, vasara, hymio,
+     pickaxe, puu, kirves, kilpi, sydan, ankkuri, aarrearkku) — ei emojeita,
+     samanlaisia tasavarisia muotoja kuin alkuperaiset viisi. Nailla ei ole
+     Unicode-glyfia, joten valitsimen nappi piirretaan pienena inline-SVG:na
+     (glyph-kentta), ja itse kartalla ne piirretaan ol.style.Iconina
+     ICON_SVGS-taulukon SVG:sta varjattynа merkin varilla (ks. pinStyle). */
   var SYMBOLS = [
     { id: 'dot',      glyph: '●' },
     { id: 'square',   glyph: '■' },
     { id: 'triangle', glyph: '▲' },
     { id: 'star',     glyph: '★' },
-    { id: 'diamond',  glyph: '◆' }
+    { id: 'diamond',  glyph: '◆' },
+    { id: 'house', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2.2 1.5 11h3.2v10.3h6V15h2.6v6.3h6V11h3.2z"/></svg>' },
+    { id: 'skull', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M12 1.6c-5 0-8.6 3.7-8.6 8.3 0 3 1.5 5.2 3.4 6.7v3.1c0 .7.5 1.2 1.2 1.2h1v-2.2h1.6v2.2h2.8v-2.2h1.6v2.2h1c.7 0 1.2-.5 1.2-1.2v-3.1c1.9-1.5 3.4-3.7 3.4-6.7 0-4.6-3.6-8.3-8.6-8.3zm-3.6 9.6a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm7.2 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zM12 13.4l1.6 2.6h-3.2z"/></svg>' },
+    { id: 'swords', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 3l1.4-1.4 16 16-1.4 1.4z"/><path d="M2.6 3.4l1-1 2.6 2.6-1 1z"/><path d="M17 20.6l-1-1 2.6-2.6 1 1z"/><path d="M21 3L19.6 1.6l-16 16 1.4 1.4z"/><path d="M21.4 3.4l-1-1-2.6 2.6 1 1z"/><path d="M7 20.6l1-1-2.6-2.6-1 1z"/></svg>' },
+    { id: 'hammer', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M14.5 2.5l-3.1 3.1 1.1 1.1L2 17.2l3.8 3.8L16.3 10.5l1.1 1.1 3.1-3.1c1-1 1-2.6 0-3.6l-2.4-2.4c-1-1-2.6-1-3.6 0z"/></svg>' },
+    { id: 'smiley', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-3.6 6.8a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zm7.2 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zM6.8 14c1 2.2 3 3.6 5.2 3.6s4.2-1.4 5.2-3.6z"/></svg>' },
+    { id: 'pickaxe', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3.2 21.5L1.8 20.1l7.4-7.4 1.4 1.4z"/><path d="M2 5.8C5.4 1.6 11.6.4 16.6 3c-1 3.7-4 6.9-7.9 8.4L2 5.8zm3.3.6l3.9 3.9c1.9-1.1 3.4-2.7 4.2-4.6-2.8-1-6-.6-8.1.7z"/></svg>' },
+    { id: 'tree', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 1.5 6.5 9.5h2.3L4.5 16h4.7l-3.5 6.5h12.6L15 16h4.5l-4.3-6.5h2.3z"/><rect x="10.6" y="19" width="2.8" height="4"/></svg>' },
+    { id: 'axe', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3.5 20.5l7.8-7.8 1.4 1.4-7.8 7.8-1.9.5z"/><path fill-rule="evenodd" d="M12.6 12.1l7.1-7.1c1.6 2.9 1.1 6.6-1.4 9.1-2.1 2.1-5.1 2.8-7.8 2l-1.3-1.3zm1.4-1.4l4.6-4.6c.6 1.7.2 3.7-1.1 5.1-1.1 1.1-2.6 1.6-4 1.4z"/></svg>' },
+    { id: 'shield', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 1.8 3.5 5v6.2c0 5.4 3.6 9.8 8.5 11.5 4.9-1.7 8.5-6.1 8.5-11.5V5z"/></svg>' },
+    { id: 'heart', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 21S2.5 14.6 2.5 8.2C2.5 5 5 2.7 8 2.7c1.8 0 3.3.9 4 2.3.7-1.4 2.2-2.3 4-2.3 3 0 5.5 2.3 5.5 5.5 0 6.4-9.5 12.8-9.5 12.8z"/></svg>' },
+    { id: 'anchor', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M12 1.8a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6zm-1.1 4.9h2.2v2.5h3.6v1.7h-3.6v8.3c2.3-.5 4-2.2 4.5-4.4h1.8c-.6 3.7-3.7 6.5-7.4 6.8v.1h-.1v-.1c-3.7-.3-6.8-3.1-7.4-6.8h1.8c.5 2.2 2.2 3.9 4.5 4.4V10.9H7.3V9.2h3.6z"/></svg>' },
+    { id: 'chest', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M3 9.5h18v10.2H3zm7.2 3.3v2.3h3.6v-2.3h1.9c-.3 1.8-1.9 3.2-3.7 3.2s-3.4-1.4-3.7-3.2z"/><path d="M4.5 4.3h15l1.8 4.2H2.7z"/></svg>' }
   ];
+
+  /* Kohta 25: samat 12 muotoa taysimustana SVG:na karttamerkkeja varten —
+     ol.style.Icon + color-optio varjaa lapinakymattomat pikselit merkin
+     valitulla varilla piirtohetkella, alkuperaisesta taytovarista riippumatta. */
+  var ICON_SVGS = {
+    house: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path d="M12 2.2 1.5 11h3.2v10.3h6V15h2.6v6.3h6V11h3.2z"/></svg>',
+    skull: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path fill-rule="evenodd" d="M12 1.6c-5 0-8.6 3.7-8.6 8.3 0 3 1.5 5.2 3.4 6.7v3.1c0 .7.5 1.2 1.2 1.2h1v-2.2h1.6v2.2h2.8v-2.2h1.6v2.2h1c.7 0 1.2-.5 1.2-1.2v-3.1c1.9-1.5 3.4-3.7 3.4-6.7 0-4.6-3.6-8.3-8.6-8.3zm-3.6 9.6a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm7.2 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zM12 13.4l1.6 2.6h-3.2z"/></svg>',
+    swords: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path d="M3 3l1.4-1.4 16 16-1.4 1.4z"/><path d="M2.6 3.4l1-1 2.6 2.6-1 1z"/><path d="M17 20.6l-1-1 2.6-2.6 1 1z"/><path d="M21 3L19.6 1.6l-16 16 1.4 1.4z"/><path d="M21.4 3.4l-1-1-2.6 2.6 1 1z"/><path d="M7 20.6l1-1-2.6-2.6-1 1z"/></svg>',
+    hammer: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path d="M14.5 2.5l-3.1 3.1 1.1 1.1L2 17.2l3.8 3.8L16.3 10.5l1.1 1.1 3.1-3.1c1-1 1-2.6 0-3.6l-2.4-2.4c-1-1-2.6-1-3.6 0z"/></svg>',
+    smiley: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-3.6 6.8a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zm7.2 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zM6.8 14c1 2.2 3 3.6 5.2 3.6s4.2-1.4 5.2-3.6z"/></svg>',
+    pickaxe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path d="M3.2 21.5L1.8 20.1l7.4-7.4 1.4 1.4z"/><path d="M2 5.8C5.4 1.6 11.6.4 16.6 3c-1 3.7-4 6.9-7.9 8.4L2 5.8zm3.3.6l3.9 3.9c1.9-1.1 3.4-2.7 4.2-4.6-2.8-1-6-.6-8.1.7z"/></svg>',
+    tree: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path d="M12 1.5 6.5 9.5h2.3L4.5 16h4.7l-3.5 6.5h12.6L15 16h4.5l-4.3-6.5h2.3z"/><rect x="10.6" y="19" width="2.8" height="4"/></svg>',
+    axe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path d="M3.5 20.5l7.8-7.8 1.4 1.4-7.8 7.8-1.9.5z"/><path fill-rule="evenodd" d="M12.6 12.1l7.1-7.1c1.6 2.9 1.1 6.6-1.4 9.1-2.1 2.1-5.1 2.8-7.8 2l-1.3-1.3zm1.4-1.4l4.6-4.6c.6 1.7.2 3.7-1.1 5.1-1.1 1.1-2.6 1.6-4 1.4z"/></svg>',
+    shield: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path d="M12 1.8 3.5 5v6.2c0 5.4 3.6 9.8 8.5 11.5 4.9-1.7 8.5-6.1 8.5-11.5V5z"/></svg>',
+    heart: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path d="M12 21S2.5 14.6 2.5 8.2C2.5 5 5 2.7 8 2.7c1.8 0 3.3.9 4 2.3.7-1.4 2.2-2.3 4-2.3 3 0 5.5 2.3 5.5 5.5 0 6.4-9.5 12.8-9.5 12.8z"/></svg>',
+    anchor: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path fill-rule="evenodd" d="M12 1.8a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6zm-1.1 4.9h2.2v2.5h3.6v1.7h-3.6v8.3c2.3-.5 4-2.2 4.5-4.4h1.8c-.6 3.7-3.7 6.5-7.4 6.8v.1h-.1v-.1c-3.7-.3-6.8-3.1-7.4-6.8h1.8c.5 2.2 2.2 3.9 4.5 4.4V10.9H7.3V9.2h3.6z"/></svg>',
+    chest: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#000"><path fill-rule="evenodd" d="M3 9.5h18v10.2H3zm7.2 3.3v2.3h3.6v-2.3h1.9c-.3 1.8-1.9 3.2-3.7 3.2s-3.4-1.4-3.7-3.2z"/><path d="M4.5 4.3h15l1.8 4.2H2.7z"/></svg>'
+  };
+  var ICON_SVG_CACHE = {};
+  function iconDataUri(id) {
+    if (ICON_SVG_CACHE[id]) return ICON_SVG_CACHE[id];
+    var svg = ICON_SVGS[id];
+    if (!svg) return null;
+    var uri = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    ICON_SVG_CACHE[id] = uri;
+    return uri;
+  }
 
   /* ---------- apurit ---------- */
   function el(tag, cls, html) {
@@ -396,6 +441,15 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
           .catch(function () { return self.plainImages(); });
       }
       return this.plainImages();
+    },
+    /* Kohta 23: yhden merkin kuvat vasta kun merkkia klikataan kartalla —
+       ei haeta kaikkien merkkien kuvia etukateen sivun ensilatauksessa. */
+    imagesForPin: function (pinId) {
+      if (!SHARED) return Promise.resolve([]);
+      return fetch(this.base() + '/rest/v1/pin_images?select=*&pin_id=eq.' + encodeURIComponent(pinId) + '&order=created_at.asc', {
+        headers: { 'apikey': CFG.supabaseKey, 'Authorization': 'Bearer ' + CFG.supabaseKey }
+      }).then(function (r) { return r.ok ? r.json() : []; })
+        .catch(function () { return []; });
     }
   };
 
@@ -518,6 +572,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     var fill = new olns.style.Fill({ color: fillColor });
     var stroke = new olns.style.Stroke({ color: strokeColor, width: 3, lineDash: hidden ? [3, 3] : undefined });
     var image;
+    var iconUri = ICON_SVGS[sym] ? iconDataUri(sym) : null;
     switch (sym) {
       case 'square':
         image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 4, radius: baseR * 1.15, angle: Math.PI / 4 });
@@ -532,7 +587,20 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 4, radius: baseR * 1.3, angle: 0 });
         break;
       default:
-        image = new olns.style.Circle({ radius: baseR, fill: fill, stroke: stroke });
+        if (iconUri) {
+          /* Kohta 25: mukautetut muodot (talo, paakallo, jne.) ovat inline-SVG
+             data-URIna — OpenLayersin Icon color-optio varjaa lapinakymattomat
+             pikselit merkin varilla piirtohetkella, riippumatta SVG:n omasta
+             taytovarista (siksi SVG:t on piirretty taysimustina yllä). */
+          image = new olns.style.Icon({
+            src: iconUri,
+            color: fillColor,
+            scale: (baseR * 2.1) / 24,
+            opacity: hidden ? 0.55 : 1
+          });
+        } else {
+          image = new olns.style.Circle({ radius: baseR, fill: fill, stroke: stroke });
+        }
     }
     var s = new olns.style.Style({ image: image });
     if (p.title && p.show_text) {
@@ -796,6 +864,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     var overlay = new olns.Overlay({ element: popEl, positioning: 'bottom-center', stopEvent: true });
     map.addOverlay(overlay);
     function closePop() {
+      popToken++;
       popEl.innerHTML = ''; popEl.className = '';
       overlay.setPosition(undefined);
       tellParentBusy(false);
@@ -821,12 +890,17 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         source.addFeature(f);
       });
     }
+    /* Kohta 23: merkkien kuvia EI enaa haeta kaikille etukateen — vain
+       merkin oma nimi/sijainti tarvitaan piirtoon. Kuvat haetaan vasta
+       kun kayttaja klikkaa yksittaista merkkia (ks. openPop). Sailytetaan
+       jo ladatut kuvat (p.images) merkin id:n kautta yli refreshin, jotta
+       auki oleva kupla ei "unohda" juuri katsottuja kuvia taustapaivityksessa. */
     function refresh() {
-      return Promise.all([Store.list(), Store.images()]).then(function (arr) {
-        rows = arr[0] || [];
-        var byPin = {};
-        (arr[1] || []).forEach(function (im) { (byPin[im.pin_id] = byPin[im.pin_id] || []).push(im); });
-        rows.forEach(function (p) { p.images = byPin[p.id] || []; });
+      var prevImages = {};
+      rows.forEach(function (p) { if (p.images) prevImages[p.id] = p.images; });
+      return Store.list().then(function (list) {
+        rows = list || [];
+        rows.forEach(function (p) { if (prevImages[p.id]) p.images = prevImages[p.id]; });
         draw();
       });
     }
@@ -860,19 +934,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     }
 
     /* --- kupla --- */
-    function openPop(p) {
+    function popBody(p, imgHtml) {
       var can = mayEdit(p);
-      popEl.className = 'kspk-pop';
-      tellParentBusy(true);
-      popEl.innerHTML =
-        '<h4><span class="dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' + esc(p.title) +
+      return '<h4><span class="dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' + esc(p.title) +
           (p.hidden ? '<span class="kspk-tag">piilotettu</span>' : '') + '</h4>' +
-        ((p.images && p.images.length)
-          ? '<div class="kspk-imggrid" style="margin:0 0 8px">' + p.images.map(function (im) {
-              return '<a href="' + esc(im.full_url) + '" target="_blank" rel="noopener">' +
-                '<img src="' + esc(im.thumb_url) + '" class="kspk-imgprev" alt="Merkin kuva"></a>';
-            }).join('') + '</div>'
-          : '') +
+        (imgHtml || '') +
         (p.message ? '<p>' + esc(p.message) + '</p>' : '') +
         '<p class="meta">' + esc(p.author || 'Nimeton') + ' &middot; X ' + p.x + ', Z ' + p.z + '</p>' +
         '<div class="row">' +
@@ -881,9 +947,10 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
           (can ? '<button class="kspk-btn kspk-btn--danger" id="kp-d">Poista</button>' : '') +
           '<button class="kspk-btn" id="kp-c2">Sulje</button>' +
         '</div>';
-      overlay.setPosition(toView(p.x, p.z));
+    }
+    function wirePopButtons(p) {
+      var can = mayEdit(p);
       popEl.querySelector('#kp-c2').onclick = closePop;
-
       if (!can) return;
 
       popEl.querySelector('#kp-e').onclick = function () {
@@ -914,6 +981,61 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
           draw(); closePop(); announce(); toast('Merkki poistettu');
         }).catch(function (e) { toast(errText(e), false); });
       };
+    }
+
+    /* Kohta 23: kuvat haetaan vasta kun tata merkkia klikataan, ja
+       thumbnailit ilmestyvat jarjestyksessa vasemmalta oikealle (max 5
+       vierekkain) nimen alle sita mukaa kun kukin <img> ehtii latautua. */
+    var popToken = 0;
+    function renderPopImages(p, container) {
+      if (!p.images || !p.images.length) return;
+      container.innerHTML = '';
+      container.style.display = '';
+      p.images.slice(0, 5).forEach(function (im, i) {
+        var a = el('a');
+        a.href = im.full_url; a.target = '_blank'; a.rel = 'noopener';
+        a.style.opacity = '0';
+        a.style.transition = 'opacity .35s ease';
+        a.style.transitionDelay = (i * 70) + 'ms';
+        var img = el('img', 'kspk-imgprev');
+        img.alt = 'Merkin kuva';
+        img.loading = 'lazy';
+        img.src = im.thumb_url;
+        a.appendChild(img);
+        container.appendChild(a);
+        requestAnimationFrame(function () { a.style.opacity = '1'; });
+      });
+    }
+    function openPop(p) {
+      popEl.className = 'kspk-pop';
+      tellParentBusy(true);
+      var myToken = ++popToken;
+      var haveImages = Array.isArray(p.images);
+      popEl.innerHTML = popBody(p, haveImages && p.images.length
+        ? '<div class="kspk-imggrid" id="kp-imggrid2" style="margin:0 0 8px"></div>' : '');
+      overlay.setPosition(toView(p.x, p.z));
+      wirePopButtons(p);
+      var grid = popEl.querySelector('#kp-imggrid2');
+      if (haveImages) {
+        if (grid) renderPopImages(p, grid);
+        return;
+      }
+      Store.imagesForPin(p.id).then(function (imgs) {
+        if (myToken !== popToken) return;   // kupla ehti vaihtua/sulkeutua
+        p.images = imgs || [];
+        if (!p.images.length) return;
+        var g = popEl.querySelector('#kp-imggrid2');
+        if (!g) {
+          // lisataan ruudukko jalkikateen viestin ja otsikon valiin
+          g = el('div', 'kspk-imggrid');
+          g.id = 'kp-imggrid2';
+          g.style.margin = '0 0 8px';
+          var h4 = popEl.querySelector('h4');
+          if (h4 && h4.nextSibling) h4.parentNode.insertBefore(g, h4.nextSibling);
+          else popEl.insertBefore(g, popEl.firstChild.nextSibling);
+        }
+        renderPopImages(p, g);
+      }).catch(function () {});
     }
 
     map.on('singleclick', function (evt) {
@@ -1228,9 +1350,45 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       }
     });
 
+    window.__kspkRefresh = refresh;
     loadWhitelist();
     refresh();
     if (SHARED) setInterval(refresh, 30000);
+    if (SHARED) initRealtime();
+  }
+
+  /* ---------- kohta 24: reaaliaikainen paivitys (Supabase Realtime) ----------
+     Kartan oma index.html on uNmINeDin generoima eika sinne voi pysyvasti
+     lisata <script>-tageja, joten Supabasen JS-kirjasto ladataan taalta
+     dynaamisesti CDN:sta. Kun joku muuttaa/lisaa/poistaa merkin tai kuvan,
+     kartta paivittyy heti — 30s pollaus jatetaan rinnalle varajarjestelmaksi. */
+  var rtDebounce = null;
+  function debouncedRefreshFromRealtime() {
+    clearTimeout(rtDebounce);
+    rtDebounce = setTimeout(function () {
+      var fn = window.__kspkRefresh;
+      if (fn) fn();
+    }, 250);
+  }
+  function initRealtime() {
+    if (window.__kspkRealtimeStarted) return;
+    window.__kspkRealtimeStarted = true;
+    function start() {
+      try {
+        var sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey);
+        var ch = sb.channel('kspk-map-changes');
+        ['pins', 'pin_images'].forEach(function (table) {
+          ch.on('postgres_changes', { event: '*', schema: 'public', table: table }, debouncedRefreshFromRealtime);
+        });
+        ch.subscribe();
+      } catch (e) { /* realtime ei kaynnistynyt — pollaus riittaa varajarjestelmaksi */ }
+    }
+    if (window.supabase && window.supabase.createClient) { start(); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+    s.onload = start;
+    s.onerror = function () {};
+    document.head.appendChild(s);
   }
 
   /* --- odota etta uNmINeD on luonut kartan --- */

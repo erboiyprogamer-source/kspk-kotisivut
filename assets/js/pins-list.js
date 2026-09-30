@@ -22,7 +22,24 @@
   var SS_CODE = 'kspk.pins.devcode';
   var LS_VIEW = 'kspk.pins.view';   // Kohta 7/8: sama avain kuin kartalla — jaettu oma nakyma
 
+  /* Kohta 25: alkuperaiset 5 ovat Unicode-glyfeja (ei emojeita); uudet 12
+     muotoa eivat vastaa mitaan yksinkertaista glyfia, joten niille on pieni
+     inline-SVG (piirretaan sellaisenaan HTML:na, ks. chip()-kutsut alla). */
   var SYMBOL_GLYPH = { dot: '●', square: '■', triangle: '▲', star: '★', diamond: '◆' };
+  var SYMBOL_SVG = {
+    house: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2.2 1.5 11h3.2v10.3h6V15h2.6v6.3h6V11h3.2z"/></svg>',
+    skull: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path fill-rule="evenodd" d="M12 1.6c-5 0-8.6 3.7-8.6 8.3 0 3 1.5 5.2 3.4 6.7v3.1c0 .7.5 1.2 1.2 1.2h1v-2.2h1.6v2.2h2.8v-2.2h1.6v2.2h1c.7 0 1.2-.5 1.2-1.2v-3.1c1.9-1.5 3.4-3.7 3.4-6.7 0-4.6-3.6-8.3-8.6-8.3zm-3.6 9.6a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm7.2 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zM12 13.4l1.6 2.6h-3.2z"/></svg>',
+    swords: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M3 3l1.4-1.4 16 16-1.4 1.4z"/><path d="M2.6 3.4l1-1 2.6 2.6-1 1z"/><path d="M17 20.6l-1-1 2.6-2.6 1 1z"/><path d="M21 3L19.6 1.6l-16 16 1.4 1.4z"/><path d="M21.4 3.4l-1-1-2.6 2.6 1 1z"/><path d="M7 20.6l1-1-2.6-2.6-1 1z"/></svg>',
+    hammer: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M14.5 2.5l-3.1 3.1 1.1 1.1L2 17.2l3.8 3.8L16.3 10.5l1.1 1.1 3.1-3.1c1-1 1-2.6 0-3.6l-2.4-2.4c-1-1-2.6-1-3.6 0z"/></svg>',
+    smiley: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-3.6 6.8a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zm7.2 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zM6.8 14c1 2.2 3 3.6 5.2 3.6s4.2-1.4 5.2-3.6z"/></svg>',
+    pickaxe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M3.2 21.5L1.8 20.1l7.4-7.4 1.4 1.4z"/><path d="M2 5.8C5.4 1.6 11.6.4 16.6 3c-1 3.7-4 6.9-7.9 8.4L2 5.8zm3.3.6l3.9 3.9c1.9-1.1 3.4-2.7 4.2-4.6-2.8-1-6-.6-8.1.7z"/></svg>',
+    tree: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 1.5 6.5 9.5h2.3L4.5 16h4.7l-3.5 6.5h12.6L15 16h4.5l-4.3-6.5h2.3z"/><rect x="10.6" y="19" width="2.8" height="4"/></svg>',
+    axe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M3.5 20.5l7.8-7.8 1.4 1.4-7.8 7.8-1.9.5z"/><path fill-rule="evenodd" d="M12.6 12.1l7.1-7.1c1.6 2.9 1.1 6.6-1.4 9.1-2.1 2.1-5.1 2.8-7.8 2l-1.3-1.3zm1.4-1.4l4.6-4.6c.6 1.7.2 3.7-1.1 5.1-1.1 1.1-2.6 1.6-4 1.4z"/></svg>',
+    shield: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 1.8 3.5 5v6.2c0 5.4 3.6 9.8 8.5 11.5 4.9-1.7 8.5-6.1 8.5-11.5V5z"/></svg>',
+    heart: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 21S2.5 14.6 2.5 8.2C2.5 5 5 2.7 8 2.7c1.8 0 3.3.9 4 2.3.7-1.4 2.2-2.3 4-2.3 3 0 5.5 2.3 5.5 5.5 0 6.4-9.5 12.8-9.5 12.8z"/></svg>',
+    anchor: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path fill-rule="evenodd" d="M12 1.8a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6zm-1.1 4.9h2.2v2.5h3.6v1.7h-3.6v8.3c2.3-.5 4-2.2 4.5-4.4h1.8c-.6 3.7-3.7 6.5-7.4 6.8v.1h-.1v-.1c-3.7-.3-6.8-3.1-7.4-6.8h1.8c.5 2.2 2.2 3.9 4.5 4.4V10.9H7.3V9.2h3.6z"/></svg>',
+    chest: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path fill-rule="evenodd" d="M3 9.5h18v10.2H3zm7.2 3.3v2.3h3.6v-2.3h1.9c-.3 1.8-1.9 3.2-3.7 3.2s-3.4-1.4-3.7-3.2z"/><path d="M4.5 4.3h15l1.8 4.2H2.7z"/></svg>'
+  };
 
   /* Kohta 8: oma nakyma-asetus myos merkkilistalle (vain tama selain,
      ei vaikuta palvelimelle eika muihin kayttajiin). Sama tallennuspaikka
@@ -203,7 +220,18 @@
       + 'border:1px solid rgba(255,255,255,.18)}'
       + '.pl-chip .sw{width:10px;height:10px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.5)}'
       + '.pl-chip.off{opacity:.4;text-decoration:line-through}'
-      + '.pl-fclear{align-self:center;margin-left:auto}';
+      + '.pl-fclear{align-self:center;margin-left:auto}'
+      + '.pl-toggle{display:flex;justify-content:center;margin:4px 0 18px}'
+      + '.pl-toggle__btn{display:inline-flex;align-items:center;gap:10px;padding:13px 22px;border-radius:999px;'
+      + 'cursor:pointer;font:inherit;font-size:.92rem;font-weight:600;color:var(--text,#eaf3ee);'
+      + 'background:rgba(62,240,138,.1);border:1px solid rgba(62,240,138,.4);transition:background .2s ease,transform .15s ease}'
+      + '.pl-toggle__btn:hover{background:rgba(62,240,138,.18)}'
+      + '.pl-toggle__btn:active{transform:scale(.98)}'
+      + '.pl-toggle__ico{transition:transform .25s ease;display:inline-block}'
+      + '.pl-toggle__btn.is-open .pl-toggle__ico{transform:rotate(180deg)}'
+      + '.pl-body{display:none}'
+      + '.pl-body.is-open{display:block;animation:plFadeIn .38s ease}'
+      + '@keyframes plFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}';
     document.head.appendChild(s);
   })();
 
@@ -223,13 +251,19 @@
         '<button class="pl-b pl-b--dev" id="pl-dev">Dev</button>' +
       '</div>' +
     '</div>' +
-    '<div class="pl-filters" id="pl-filters">' +
-      '<div class="pl-fgroup"><span>PIILOTA PELAAJA</span><div class="pl-chips" id="pl-f-authors"></div></div>' +
-      '<div class="pl-fgroup"><span>PIILOTA VARI</span><div class="pl-chips" id="pl-f-colors"></div></div>' +
-      '<div class="pl-fgroup"><span>PIILOTA SYMBOLI</span><div class="pl-chips" id="pl-f-symbols"></div></div>' +
-      '<button class="pl-b pl-fclear" id="pl-f-reset">Nollaa oma nakyma</button>' +
-    '</div>' +
-    '<div class="pl-grid" id="pl-grid"></div>';
+    '<div class="pl-toggle"><button class="pl-toggle__btn" id="pl-toggle" type="button" aria-expanded="false">' +
+      '<span id="pl-toggle-label">Nayta karttamerkinnat</span> <span id="pl-toggle-n"></span>' +
+      '<span class="pl-toggle__ico">&#9660;</span>' +
+    '</button></div>' +
+    '<div class="pl-body" id="pl-body">' +
+      '<div class="pl-filters" id="pl-filters">' +
+        '<div class="pl-fgroup"><span>PIILOTA PELAAJA</span><div class="pl-chips" id="pl-f-authors"></div></div>' +
+        '<div class="pl-fgroup"><span>PIILOTA VARI</span><div class="pl-chips" id="pl-f-colors"></div></div>' +
+        '<div class="pl-fgroup"><span>PIILOTA SYMBOLI</span><div class="pl-chips" id="pl-f-symbols"></div></div>' +
+        '<button class="pl-b pl-fclear" id="pl-f-reset">Nollaa oma nakyma</button>' +
+      '</div>' +
+      '<div class="pl-grid" id="pl-grid"></div>' +
+    '</div>';
 
   var $name = document.getElementById('pl-name');
   var $pass = document.getElementById('pl-pass');
@@ -240,6 +274,25 @@
   var $fColors  = document.getElementById('pl-f-colors');
   var $fSymbols = document.getElementById('pl-f-symbols');
   var $fReset   = document.getElementById('pl-f-reset');
+  var $toggle   = document.getElementById('pl-toggle');
+  var $toggleN  = document.getElementById('pl-toggle-n');
+  var $toggleLabel = document.getElementById('pl-toggle-label');
+  var $body    = document.getElementById('pl-body');
+
+  /* Kohta 22: lista piilossa oletuksena — ensimmainen avaus lataa/piirtaa
+     kortit (ja niiden thumbnailit) vasta silloin, ei sivun ensilatauksessa. */
+  var listOpened = false;
+  $toggle.onclick = function () {
+    listOpened = !listOpened;
+    $toggle.classList.toggle('is-open', listOpened);
+    $toggle.setAttribute('aria-expanded', listOpened ? 'true' : 'false');
+    $toggleLabel.textContent = listOpened ? 'Piilota karttamerkinnat' : 'Nayta karttamerkinnat';
+    $body.classList.toggle('is-open', listOpened);
+    if (listOpened) {
+      render();
+      if (!imagesLoadedOnce) attachImages().then(render);
+    }
+  };
 
   $name.value = get(LS_NAME);
   $pass.value = get(LS_PASS);
@@ -266,7 +319,7 @@
   document.getElementById('pl-reload').onclick = load;
 
   /* ---------- kohta 8: oma nakyma -suodattimet (vain tama selain) ---------- */
-  function chip(container, key, value, label, swatch) {
+  function chip(container, key, value, label, swatch, labelIsHtml) {
     var v = getView();
     var arr = v[key].slice();
     var off = arr.indexOf(value) > -1;
@@ -275,7 +328,8 @@
     b.setAttribute('role', 'button');
     b.setAttribute('aria-pressed', off ? 'true' : 'false');
     b.title = off ? 'Piilotettu — klikkaa nayttaaksesi' : 'Nakyvissa — klikkaa piilottaaksesi';
-    b.innerHTML = (swatch ? '<span class="sw" style="background:' + esc(swatch) + '"></span>' : '') + esc(label);
+    b.innerHTML = (swatch ? '<span class="sw" style="background:' + esc(swatch) + '"></span>' : '') +
+      (labelIsHtml ? label : esc(label));
     b.onclick = function () {
       var cur = getView();
       var a = cur[key].slice();
@@ -301,7 +355,10 @@
     $fAuthors.innerHTML = ''; $fColors.innerHTML = ''; $fSymbols.innerHTML = '';
     authors.forEach(function (a) { chip($fAuthors, 'hideAuthors', a.toLowerCase(), a); });
     colors.forEach(function (c) { chip($fColors, 'hideColors', c, c, c); });
-    symbols.forEach(function (s) { chip($fSymbols, 'hideSymbols', s, SYMBOL_GLYPH[s] || s); });
+    symbols.forEach(function (s) {
+      if (SYMBOL_SVG[s]) chip($fSymbols, 'hideSymbols', s, SYMBOL_SVG[s] + ' ' + esc(s), null, true);
+      else chip($fSymbols, 'hideSymbols', s, SYMBOL_GLYPH[s] || s);
+    });
     if (!authors.length && !colors.length && !symbols.length) {
       document.getElementById('pl-filters').style.display = 'none';
     } else {
@@ -319,7 +376,6 @@
   function render() {
     var dev = isDev();
     var v = getView();
-    renderFilters();
     var visible = rows.filter(function (p) {
       /* Piilotettu merkki jaa nakyviin (tummempana) VAIN devlle tai sen
          omalle tekijalle — muilta se puuttuu jo palvelimen RLS:sta. */
@@ -330,6 +386,14 @@
       return true;
     });
     $n.textContent = '(' + visible.length + ')';
+    if ($toggleN) $toggleN.textContent = '(' + visible.length + ')';
+
+    /* Kohta 22: kortit (ja niiden kuvat) rakennetaan DOMiin vasta kun
+       lista on avattu — muuten thumbnailit alkaisivat latautua heti kun
+       sivu aukeaa, vaikka kayttaja ei olisi viela edes avannut listaa. */
+    if (!listOpened) return;
+
+    renderFilters();
 
     if (!visible.length) {
       $grid.innerHTML = '<div class="pl-empty">Ei viela yhtaan merkkia. Avaa kartta, klikkaa oikealla tai napauta kolmesti — ja lisaa ensimmainen.</div>';
@@ -429,6 +493,26 @@
       rpc('pin_images_mine', { p_pass: pw, p_author: n }).catch(function () { return []; })
     ]).then(function (arr) { return { pins: arr[0] || [], images: arr[1] || [] }; });
   }
+  /* Kohta 22: kuvia EI haeta ollenkaan ennen kuin lista on avattu kerran —
+     muuten kaikkien merkkien thumbnailit alkaisivat ladata heti sivun
+     avautuessa. imagesLoadedOnce estaa turhat toistuvat hakukierrokset. */
+  var imagesLoadedOnce = false;
+  function attachImages() {
+    var dev = isDev() && devCode();
+    var imagesP = loadImages();
+    var mineImgP = dev ? Promise.resolve([]) : loadMineHidden().then(function (m) { return m.images || []; });
+    return Promise.all([imagesP, mineImgP]).then(function (arr) {
+      var images = (arr[0] || []).slice();
+      var imgIds = {};
+      images.forEach(function (im) { imgIds[im.id] = true; });
+      (arr[1] || []).forEach(function (im) { if (!imgIds[im.id]) { images.push(im); imgIds[im.id] = true; } });
+      var byPin = {};
+      images.forEach(function (im) { (byPin[im.pin_id] = byPin[im.pin_id] || []).push(im); });
+      rows.forEach(function (p) { p.images = byPin[p.id] || []; });
+      imagesLoadedOnce = true;
+    }).catch(function () {});
+  }
+
   function load() {
     /* Piilotetut merkit eivat tule API:sta lapi — dev hakee ne
        pins_all-funktiolla, joka tarkistaa koodin palvelimella. */
@@ -436,23 +520,27 @@
     var pinsP = dev
       ? rpc('pins_all', { p_code: devCode() }).then(function (r) { return (r || []).slice().reverse(); }).catch(plainLoad)
       : plainLoad();
-    var imagesP = loadImages();
     var mineP = dev ? Promise.resolve({ pins: [], images: [] }) : loadMineHidden();
 
-    return Promise.all([pinsP, imagesP, mineP]).then(function (arr) {
-      var basePins = arr[0] || [], images = (arr[1] || []).slice(), mine = arr[2] || { pins: [], images: [] };
+    return Promise.all([pinsP, mineP]).then(function (arr) {
+      var basePins = arr[0] || [], mine = arr[1] || { pins: [], images: [] };
       var ids = {};
       basePins.forEach(function (p) { ids[p.id] = true; });
       mine.pins.forEach(function (p) { if (!ids[p.id]) { basePins.push(p); ids[p.id] = true; } });
-      var imgIds = {};
-      images.forEach(function (im) { imgIds[im.id] = true; });
-      mine.images.forEach(function (im) { if (!imgIds[im.id]) { images.push(im); imgIds[im.id] = true; } });
 
-      var byPin = {};
-      images.forEach(function (im) { (byPin[im.pin_id] = byPin[im.pin_id] || []).push(im); });
-      basePins.forEach(function (p) { p.images = byPin[p.id] || []; });
+      /* Sailytetaan jo ladatut kuvat merkin id:n kautta, jos lista on ollut
+         auki ja taustapaivitys (polling/realtime) hakee merkit uudestaan. */
+      var prevImages = {};
+      rows.forEach(function (p) { if (p.images) prevImages[p.id] = p.images; });
+      basePins.forEach(function (p) { if (prevImages[p.id]) p.images = prevImages[p.id]; });
 
-      rows = basePins; render();
+      rows = basePins;
+      if (listOpened && imagesLoadedOnce) {
+        attachImages().then(render);
+        render();
+      } else {
+        render();
+      }
     }).catch(function () { rows = []; render(); });
   }
 
@@ -474,6 +562,28 @@
     tellMap({ kspk: 'dev-state', on: isDev(), code: devCode() });
     load();
   });
+
+  /* ---------- kohta 24: reaaliaikainen paivitys (Supabase Realtime) ----------
+     Kun joku muuttaa/lisaa/poistaa merkin tai kuvan, kaikki avoinna olevat
+     sivut paivittyvat saman tien ilman 45s pollausviivetta. Pollaus jatetaan
+     rinnalle varajarjestelmaksi siltä varalta ettei realtime-yhteys toimisi
+     (esim. palomuuri estaa WebSocketin). */
+  var debounceTimer = null;
+  function debouncedLoad() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(load, 250);
+  }
+  (function initRealtime() {
+    if (typeof window.supabase === 'undefined' || !window.supabase.createClient) return;
+    try {
+      var sb = window.supabase.createClient(CFG.url, CFG.key);
+      var ch = sb.channel('kspk-pins-changes');
+      ['pins', 'pin_images'].forEach(function (table) {
+        ch.on('postgres_changes', { event: '*', schema: 'public', table: table }, debouncedLoad);
+      });
+      ch.subscribe();
+    } catch (e) { /* realtime ei kaynnistynyt — pollaus riittaa varajarjestelmaksi */ }
+  })();
 
   load();
   setInterval(load, 45000);
