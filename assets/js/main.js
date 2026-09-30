@@ -229,7 +229,7 @@
     });
   });
 
-  /* ---------- 10. Lomake (ei backendiä → mailto) ---------- */
+  /* ---------- 10. Lomake (ei backendiä → Gmail uuteen välilehteen) ---------- */
   const form = $('#contact-form');
   form?.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -237,8 +237,9 @@
     const to = form.dataset.email || '';
     const subj = encodeURIComponent(`[KSPK] ${d.get('aihe') || 'Yhteydenotto'}`);
     const body = encodeURIComponent(`Nimi: ${d.get('nimi')}\nSähköposti: ${d.get('email')}\n\n${d.get('viesti')}`);
-    location.href = `mailto:${to}?subject=${subj}&body=${body}`;
-    toast('Avataan sähköpostiohjelma…');
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${subj}&body=${body}`;
+    window.open(gmailUrl, '_blank', 'noopener');
+    toast('Avataan Gmail uuteen välilehteen…');
   });
 
   /* ---------- 11. Taulukon summat (kirjanpito) ---------- */
