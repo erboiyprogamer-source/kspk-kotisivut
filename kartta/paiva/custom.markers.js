@@ -15,6 +15,31 @@
      - Dev-tila: kaikki oikeudet kaikkiin merkkeihin
    ===================================================================== */
 
+/* ---------------------------------------------------------------------
+   Tumma tausta + theme-color mobiilille (kohta 11)
+   Suoritetaan heti kun tama tiedosto ladataan (ennen kuin uNmINeD on
+   edes alkanut piirtaa karttaa), jotta selaimen oma osoite-/tyokalurivi
+   pysyy tummana myos taalla avattuna koko naytolle, eika valkoisena
+   reunoilla tai ladatessa. Tama tiedosto sailyy uNmINeD-paivityksissa,
+   joten korjaus ei katoa kun kartta renderoidaan uudelleen. ------------ */
+(function () {
+  try {
+    var DARK = '#070d0a';
+    var css = document.createElement('style');
+    css.textContent = 'html,body{background:' + DARK + ' !important;background-color:' + DARK + ' !important;}';
+    (document.head || document.documentElement).appendChild(css);
+
+    function setMeta(name, content) {
+      var m = document.querySelector('meta[name="' + name + '"]');
+      if (!m) { m = document.createElement('meta'); m.setAttribute('name', name); (document.head || document.documentElement).appendChild(m); }
+      m.setAttribute('content', content);
+    }
+    setMeta('theme-color', DARK);
+    setMeta('color-scheme', 'dark');
+    setMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
+  } catch (e) {}
+})();
+
 var UnminedSharedPins = {
 
   // --- Jaettu tallennus (Supabase) ---------------------------------
@@ -37,7 +62,6 @@ var UnminedSharedPins = {
 
 /* uNmINeDin oma kiintea merkkilista (ei kaytossa) */
 var UnminedCustomMarkers = { isEnabled: false, markers: [] };
-
 
 (function () {
   'use strict';
