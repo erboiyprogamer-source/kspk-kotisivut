@@ -105,7 +105,7 @@ const DOC_TYPES = {
         <ul class="nav__links">${links}</ul>
       </nav>
       <a class="btn btn--solid btn--sm nav__cta" href="${SITE.youtube}" target="_blank" rel="noopener">
-        ${icon('yt')} Tilaa
+        <span class="btn__ico" aria-hidden="true">${icon('yt')}</span>Tilaa
       </a>
       <button class="nav__toggle" aria-label="Avaa valikko" aria-expanded="false"><span></span></button>
     </div>`;
