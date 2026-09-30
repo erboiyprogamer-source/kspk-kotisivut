@@ -74,6 +74,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   var LS_PASS  = 'kspk.pins.pass';
   var SS_DEV   = 'kspk.pins.dev';
   var SS_CODE  = 'kspk.pins.devcode';
+  var LS_VIEW  = 'kspk.pins.view';   // Kohta 7: henkilokohtainen nakyma (vain tama selain)
 
   /* Kohta 6: 5 valittavaa symbolia karttamerkeille (piste = oletus) */
   var SYMBOLS = [
@@ -104,6 +105,23 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   function saveName(n) { try { localStorage.setItem(LS_NAME, n); } catch (e) {} }
   function savedPass() { try { return localStorage.getItem(LS_PASS) || ''; } catch (e) { return ''; } }
   function savePass(p) { try { localStorage.setItem(LS_PASS, p); } catch (e) {} }
+
+  /* Kohta 7: henkilokohtainen nakyma-asetus. Talletetaan vain omaan
+     selaimeen (localStorage) — ei vaikuta palvelimelle eika muihin
+     pelaajiin. Vari/symboli-piilotus + koon skaalaus. */
+  function getView() {
+    try {
+      var v = JSON.parse(localStorage.getItem(LS_VIEW) || '{}');
+      return {
+        hideColors: Array.isArray(v.hideColors) ? v.hideColors : [],
+        hideSymbols: Array.isArray(v.hideSymbols) ? v.hideSymbols : [],
+        scale: (typeof v.scale === 'number' && v.scale > 0) ? v.scale : 1
+      };
+    } catch (e) { return { hideColors: [], hideSymbols: [], scale: 1 }; }
+  }
+  function setView(v) {
+    try { localStorage.setItem(LS_VIEW, JSON.stringify(v)); } catch (e) {}
+  }
 
   /* Palvelinfunktioiden virheet suomeksi */
   function errText(e) {
@@ -315,6 +333,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + 'display:grid;place-items:center;cursor:pointer;font-size:17px;'
       + 'background:rgba(10,18,14,.85);color:#9db3a6;border:1px solid rgba(255,255,255,.16)}'
       + '.kspk-dev.on{background:#ffd166;color:#241a00;border-color:#ffd166}'
+      + '.kspk-view{position:absolute;right:10px;bottom:56px;z-index:45;width:38px;height:38px;border-radius:50%;'
+      + 'display:grid;place-items:center;cursor:pointer;font-size:17px;'
+      + 'background:rgba(10,18,14,.85);color:#9db3a6;border:1px solid rgba(255,255,255,.16)}'
+      + '.kspk-view.on{background:#5aa9ff;color:#041018;border-color:#5aa9ff}'
+      + '.kv-off{opacity:.28}'
       + '.kspk-ripple{position:absolute;z-index:44;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;'
       + 'pointer-events:none;border:2px solid #3ef08a;box-shadow:0 0 22px 4px rgba(62,240,138,.45);'
       + 'animation:kspkR .6s cubic-bezier(.2,.7,.3,1) forwards}'
@@ -323,11 +346,12 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   }
 
   /* ---------- merkin tyyli ---------- */
-  function pinStyle(p, olns) {
+  function pinStyle(p, olns, viewScale) {
+    var vs = (typeof viewScale === 'number' && viewScale > 0) ? viewScale : 1;
     var c = p.color || CFG.colors[0];
     var hidden = !!p.hidden;
     var sym = p.symbol || 'dot';
-    var baseR = 8 * (p.size || 1);
+    var baseR = 8 * (p.size || 1) * vs;
     var fillColor = hidden ? 'rgba(120,120,120,.45)' : c;
     var strokeColor = hidden ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.65)';
     var fill = new olns.style.Fill({ color: fillColor });
@@ -353,7 +377,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     if (p.title && p.show_text) {
       s.setText(new olns.style.Text({
         text: p.title + (hidden ? ' (piilotettu)' : ''),
-        font: '600 13px system-ui,sans-serif', offsetY: -20 - (baseR - 8),
+        font: '600 ' + Math.max(9, Math.round(13 * vs)) + 'px system-ui,sans-serif', offsetY: -20 - (baseR - 8),
         fill: new olns.style.Fill({ color: hidden ? '#b9c4bd' : '#ffffff' }),
         stroke: new olns.style.Stroke({ color: 'rgba(0,0,0,.85)', width: 3 })
       }));
@@ -545,11 +569,14 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
     function draw() {
       source.clear();
+      var vw = getView();
       rows.forEach(function (p) {
         if (p.hidden && !isDev()) return;
+        if (vw.hideColors.indexOf(p.color) > -1) return;
+        if (vw.hideSymbols.indexOf(p.symbol || 'dot') > -1) return;
         var f = new olns.Feature({ geometry: new olns.geom.Point(toView(p.x, p.z)) });
         f.set('pin', p);
-        f.setStyle(pinStyle(p, olns));
+        f.setStyle(pinStyle(p, olns, vw.scale));
         source.addFeature(f);
       });
     }
@@ -743,6 +770,112 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       }
     };
     map.getViewport().appendChild(dev);
+
+    /* --- Kohta 7: oma nakyma -nappi (vari/symboli-piilotus + koko, vain tama selain) --- */
+    var viewBtn = el('div', 'kspk-view', '&#128065;');
+    viewBtn.title = 'Oma nakyma (vain tama selain)';
+    function paintViewBtn() {
+      var v = getView();
+      var active = v.hideColors.length || v.hideSymbols.length || Math.abs(v.scale - 1) > 0.001;
+      viewBtn.classList.toggle('on', !!active);
+    }
+    viewBtn.onclick = function () { openViewPanel(); };
+    map.getViewport().appendChild(viewBtn);
+    paintViewBtn();
+
+    function openViewPanel() {
+      var v = getView();
+      var wrap = el('div', 'kspk-modal');
+      var card = el('div', 'kspk-card');
+      card.innerHTML =
+        '<h3>Oma nakyma</h3>' +
+        '<p class="sub">Nama asetukset vaikuttavat vain tahan selaimeen — eivat muihin pelaajiin eika palvelimelle.</p>' +
+        '<label>Piilota varit omasta nakymasta</label><div class="kspk-colors" id="kv-c" role="group"></div>' +
+        '<label>Piilota symbolit omasta nakymasta</label><div class="kspk-symbols" id="kv-s" role="group"></div>' +
+        '<label>Merkkien ja tekstin koko omassa nakymassa (<span id="kv-scale-val">' + v.scale.toFixed(1) + 'x</span>)</label>' +
+        '<input id="kv-scale" type="range" min="0.1" max="3" step="0.1" value="' + v.scale + '">' +
+        '<div class="row">' +
+          '<button class="kspk-btn" id="kv-reset">Palauta oletukset</button>' +
+          '<button class="kspk-btn kspk-btn--primary" id="kv-ok">Valmis</button>' +
+        '</div>';
+      wrap.appendChild(card);
+      document.body.appendChild(wrap);
+      tellParentBusy(true);
+
+      var $ = function (id) { return card.querySelector(id); };
+      var hideColors = v.hideColors.slice();
+      var hideSymbols = v.hideSymbols.slice();
+
+      var cbox = $('#kv-c');
+      CFG.colors.forEach(function (c) {
+        var b = el('button');
+        b.type = 'button';
+        b.style.background = c;
+        var off = hideColors.indexOf(c) > -1;
+        b.setAttribute('aria-pressed', off ? 'false' : 'true');
+        if (off) b.classList.add('kv-off');
+        b.title = off ? 'Piilotettu — klikkaa nayttaaksesi' : 'Nakyvissa — klikkaa piilottaaksesi';
+        b.onclick = function () {
+          var i = hideColors.indexOf(c);
+          if (i > -1) { hideColors.splice(i, 1); b.classList.remove('kv-off'); b.setAttribute('aria-pressed', 'true'); }
+          else { hideColors.push(c); b.classList.add('kv-off'); b.setAttribute('aria-pressed', 'false'); }
+          apply();
+        };
+        cbox.appendChild(b);
+      });
+
+      var sbox = $('#kv-s');
+      SYMBOLS.forEach(function (sInfo) {
+        var b = el('button', null, sInfo.glyph);
+        b.type = 'button';
+        var off = hideSymbols.indexOf(sInfo.id) > -1;
+        b.setAttribute('aria-pressed', off ? 'false' : 'true');
+        if (off) b.classList.add('kv-off');
+        b.title = sInfo.id + (off ? ' — piilotettu' : ' — nakyvissa');
+        b.onclick = function () {
+          var i = hideSymbols.indexOf(sInfo.id);
+          if (i > -1) { hideSymbols.splice(i, 1); b.classList.remove('kv-off'); b.setAttribute('aria-pressed', 'true'); }
+          else { hideSymbols.push(sInfo.id); b.classList.add('kv-off'); b.setAttribute('aria-pressed', 'false'); }
+          apply();
+        };
+        sbox.appendChild(b);
+      });
+
+      function apply() {
+        setView({ hideColors: hideColors, hideSymbols: hideSymbols, scale: parseFloat($('#kv-scale').value) || 1 });
+        draw();
+        paintViewBtn();
+      }
+
+      $('#kv-scale').addEventListener('input', function () {
+        $('#kv-scale-val').textContent = Number($('#kv-scale').value).toFixed(1) + 'x';
+        apply();
+      });
+
+      $('#kv-reset').onclick = function () {
+        hideColors = []; hideSymbols = [];
+        [].forEach.call(cbox.children, function (o) { o.classList.remove('kv-off'); o.setAttribute('aria-pressed', 'true'); });
+        [].forEach.call(sbox.children, function (o) { o.classList.remove('kv-off'); o.setAttribute('aria-pressed', 'true'); });
+        $('#kv-scale').value = 1;
+        $('#kv-scale-val').textContent = '1.0x';
+        apply();
+      };
+
+      function close() {
+        wrap.remove();
+        document.removeEventListener('keydown', onEsc);
+        tellParentBusy(false);
+      }
+      function onEsc(e) { if (e.key === 'Escape') { e.stopPropagation(); close(); } }
+      document.addEventListener('keydown', onEsc);
+      $('#kv-ok').onclick = close;
+      var downOnWrap = false;
+      wrap.addEventListener('pointerdown', function (e) { downOnWrap = (e.target === wrap); });
+      wrap.addEventListener('click', function (e) {
+        if (e.target === wrap && downOnWrap) close();
+        downOnWrap = false;
+      });
+    }
 
     if (!SHARED) map.getViewport().appendChild(el('div', 'kspk-badge', 'Merkit tallentuvat vain tahan selaimeen'));
 
