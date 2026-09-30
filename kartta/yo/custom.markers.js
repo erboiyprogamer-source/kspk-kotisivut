@@ -556,14 +556,6 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
          samassa kulmassa) piilotetaan — kayttajan oma tumma .kspk-coord
          korvaa sen kokonaan, kahta paallekkaista koordinaattia ei tarvita. */
       + '.ol-mouse-position{display:none!important}'
-      /* Hiiren hover -nimilappu merkin yla puolella — hiipuu nakyviin
-         opacity-transitiolla (mini-fade in), itse merkki suurenee samaan
-         aikaan pinStyle()in hoverT-parametrilla animoituna. */
-      + '.kspk-hoverlabel{position:absolute;transform:translate(-50%,0);z-index:47;padding:5px 10px;'
-      + 'border-radius:8px;background:rgba(10,18,14,.92);color:#eaf3ee;border:1px solid rgba(255,255,255,.18);'
-      + 'font:600 12.5px system-ui,sans-serif;white-space:nowrap;pointer-events:none;'
-      + 'opacity:0;transition:opacity .15s ease;box-shadow:0 4px 14px rgba(0,0,0,.35)}'
-      + '.kspk-hoverlabel.show{opacity:1}'
       + '.kspk-badge{position:absolute;left:10px;bottom:10px;z-index:40;padding:6px 11px;border-radius:999px;'
       + 'background:rgba(10,18,14,.85);color:#9db3a6;border:1px solid rgba(255,255,255,.14);'
       + 'font:12px system-ui,sans-serif;pointer-events:none}'
@@ -653,12 +645,18 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         }
     }
     var s = new olns.style.Style({ image: image });
-    if (p.title && p.show_text) {
+    /* Otsikko nakyy joko pysyvasti (show_text) tai hetkellisesti hoverin
+       ajan (ht>0) vaikka show_text olisi pois — sama valmis teksti-tyyli,
+       ei erillista uutta elementtia. Hover-tapauksessa ht (0->1) toimii
+       samalla myos "mini-fade-in"-himmennyksena tekstin lapinakyvyytena. */
+    var titleVisible = p.title && (p.show_text || ht > 0);
+    if (titleVisible) {
+      var ta = p.show_text ? 1 : ht;
       s.setText(new olns.style.Text({
         text: p.title + (hidden ? ' (piilotettu)' : ''),
         font: '600 ' + Math.max(9, Math.round(13 * vs)) + 'px system-ui,sans-serif', offsetY: -20 - (baseR - 8),
-        fill: new olns.style.Fill({ color: hidden ? '#b9c4bd' : '#ffffff' }),
-        stroke: new olns.style.Stroke({ color: 'rgba(0,0,0,.85)', width: 3 })
+        fill: new olns.style.Fill({ color: (hidden ? 'rgba(185,196,189,' : 'rgba(255,255,255,') + ta + ')' }),
+        stroke: new olns.style.Stroke({ color: 'rgba(0,0,0,' + (0.85 * ta) + ')', width: 3 })
       }));
     }
     /* Tumma, lapinakyva "varjoympyra" ikonin/muodon alla — hieman pienempi
@@ -929,13 +927,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       tellParentBusy(false);
     }
 
-    /* --- hover: pieni "nappimainen" suurennus + nimilappu ---------------
-       hoverOverlay seuraa karttaa automaattisesti (pan/zoom), hoverEl saa
-       CSS-fade-transition .kspk-hoverlabel.show-luokalla. Itse merkin
-       skaalausanimaatio hoitaa setHoverTarget() alla (pinStyle:n hoverT). */
-    var hoverEl = el('div', 'kspk-hoverlabel');
-    var hoverOverlay = new olns.Overlay({ element: hoverEl, positioning: 'bottom-center', stopEvent: false, offset: [0, -10] });
-    map.addOverlay(hoverOverlay);
+    /* --- hover: pieni "nappimainen" suurennus + otsikko hetkellisesti ----
+       Ei erillista uutta teksti-/lappuelementtia — sama valmis otsikko-
+       tyyli (pinStyle:n titleVisible/ht) nayttaa merkin nimen kartalla
+       vaikka "nayta otsikko" olisi pois paalta, ja hoivyy pois kun hiiri
+       siirtyy pois. Itse skaalausanimaatio hoidetaan taalla. */
     var hoverFeature = null;
     function setHoverTarget(f, target, vwScale) {
       if (!f) return;
@@ -959,8 +955,6 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     function clearHover() {
       if (hoverFeature) setHoverTarget(hoverFeature, 0, getView().scale);
       hoverFeature = null;
-      hoverEl.classList.remove('show');
-      hoverOverlay.setPosition(undefined);
       var t = map.getTargetElement();
       if (t) t.style.cursor = '';
     }
@@ -1149,23 +1143,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       var vwScale = getView().scale;
       if (hoverFeature) setHoverTarget(hoverFeature, 0, vwScale);
       hoverFeature = f;
-      if (f) {
-        setHoverTarget(f, 1, vwScale);
-        var p = f.get('pin');
-        if (p && p.title) {
-          hoverEl.textContent = p.title + (p.hidden ? ' (piilotettu)' : '');
-          var r = 8 * (p.size || 1) * vwScale * 1.18;
-          hoverOverlay.setOffset([0, -(r + 10)]);
-          hoverOverlay.setPosition(f.getGeometry().getCoordinates());
-          requestAnimationFrame(function () { hoverEl.classList.add('show'); });
-        } else {
-          hoverEl.classList.remove('show');
-          hoverOverlay.setPosition(undefined);
-        }
-      } else {
-        hoverEl.classList.remove('show');
-        hoverOverlay.setPosition(undefined);
-      }
+      if (f) setHoverTarget(f, 1, vwScale);
     });
     map.getViewport().addEventListener('pointerleave', clearHover);
 
