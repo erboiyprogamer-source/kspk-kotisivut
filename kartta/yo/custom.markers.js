@@ -136,6 +136,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     if (m.indexOf('FULL_TOO_BIG')    > -1) return 'Kuva jai pakkauksen jalkeenkin liian isoksi';
     if (m.indexOf('UPLOAD_FAILED')   > -1) return 'Kuvan lataus palvelimelle epaonnistui';
     if (m.indexOf('NO_IMAGE')        > -1) return 'Kuva puuttuu';
+    if (m.indexOf('MAX_IMAGES')      > -1) return 'Merkilla on jo enimmaismaara kuvia (5)';
     return 'Toiminto ei onnistunut';
   }
 
@@ -182,25 +183,42 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       r.readAsDataURL(blob);
     });
   }
-  /* Tuottaa pikkukuvan (~20 kt) ja isomman version (max ~500 kt)
-     mista tahansa selaimeen valitusta kuvasta. */
+  /* Tuottaa pikkukuvan (max 20 kt) ja isomman version (max 250 kt)
+     mista tahansa selaimeen valitusta kuvasta. Jos alkuperainen tiedosto
+     on jo sallittua kuvatyyppia (jpeg/png/webp) JA jo tavoitekokoa
+     pienempi, sita EI pakata/pienenneta uudelleen — kaytetaan sellaisenaan. */
+  var PASSTHROUGH_TYPES = { 'image/jpeg': 1, 'image/png': 1, 'image/webp': 1 };
+  function passOrCompress(file, loaded, maxDim, targetBytes) {
+    if (PASSTHROUGH_TYPES[file.type] && file.size <= targetBytes) {
+      return Promise.resolve({ blob: file, type: file.type });
+    }
+    return shrinkToTarget(loaded.img, maxDim, targetBytes).then(function (b) {
+      return { blob: b, type: 'image/jpeg' };
+    });
+  }
   function compressImage(file) {
     return loadImageFile(file).then(function (loaded) {
-      return shrinkToTarget(loaded.img, 260, 20 * 1024).then(function (thumbBlob) {
-        return shrinkToTarget(loaded.img, 1600, 500 * 1024).then(function (fullBlob) {
-          URL.revokeObjectURL(loaded.url);
-          if (!thumbBlob || !fullBlob) throw new Error('COMPRESS_FAILED');
-          return Promise.all([blobToBase64(thumbBlob), blobToBase64(fullBlob)]).then(function (arr) {
-            return { thumbB64: arr[0], fullB64: arr[1], thumbBytes: thumbBlob.size, fullBytes: fullBlob.size };
-          });
+      return Promise.all([
+        passOrCompress(file, loaded, 260, 20 * 1024),
+        passOrCompress(file, loaded, 1600, 250 * 1024)
+      ]).then(function (arr) {
+        URL.revokeObjectURL(loaded.url);
+        var thumb = arr[0], full = arr[1];
+        if (!thumb.blob || !full.blob) throw new Error('COMPRESS_FAILED');
+        return Promise.all([blobToBase64(thumb.blob), blobToBase64(full.blob)]).then(function (b64) {
+          return {
+            thumbB64: b64[0], thumbType: thumb.type, thumbBytes: thumb.blob.size,
+            fullB64: b64[1], fullType: full.type, fullBytes: full.blob.size
+          };
         });
       });
     });
   }
-  function mayEditImage(p) {
+  var MAX_IMAGES = 5;
+  function mayEditImage(img) {
     if (isDev()) return true;
     var n = savedName();
-    return !!n && !!p.image_added_by && n.toLowerCase() === String(p.image_added_by).toLowerCase();
+    return !!n && !!img && !!img.added_by && n.toLowerCase() === String(img.added_by).toLowerCase();
   }
 
   /* Pelinimi + oma salasana muokkausta/poistoa varten.
@@ -312,22 +330,17 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         p_symbol: v('symbol'), p_size: v('size'), p_show_text: v('show_text')
       });
     },
+    /* Poistaa merkin JA kaikki sen kuvat (myos Storagesta) Edge Functionin
+       kautta — pelkka pin_delete-RPC ei siivoaisi Storage-tiedostoja. */
     remove: function (id, c) {
       if (!SHARED) {
         this.local(this.local().filter(function (p) { return String(p.id) !== String(id); }));
         return Promise.resolve();
       }
-      return this.rpc('pin_delete', { p_pass: c.pass, p_author: c.author, p_id: id });
-    },
-    /* Kohta 9: kuvaliitteet. Kulkee Edge Functionin kautta koska
-       tiedoston tavuja ei voi laittaa suoraan RPC:lle — service-role-
-       avain (joka voi kirjoittaa Storageen) asuu vain funktiossa,
-       ei koskaan taalla clientilla. */
-    imageSet: function (id, img, c) {
-      if (!SHARED) return Promise.reject(new Error('NO_SHARED'));
+      var self = this;
       return fetch(this.base() + '/functions/v1/pin-image', {
         method: 'POST', headers: this.head(),
-        body: JSON.stringify({ action: 'set', pass: c.pass, author: c.author, id: id, thumb: img.thumbB64, full: img.fullB64 })
+        body: JSON.stringify({ action: 'pin_delete', pass: c.pass, author: c.author, id: id })
       }).then(function (r) {
         return r.json().catch(function () { return null; }).then(function (data) {
           if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
@@ -335,17 +348,54 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         });
       });
     },
-    imageClear: function (id, c) {
+    /* Kohta 9 (v2): monta kuvaa per merkki (max 5). Kulkee Edge Functionin
+       kautta koska tiedoston tavuja ei voi laittaa suoraan RPC:lle —
+       service-role-avain (joka voi kirjoittaa Storageen) asuu vain
+       funktiossa, ei koskaan taalla clientilla. */
+    imageAdd: function (id, img, c) {
       if (!SHARED) return Promise.reject(new Error('NO_SHARED'));
       return fetch(this.base() + '/functions/v1/pin-image', {
         method: 'POST', headers: this.head(),
-        body: JSON.stringify({ action: 'clear', pass: c.pass, author: c.author, id: id })
+        body: JSON.stringify({
+          action: 'add', pass: c.pass, author: c.author, id: id,
+          thumb: img.thumbB64, thumbType: img.thumbType, full: img.fullB64, fullType: img.fullType
+        })
       }).then(function (r) {
         return r.json().catch(function () { return null; }).then(function (data) {
           if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
           return data;
         });
       });
+    },
+    imageDelete: function (imageId, c) {
+      if (!SHARED) return Promise.reject(new Error('NO_SHARED'));
+      return fetch(this.base() + '/functions/v1/pin-image', {
+        method: 'POST', headers: this.head(),
+        body: JSON.stringify({ action: 'delete', pass: c.pass, author: c.author, image_id: imageId })
+      }).then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (data) {
+          if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
+          return data;
+        });
+      });
+    },
+    /* Kaikkien nakyvien merkkien kuvat (RLS piilottaa piilotettujen
+       merkkien kuvat samalla tavoin kuin itse merkit). */
+    plainImages: function () {
+      return fetch(this.base() + '/rest/v1/pin_images?select=*&order=created_at.asc', {
+        headers: { 'apikey': CFG.supabaseKey, 'Authorization': 'Bearer ' + CFG.supabaseKey }
+      }).then(function (r) { return r.ok ? r.json() : []; })
+        .catch(function () { return []; });
+    },
+    images: function () {
+      if (!SHARED) return Promise.resolve([]);
+      if (isDev() && devCode()) {
+        var self = this;
+        return this.rpc('pin_images_all', { p_code: devCode() })
+          .then(function (rows) { return rows || []; })
+          .catch(function () { return self.plainImages(); });
+      }
+      return this.plainImages();
     }
   };
 
@@ -440,6 +490,10 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + 'background:rgba(255,255,255,.06);color:#eaf3ee;font:inherit;font-size:12.5px;cursor:pointer}'
       + '.kspk-imgrow{display:flex;align-items:center;gap:10px;margin-top:6px}'
       + '.kspk-imgprev{width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,.18);display:block}'
+      + '.kspk-imggrid{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}'
+      + '.kspk-imgitem{display:flex;flex-direction:column;align-items:center;gap:6px;width:76px}'
+      + '.kspk-imgitem .kspk-btn{padding:4px 8px;font-size:11px;white-space:nowrap}'
+      + '.kspk-imgcount{font-size:12px;opacity:.6;margin:6px 0 0}'
       + '.kspk-card input[type=file]{width:100%;box-sizing:border-box;padding:9px 10px;border-radius:10px;'
       + 'background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:inherit;font:inherit;font-size:12.5px}'
       + '.kspk-ripple{position:absolute;z-index:44;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;'
@@ -521,15 +575,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
       '<label class="kspk-check"><input type="checkbox" id="kp-text"> Nayta otsikko kartalla</label>' +
 
-      '<label>Kuva (valinnainen)</label>' +
-      (edit && p.image_thumb_url
-        ? '<div class="kspk-imgrow" id="kp-img-cur">' +
-            '<a href="' + esc(p.image_full_url) + '" target="_blank" rel="noopener">' +
-              '<img src="' + esc(p.image_thumb_url) + '" class="kspk-imgprev" alt="Merkin kuva"></a>' +
-            (mayEditImage(p) ? '<button type="button" class="kspk-btn kspk-btn--danger" id="kp-img-del">Poista kuva</button>' : '') +
-          '</div>'
-        : '') +
-      '<input id="kp-img" type="file" accept="image/*">' +
+      '<label>Kuvat (<span id="kp-img-count">0</span>/' + MAX_IMAGES + ', valinnainen)</label>' +
+      '<div class="kspk-imggrid" id="kp-imggrid"></div>' +
+      '<div id="kp-img-addwrap"><input id="kp-img" type="file" accept="image/*"></div>' +
+      (!edit ? '<div class="kspk-imgcount">Ensimmainen kuva liitetaan heti kun merkki on lisatty. Loput (max ' +
+        MAX_IMAGES + ') voit lisata jalkeenpain muokkauksesta.</div>' : '') +
       '<div id="kp-img-status" class="kspk-hint" style="display:none"></div>' +
 
       '<label>Pelinimesi *</label><input id="kp-a" maxlength="24" placeholder="Minecraft-nimesi">' +
@@ -594,35 +644,75 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
     $('#kp-text').checked = edit ? !!p.show_text : false;
 
-    var pendingImage = null;
-    var imgDel = $('#kp-img-del');
-    if (imgDel) {
-      imgDel.onclick = function () {
-        if (!confirm('Poistetaanko kuva merkilta? Itse merkki sailyy.')) return;
-        var c = creds(p);
-        if (!c) return;
-        imgDel.disabled = true;
-        Store.imageClear(p.id, c).then(function () {
-          p.image_thumb_url = null; p.image_full_url = null;
-          p.image_thumb_path = null; p.image_full_path = null; p.image_added_by = null;
-          var row = $('#kp-img-cur'); if (row) row.remove();
-          draw(); announce();
-          toast('Kuva poistettu');
-        }).catch(function (e) { toast(errText(e), false); imgDel.disabled = false; });
-      };
+    /* ---------- kohta 9 (v2): monta kuvaa per merkki (max 5) ---------- */
+    var pendingImage = null;                 // vain lisays-tilassa (merkilla ei viela id:ta)
+    var images = edit ? (p.images || []).slice() : [];
+    var imgGrid = $('#kp-imggrid');
+    var imgAddWrap = $('#kp-img-addwrap');
+    var imgFile = $('#kp-img');
+    var imgStatus = $('#kp-img-status');
+
+    function renderImgGrid() {
+      $('#kp-img-count').textContent = images.length + (pendingImage ? 1 : 0);
+      imgGrid.innerHTML = '';
+      images.forEach(function (im) {
+        var item = el('div', 'kspk-imgitem');
+        item.innerHTML =
+          '<a href="' + esc(im.full_url) + '" target="_blank" rel="noopener">' +
+            '<img src="' + esc(im.thumb_url) + '" class="kspk-imgprev" alt="Merkin kuva"></a>' +
+          (mayEditImage(im) ? '<button type="button" class="kspk-btn kspk-btn--danger" data-id="' + im.id + '">Poista</button>' : '');
+        var b = item.querySelector('button');
+        if (b) b.onclick = function () {
+          if (!confirm('Poistetaanko tama kuva? Toimintoa ei voi perua.')) return;
+          var c = creds(p);
+          if (!c) return;
+          b.disabled = true;
+          Store.imageDelete(im.id, c).then(function () {
+            images = images.filter(function (o) { return o.id !== im.id; });
+            if (edit) p.images = images;
+            renderImgGrid(); draw(); announce();
+            toast('Kuva poistettu');
+          }).catch(function (e) { toast(errText(e), false); b.disabled = false; });
+        };
+        imgGrid.appendChild(item);
+      });
+      imgAddWrap.style.display = (edit ? images.length >= MAX_IMAGES : !!pendingImage) ? 'none' : '';
     }
-    $('#kp-img').addEventListener('change', function (ev) {
+    renderImgGrid();
+
+    imgFile.addEventListener('change', function (ev) {
       var f = ev.target.files && ev.target.files[0];
-      var st = $('#kp-img-status');
-      if (!f) { pendingImage = null; st.style.display = 'none'; return; }
-      st.style.display = ''; st.textContent = 'Pakataan kuvaa...';
+      if (!f) {
+        if (!edit) { pendingImage = null; renderImgGrid(); }
+        imgStatus.style.display = 'none';
+        return;
+      }
+      imgStatus.style.display = ''; imgStatus.textContent = 'Pakataan kuvaa...';
       compressImage(f).then(function (res) {
-        pendingImage = res;
-        st.textContent = 'Kuva valmis (pikkukuva ~' + Math.round(res.thumbBytes / 1024) +
-          ' kt, iso versio ~' + Math.round(res.fullBytes / 1024) + ' kt).';
+        if (!edit) {
+          pendingImage = res;
+          imgStatus.textContent = 'Kuva valmis (pikkukuva ~' + Math.round(res.thumbBytes / 1024) +
+            ' kt, iso versio ~' + Math.round(res.fullBytes / 1024) + ' kt). Liitetaan kun merkki lisataan.';
+          renderImgGrid();
+          return;
+        }
+        var c = creds(p);
+        if (!c) { imgStatus.style.display = 'none'; imgFile.value = ''; return; }
+        imgStatus.textContent = 'Lisataan kuvaa...';
+        imgFile.disabled = true;
+        Store.imageAdd(p.id, res, c).then(function (row) {
+          images.push(row);
+          p.images = images;
+          imgFile.value = ''; imgFile.disabled = false;
+          imgStatus.style.display = 'none';
+          renderImgGrid(); draw(); announce();
+          toast('Kuva lisatty');
+        }).catch(function (e) {
+          imgFile.disabled = false;
+          imgStatus.textContent = errText(e);
+        });
       }).catch(function () {
-        pendingImage = null;
-        st.textContent = 'Kuvan kasittely epaonnistui — kokeile toista kuvaa.';
+        imgStatus.textContent = 'Kuvan kasittely epaonnistui — kokeile toista kuvaa.';
       });
     });
 
@@ -729,7 +819,13 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       });
     }
     function refresh() {
-      return Store.list().then(function (r) { rows = r || []; draw(); });
+      return Promise.all([Store.list(), Store.images()]).then(function (arr) {
+        rows = arr[0] || [];
+        var byPin = {};
+        (arr[1] || []).forEach(function (im) { (byPin[im.pin_id] = byPin[im.pin_id] || []).push(im); });
+        rows.forEach(function (p) { p.images = byPin[p.id] || []; });
+        draw();
+      });
     }
 
     function ripple(px) {
@@ -745,16 +841,13 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       if (pixel) ripple(pixel);
       pinForm({ mode: 'add', x: b[0], z: b[1], centre: centre }, function (pin, c, img) {
         Store.add(pin, c).then(function (saved) {
-          if (saved) rows.push(saved);
+          if (saved) { saved.images = []; rows.push(saved); }
           draw(); announce();
           toast(SHARED ? 'Merkki lisatty — nakyy kaikille' : 'Merkki lisatty (vain tassa selaimessa)');
           var after = Promise.resolve();
           if (img && saved && SHARED) {
-            after = Store.imageSet(saved.id, img, c).then(function (r) {
-              Object.assign(saved, {
-                image_thumb_url: r.thumb_url, image_full_url: r.full_url,
-                image_thumb_path: r.thumb_path, image_full_path: r.full_path, image_added_by: c.author
-              });
+            after = Store.imageAdd(saved.id, img, c).then(function (row) {
+              saved.images = [row];
               draw(); announce(); toast('Kuva lisatty merkille');
             }).catch(function (e) { toast('Merkki tallennettu, mutta kuva ei onnistunut: ' + errText(e), false); });
           }
@@ -771,10 +864,12 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       popEl.innerHTML =
         '<h4><span class="dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' + esc(p.title) +
           (p.hidden ? '<span class="kspk-tag">piilotettu</span>' : '') + '</h4>' +
-        (p.image_thumb_url
-          ? '<a href="' + esc(p.image_full_url) + '" target="_blank" rel="noopener">' +
-              '<img src="' + esc(p.image_thumb_url) + '" class="kspk-imgprev" alt="Merkin kuva" style="margin:0 0 8px">' +
-            '</a>' : '') +
+        ((p.images && p.images.length)
+          ? '<div class="kspk-imggrid" style="margin:0 0 8px">' + p.images.map(function (im) {
+              return '<a href="' + esc(im.full_url) + '" target="_blank" rel="noopener">' +
+                '<img src="' + esc(im.thumb_url) + '" class="kspk-imgprev" alt="Merkin kuva"></a>';
+            }).join('') + '</div>'
+          : '') +
         (p.message ? '<p>' + esc(p.message) + '</p>' : '') +
         '<p class="meta">' + esc(p.author || 'Nimeton') + ' &middot; X ' + p.x + ', Z ' + p.z + '</p>' +
         '<div class="row">' +
@@ -790,18 +885,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
       popEl.querySelector('#kp-e').onclick = function () {
         closePop();
-        pinForm({ mode: 'edit', pin: p, centre: centre }, function (v, c, img) {
+        pinForm({ mode: 'edit', pin: p, centre: centre }, function (v, c) {
+          /* Kuvien lisays/poisto tapahtuu jo lomakkeen sisalla valittomasti
+             (p.images paivittyy suoraan) — tassa tallennetaan vain tekstikentat. */
           Store.update(p.id, v, c).then(function () {
             Object.assign(p, v); draw(); announce(); toast('Merkki paivitetty');
-            if (img) {
-              Store.imageSet(p.id, img, c).then(function (r) {
-                Object.assign(p, {
-                  image_thumb_url: r.thumb_url, image_full_url: r.full_url,
-                  image_thumb_path: r.thumb_path, image_full_path: r.full_path, image_added_by: c.author
-                });
-                draw(); announce(); toast('Kuva lisatty/vaihdettu');
-              }).catch(function (e) { toast('Kuva ei tallentunut: ' + errText(e), false); });
-            }
           }).catch(function (e) { toast(errText(e), false); });
         });
       };

@@ -94,18 +94,33 @@
     return 'Toiminto ei onnistunut';
   }
 
-  /* Kohta 9: kuvan poisto merkilta (Edge Function — sama kuin kartalla) */
-  function imageClear(id, c) {
+  /* Kohta 9 (v2): kuvat + merkin taysi poisto — sama Edge Function kuin kartalla */
+  function pinImageCall(payload) {
     return fetch(CFG.url + '/functions/v1/pin-image', {
       method: 'POST',
       headers: { 'apikey': CFG.key, 'Authorization': 'Bearer ' + CFG.key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'clear', pass: c.pass, author: c.author, id: id })
+      body: JSON.stringify(payload)
     }).then(function (r) {
       return r.json().catch(function () { return null; }).then(function (data) {
         if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
         return data;
       });
     });
+  }
+  function imageDelete(imageId, c) {
+    return pinImageCall({ action: 'delete', pass: c.pass, author: c.author, image_id: imageId });
+  }
+  function pinDeleteFull(id, c) {
+    return pinImageCall({ action: 'pin_delete', pass: c.pass, author: c.author, id: id });
+  }
+  function plainImages() {
+    return rest('pin_images?select=*&order=created_at.asc').then(function (r) { return r.ok ? r.json() : []; });
+  }
+  function loadImages() {
+    var p = (isDev() && devCode())
+      ? rpc('pin_images_all', { p_code: devCode() }).catch(plainImages)
+      : plainImages();
+    return p.catch(function () { return []; });
   }
 
   /* Pelinimi + oma salasana. Dev-tilassa yllapitokoodi kelpaa. */
@@ -129,10 +144,10 @@
   }
   /* Kohta 9: kuvan poisto-oikeus — dev tai kuvan alun perin liittanyt
      kayttaja, ei valttamatta sama kuin merkin omistaja. */
-  function mayEditImage(p) {
+  function mayEditImage(im) {
     if (isDev()) return true;
     var n = get(LS_NAME), pw = get(LS_PASS);
-    return !!n && !!pw && !!p.image_added_by && n.toLowerCase() === String(p.image_added_by).toLowerCase();
+    return !!n && !!pw && !!im && !!im.added_by && n.toLowerCase() === String(im.added_by).toLowerCase();
   }
 
   function tellMap(msg) {
@@ -161,6 +176,11 @@
       + '.pl-msg{margin:0;white-space:pre-wrap;word-break:break-word;font-size:.92rem;color:var(--text,#eaf3ee)}'
       + '.pl-img{width:100%;max-height:140px;object-fit:cover;border-radius:10px;'
       + 'border:1px solid var(--line,rgba(255,255,255,.12));display:block}'
+      + '.pl-imggrid{display:flex;flex-wrap:wrap;gap:8px}'
+      + '.pl-imgitem{display:flex;flex-direction:column;align-items:center;gap:5px;width:78px}'
+      + '.pl-imgitem img{width:78px;height:78px;object-fit:cover;border-radius:10px;'
+      + 'border:1px solid var(--line,rgba(255,255,255,.12));display:block}'
+      + '.pl-imgitem .pl-b{padding:4px 8px;font-size:.72rem}'
       + '.pl-meta{font-size:.8rem;color:var(--muted,#9db3a6);display:flex;flex-wrap:wrap;gap:10px}'
       + '.pl-acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}'
       + '.pl-b{border:1px solid var(--line,rgba(255,255,255,.14));background:rgba(255,255,255,.05);'
@@ -301,7 +321,9 @@
     var v = getView();
     renderFilters();
     var visible = rows.filter(function (p) {
-      if (p.hidden && !dev) return false;
+      /* Piilotettu merkki jaa nakyviin (tummempana) VAIN devlle tai sen
+         omalle tekijalle — muilta se puuttuu jo palvelimen RLS:sta. */
+      if (p.hidden && !dev && !mayEdit(p)) return false;
       if (v.hideColors.indexOf(p.color || '#3ef08a') > -1) return false;
       if (v.hideSymbols.indexOf(p.symbol || 'dot') > -1) return false;
       if (v.hideAuthors.indexOf(String(p.author || 'Nimeton').toLowerCase()) > -1) return false;
@@ -317,25 +339,46 @@
     $grid.innerHTML = '';
     visible.forEach(function (p) {
       var can = mayEdit(p);
+      var imgs = p.images || [];
       var c = document.createElement('div');
       c.className = 'pl-card' + (p.hidden ? ' is-hidden' : '');
-      var canImg = mayEditImage(p);
       c.innerHTML =
         '<div class="pl-t"><span class="pl-dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' +
-          esc(p.title) + (p.hidden ? ' <span class="pl-tag">piilotettu</span>' : '') + '</div>' +
-        (p.image_thumb_url
-          ? '<a href="' + esc(p.image_full_url) + '" target="_blank" rel="noopener">' +
-              '<img class="pl-img" src="' + esc(p.image_thumb_url) + '" alt="Merkin kuva" loading="lazy"></a>'
-          : '') +
+          esc(p.title) + (p.hidden ? ' <span class="pl-tag">Piilotettu</span>' : '') + '</div>' +
+        (imgs.length ? '<div class="pl-imggrid" data-imggrid></div>' : '') +
         (p.message ? '<p class="pl-msg">' + esc(p.message) + '</p>' : '') +
         '<div class="pl-meta"><span>&#128100; ' + esc(p.author || 'Nimeton') + '</span>' +
           '<span>&#128205; X ' + p.x + ', Z ' + p.z + '</span></div>' +
         '<div class="pl-acts">' +
           '<button class="pl-b" data-a="go">Nayta kartalla</button>' +
-          (can ? '<button class="pl-b" data-a="hide">' + (p.hidden ? 'Palauta nakyviin' : 'Piilota') + '</button>' : '') +
+          (can ? '<button class="pl-b" data-a="hide">' + (p.hidden ? 'Nayta' : 'Piilota') + '</button>' : '') +
           (can ? '<button class="pl-b pl-b--danger" data-a="del">Poista</button>' : '') +
-          (p.image_thumb_url && canImg ? '<button class="pl-b pl-b--danger" data-a="imgdel">Poista kuva</button>' : '') +
         '</div>';
+
+      var imggrid = c.querySelector('[data-imggrid]');
+      if (imggrid) {
+        imgs.forEach(function (im) {
+          var item = document.createElement('div');
+          item.className = 'pl-imgitem';
+          var canImg = mayEditImage(im);
+          item.innerHTML =
+            '<a href="' + esc(im.full_url) + '" target="_blank" rel="noopener">' +
+              '<img src="' + esc(im.thumb_url) + '" alt="Merkin kuva" loading="lazy"></a>' +
+            (canImg ? '<button class="pl-b pl-b--danger" type="button">Poista</button>' : '');
+          var b = item.querySelector('button');
+          if (b) b.onclick = function () {
+            if (!confirm('Poistetaanko tama kuva merkilta "' + p.title + '"? Itse merkki sailyy.')) return;
+            var cr = creds(p);
+            if (!cr) return;
+            b.disabled = true;
+            imageDelete(im.id, cr).then(function () {
+              p.images = (p.images || []).filter(function (o) { return o.id !== im.id; });
+              render(); tellMap({ kspk: 'pins-reload' });
+            }).catch(function (e) { alert(errText(e)); b.disabled = false; });
+          };
+          imggrid.appendChild(item);
+        });
+      }
 
       c.querySelector('[data-a="go"]').onclick = function () {
         tellMap({ kspk: 'pins-focus', id: p.id });
@@ -357,26 +400,14 @@
       };
       var d = c.querySelector('[data-a="del"]');
       if (d) d.onclick = function () {
-        if (!confirm('Poistetaanko merkki "' + p.title + '"? Tata ei voi perua.')) return;
+        if (!confirm('Poistetaanko merkki "' + p.title + '"? Tata ei voi perua — myos sen kuvat poistuvat.')) return;
         var c = creds(p);
         if (!c) return;
-        rpc('pin_delete', { p_pass: c.pass, p_author: c.author, p_id: p.id })
+        pinDeleteFull(p.id, c)
           .then(function () {
             rows = rows.filter(function (o) { return o.id !== p.id; });
             render(); tellMap({ kspk: 'pins-reload' });
           }).catch(function (e) { alert(errText(e)); });
-      };
-      var idl = c.querySelector('[data-a="imgdel"]');
-      if (idl) idl.onclick = function () {
-        if (!confirm('Poistetaanko kuva merkilta "' + p.title + '"? Itse merkki sailyy.')) return;
-        var cr = creds(p);
-        if (!cr) return;
-        idl.disabled = true;
-        imageClear(p.id, cr).then(function () {
-          p.image_thumb_url = null; p.image_full_url = null;
-          p.image_thumb_path = null; p.image_full_path = null; p.image_added_by = null;
-          render(); tellMap({ kspk: 'pins-reload' });
-        }).catch(function (e) { alert(errText(e)); idl.disabled = false; });
       };
 
       $grid.appendChild(c);
@@ -387,16 +418,42 @@
     return rest(CFG.table + '?select=*&order=created_at.desc')
       .then(function (r) { return r.ok ? r.json() : []; });
   }
+  /* Oman piilotetun merkin saa nakyviin listaan (tummempana, Nayta-napilla)
+     vaikka RLS piilottaa hidden=true-rivit muilta — pins_mine tarkistaa
+     salasanan palvelimella ja palauttaa vain kutsujan omat piilotetut. */
+  function loadMineHidden() {
+    var n = get(LS_NAME), pw = get(LS_PASS);
+    if (!n || !pw) return Promise.resolve({ pins: [], images: [] });
+    return Promise.all([
+      rpc('pins_mine', { p_pass: pw, p_author: n }).catch(function () { return []; }),
+      rpc('pin_images_mine', { p_pass: pw, p_author: n }).catch(function () { return []; })
+    ]).then(function (arr) { return { pins: arr[0] || [], images: arr[1] || [] }; });
+  }
   function load() {
     /* Piilotetut merkit eivat tule API:sta lapi — dev hakee ne
        pins_all-funktiolla, joka tarkistaa koodin palvelimella. */
-    var p = (isDev() && devCode())
-      ? rpc('pins_all', { p_code: devCode() })
-          .then(function (r) { return (r || []).slice().reverse(); })
-          .catch(plainLoad)
+    var dev = isDev() && devCode();
+    var pinsP = dev
+      ? rpc('pins_all', { p_code: devCode() }).then(function (r) { return (r || []).slice().reverse(); }).catch(plainLoad)
       : plainLoad();
-    return p.then(function (r) { rows = r || []; render(); })
-            .catch(function () { rows = []; render(); });
+    var imagesP = loadImages();
+    var mineP = dev ? Promise.resolve({ pins: [], images: [] }) : loadMineHidden();
+
+    return Promise.all([pinsP, imagesP, mineP]).then(function (arr) {
+      var basePins = arr[0] || [], images = (arr[1] || []).slice(), mine = arr[2] || { pins: [], images: [] };
+      var ids = {};
+      basePins.forEach(function (p) { ids[p.id] = true; });
+      mine.pins.forEach(function (p) { if (!ids[p.id]) { basePins.push(p); ids[p.id] = true; } });
+      var imgIds = {};
+      images.forEach(function (im) { imgIds[im.id] = true; });
+      mine.images.forEach(function (im) { if (!imgIds[im.id]) { images.push(im); imgIds[im.id] = true; } });
+
+      var byPin = {};
+      images.forEach(function (im) { (byPin[im.pin_id] = byPin[im.pin_id] || []).push(im); });
+      basePins.forEach(function (p) { p.images = byPin[p.id] || []; });
+
+      rows = basePins; render();
+    }).catch(function () { rows = []; render(); });
   }
 
   window.addEventListener('message', function (e) {
