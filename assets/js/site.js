@@ -33,21 +33,6 @@ const SITE = {
     { href:'tietoa.html',    label:'Tietoa',     foot:'Sivusto' }
   ],
 
-  /* ===================================================================
-     TAPAHTUMAT  (keltainen ruutu etusivulla)
-     -------------------------------------------------------------------
-     Dev voi julkaista, muokata ja piilottaa nämä sivulla dev.html
-     (välilehti "Eventit"). Tämä lista on vain varasisältö siltä varalta
-     ettei asetuksia ole vielä tallennettu.
-       on    : näkyykö ruutu
-       badge : pieni tunniste ruudun ylälaidassa
-       title : otsikko
-       text  : kuvaus
-       iso   : tapahtuman hetki. Countdown lasketaan tästä selaimessa —
-               EI yhtään palvelinpyyntöä, joten se ei kuormita mitään.
-               Muoto: 2027-03-04T17:55:00+02:00  (+02:00 = Suomen talviaika,
-               kesäaikaan +03:00)
-     =================================================================== */
   events: [
     { on: true,
       badge: 'Juhlavuosi',
@@ -57,11 +42,6 @@ const SITE = {
       when:  '4.3.2027 klo 17:55 Suomen aikaa' }
   ],
 
-  /* ===================================================================
-     GOOGLE DOCS -LINKIT  (näkyvät sivulla projektit.html)
-     -------------------------------------------------------------------
-     Dev voi lisätä ja muokata näitä sivulla dev.html (välilehti "Linkit").
-     =================================================================== */
   docs: [
     { type:'doc', name:'Muistiinpanot',
       desc:'Yhteinen muistiinpanovihko: päätökset, ideat ja avoimet kysymykset.',
@@ -74,11 +54,16 @@ const SITE = {
       url:'https://docs.google.com/document/d/1nNChKcaJO4lIYsJUTvFiGERBCXUfnKI_9EZBwq_a_ug/edit' },
     { type:'doc', name:'Tapahtumat ja aikataulu',
       desc:'Tulevat tapahtumat ja juhlapäivät — samat jotka näkyvät etusivun tapahtumaruudussa.',
-      url:'https://docs.google.com/document/d/12wYYRjaOHw0prvTeoTThPj4EvZbeQ5brqQ0SlcsBNX4/edit' }
+      url:'https://docs.google.com/document/d/12wYYRjaOHw0prvTeoTThPj4EvZbeQ5brqQ0SlcsBNX4/edit' },
+    { type:'sheet', name:'Taulukko 1',
+      desc:'Jaettu Google Sheets -taulukko.',
+      url:'https://docs.google.com/spreadsheets/d/1baCsEkqB7ju4edqqqLlZL1XVtyUNTjxYw3aluWYzqvI/edit' },
+    { type:'sheet', name:'Taulukko 2',
+      desc:'Jaettu Google Sheets -taulukko.',
+      url:'https://docs.google.com/spreadsheets/d/1TfEYMlFrk1aIjjBv5dfb6gE6jaXtWOGU2gToiA5ZuwQ/edit' }
   ]
 };
 
-/* Google-dokumenttityyppien ulkoasu */
 const DOC_TYPES = {
   doc:   { ico:'📄', tag:'Google Docs',   cls:'tag--sky' },
   sheet: { ico:'📊', tag:'Google Sheets', cls:'' },
@@ -87,11 +72,9 @@ const DOC_TYPES = {
   drive: { ico:'🗂️', tag:'Google Drive',  cls:'tag--dim' }
 };
 
-/* --------------------------------------------------------------- */
 (function buildChrome(){
   const path = location.pathname.split('/').pop() || 'index.html';
 
-  /* ---- Navigaatio ---- */
   const links = SITE.pages.filter(p => !p.hidden).map(p =>
     `<li><a href="${p.href}"${p.href === path ? ' aria-current="page"' : ''}>${p.label}</a></li>`
   ).join('');
@@ -113,7 +96,6 @@ const DOC_TYPES = {
       <button class="nav__toggle" aria-label="Avaa valikko" aria-expanded="false"><span></span></button>
     </div>`;
 
-  /* ---- Footer ---- */
   const groups = {};
   SITE.pages.filter(p => !p.hidden).forEach(p => {
     const g = p.foot || 'Sivusto';
@@ -141,7 +123,7 @@ const DOC_TYPES = {
           </p>
           <div class="socials">
             <a href="${SITE.youtube}" target="_blank" rel="noopener" aria-label="YouTube">${icon('yt')}</a>
-            <a href="mailto:${SITE.email}" aria-label="Sähköposti">${icon('mail')}</a>
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(SITE.email)}" target="_blank" rel="noopener" aria-label="Sähköposti">${icon('mail')}</a>
           </div>
         </div>
         ${cols}
@@ -157,7 +139,6 @@ const DOC_TYPES = {
   const y = document.getElementById('year');
   if (y) y.textContent = new Date().getFullYear();
 
-  /* mobiilivalikko */
   const tgl = nav.querySelector('.nav__toggle');
   tgl.addEventListener('click', () => {
     const open = nav.classList.toggle('is-open');
@@ -166,7 +147,6 @@ const DOC_TYPES = {
   nav.querySelectorAll('.nav__links a').forEach(a =>
     a.addEventListener('click', () => nav.classList.remove('is-open')));
 
-  /* Google Docs -korttien renderöinti (projektit.html) */
   const dg = document.getElementById('docs-grid');
   if (dg) {
     dg.innerHTML = SITE.docs.map(d => {
@@ -184,7 +164,6 @@ const DOC_TYPES = {
     }).join('');
   }
 
-  /* täydennä data-site-* paikkamerkit sivuilla */
   document.querySelectorAll('[data-site]').forEach(el => {
     const v = SITE[el.dataset.site];
     if (v != null) el.textContent = v;
@@ -203,14 +182,6 @@ function icon(n){
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${p}"/></svg>`;
 }
 
-/* =====================================================================
-   DEV — kirjautuminen joka sivun alalaidasta + sivuston asetukset
-   ---------------------------------------------------------------------
-   Yllapitokoodi tarkistetaan palvelimella (Supabase-funktio is_admin).
-   Koodi elaa vain valilehden sessionStoragessa, ei koskaan repossa.
-   Asetukset (whitelist, linkit, tekstit) haetaan settings-taulusta ja
-   niita muokataan sivulla dev.html.
-   ===================================================================== */
 var KSPK = (function () {
   var SS_DEV  = 'kspk.pins.dev';
   var SS_CODE = 'kspk.pins.devcode';
@@ -273,7 +244,6 @@ var KSPK = (function () {
 })();
 window.KSPK = KSPK;
 
-/* --- asetusten soveltaminen: dokumenttilinkit ja tekstit ------------- */
 (function applySettings() {
   function docCards(list) {
     var dg = document.getElementById('docs-grid');
@@ -294,7 +264,7 @@ window.KSPK = KSPK;
     docCards(s.links);
     if (s.texts) {
       Object.keys(s.texts).forEach(function (sel) {
-        if (sel === '@events') {                 // tapahtumat, ei CSS-valitsin
+        if (sel === '@events') {
           var list = null;
           try { list = JSON.parse(s.texts[sel]); } catch (e) { list = null; }
           if (list && list.length !== undefined) window.KSPK_renderEvents(list);
@@ -308,7 +278,6 @@ window.KSPK = KSPK;
   });
 })();
 
-/* --- dev-palkki footeriin ------------------------------------------- */
 (function devBar() {
   var st = document.createElement('style');
   st.textContent = ''
@@ -369,16 +338,6 @@ window.KSPK = KSPK;
   paint();
 })();
 
-
-/* =====================================================================
-   TAPAHTUMARUUTU + REAALIAIKAINEN COUNTDOWN
-   ---------------------------------------------------------------------
-   Renderöi keltaisen tapahtumaruudun elementtiin #kspk-events (etusivu).
-   Countdown lasketaan pelkästään selaimen kellosta suhteessa tapahtuman
-   ISO-aikaleimaan, jossa on aikavyöhyke mukana. Siksi se näyttää saman
-   jäljellä olevan ajan kaikille avaajille maailmassa, eikä tee yhtäkään
-   verkkopyyntöä — Supabasen kuormitus on nolla.
-   ===================================================================== */
 (function events() {
   var box = document.getElementById('kspk-events');
   if (!box) return;
@@ -446,13 +405,10 @@ window.KSPK = KSPK;
     }
   }
 
-  window.KSPK_renderEvents = render;     // dev-asetukset voivat korvata listan
-  render(SITE.events);                   // näytä varasisältö heti, ennen verkkohakua
+  window.KSPK_renderEvents = render;
+  render(SITE.events);
 })();
 
-/* =====================================================================
-   TUE KSPK:TA — kulmanappi + ikkuna
-   ===================================================================== */
 (function support() {
   if (document.body.dataset.noSupport === '1') return;
 
@@ -523,7 +479,7 @@ window.KSPK = KSPK;
     + '<div class="kspk-sup__acts">'
     + '<button type="button" class="kspk-sup__b" data-a="copy">📋 Kopioi osoite</button>'
     + '<a class="kspk-sup__b kspk-sup__b--y" data-a="gmail" href="#" target="_blank" rel="noopener">✉️ Avaa Gmail valmiilla viestillä</a>'
-    + '<a class="kspk-sup__b" data-a="mailto" href="#">Avaa oma sähköpostiohjelma</a>'
+    + '<a class="kspk-sup__b" data-a="mailto" href="#">Avaa Gmail (uusi välilehti)</a>'
     + '</div>'
     + '<p class="kspk-sup__eco">🌱 <b>Lupauksemme tuesta:</b> käytämme jokaisen saamamme euron huolella ja '
     + 'ainoastaan tämän projektin kehittämiseen — kanavaan, serveriin ja sivustoon. Valintamme teemme '
@@ -539,7 +495,9 @@ window.KSPK = KSPK;
   mod.querySelector('[data-a="gmail"]').href =
     'https://mail.google.com/mail/?view=cm&fs=1&' + q('to', TO) + '&' + q('su', SUBJ) + '&' + q('body', BODY);
   mod.querySelector('[data-a="mailto"]').href =
-    'mailto:' + TO + '?' + q('subject', SUBJ) + '&' + q('body', BODY);
+    'https://mail.google.com/mail/?view=cm&fs=1&' + q('to', TO) + '&' + q('su', SUBJ) + '&' + q('body', BODY);
+  mod.querySelector('[data-a="mailto"]').target = '_blank';
+  mod.querySelector('[data-a="mailto"]').rel = 'noopener';
 
   function open()  { mod.classList.add('on'); document.documentElement.style.overflow = 'hidden'; }
   function close() { mod.classList.remove('on'); document.documentElement.style.overflow = ''; }
@@ -559,7 +517,6 @@ window.KSPK = KSPK;
     if (e.key === 'Escape' && mod.classList.contains('on')) close();
   });
 
-  // sivun omat "tue meitä" -napit avaavat saman ikkunan
   [].forEach.call(document.querySelectorAll('[data-support]'), function (a) {
     a.addEventListener('click', function (e) { e.preventDefault(); open(); });
   });
@@ -569,21 +526,41 @@ window.KSPK = KSPK;
    KEVYT YOUTUBE-UPOTUS
    ---------------------------------------------------------------------
    Kortti näyttää aluksi vain kansikuvan. Vasta klikkauksesta ladataan
-   YouTube-soitin — sivu pysyy nopeana myös mobiilissa.
+   YouTube-soitin. Jokaiseen soivaan videoon lisätään sulkunappi (x),
+   joka poistaa iframen (pysäyttäen toiston) ja palauttaa esikatselukuvan.
    ===================================================================== */
 (function ytLite() {
   [].forEach.call(document.querySelectorAll('[data-yt]'), function (card) {
     var btn = card.querySelector('.yt-btn');
     if (!btn) return;
-    btn.addEventListener('click', function () {
+    var originalHTML = btn.outerHTML;
+
+    function bind(el) {
+      el.addEventListener('click', function () { play(el); });
+    }
+
+    function play(triggerBtn) {
       var id = card.dataset.yt;
       var w = document.createElement('div');
       w.className = 'video-card__thumb is-playing';
-      w.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id +
+      w.innerHTML = '<button type="button" class="yt-close" aria-label="Sulje video">&times;</button>'
+        + '<iframe src="https://www.youtube-nocookie.com/embed/' + id +
         '?autoplay=1&rel=0" title="YouTube-video" loading="lazy" allowfullscreen ' +
         'allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" ' +
         'referrerpolicy="strict-origin-when-cross-origin" frameborder="0"></iframe>';
-      btn.replaceWith(w);
-    });
+      triggerBtn.replaceWith(w);
+
+      w.querySelector('.yt-close').addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var tmp = document.createElement('div');
+        tmp.innerHTML = originalHTML;
+        var newBtn = tmp.firstElementChild;
+        w.replaceWith(newBtn);
+        bind(newBtn);
+      });
+    }
+
+    bind(btn);
   });
 })();
