@@ -103,24 +103,38 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     { id: 'chest', glyph: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M3 9.5h18v10.2H3zm7.2 3.3v2.3h3.6v-2.3h1.9c-.3 1.8-1.9 3.2-3.7 3.2s-3.4-1.4-3.7-3.2z"/><path d="M4.5 4.3h15l1.8 4.2H2.7z"/></svg>' }
   ];
 
-  /* Kohta 25: samat 12 muotoa taysimustana SVG:na karttamerkkeja varten —
-     ol.style.Icon + color-optio varjaa lapinakymattomat pikselit merkin
-     valitulla varilla piirtohetkella, alkuperaisesta taytovarista riippumatta. */
+  /* Kohta 25 + korjaus: samat 12 muotoa SVG:na karttamerkkeja varten.
+     TAYTTO ON VALKOINEN (#fff) — ol.style.Icon:n color-optio varjaa kuvan
+     "multiply"-sekoituksella (kuvapikseli * valittu vari / 255): musta pikseli
+     (0) pysyy aina mustana varista riippumatta, siksi taysimusta versio ei
+     koskaan nayttanyt vartia. Valkoinen (255) taas muuttuu tasmalleen
+     valituksi variksi. Ulkoreunan musta viiva (stroke) on leivottu SVG:hen
+     kiinteana — se pysyy mustana samasta multiply-syysta eika hairitse
+     varjaystä, ja vastaa ympyra/nelio-symbolien tummaa outlinea. */
   var ICON_SVGS = {
-    house: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><g transform="translate(0.000 0.250)"><path d="M12 2.2 1.5 11h3.2v10.3h6V15h2.6v6.3h6V11h3.2z"/></g></svg>',
-    skull: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><g transform="translate(0.000 0.750)"><path fill-rule="evenodd" d="M12 1.6c-5 0-8.6 3.7-8.6 8.3 0 3 1.5 5.2 3.4 6.7v3.1c0 .7.5 1.2 1.2 1.2h1v-2.2h1.6v2.2h2.8v-2.2h1.6v2.2h1c.7 0 1.2-.5 1.2-1.2v-3.1c1.9-1.5 3.4-3.7 3.4-6.7 0-4.6-3.6-8.3-8.6-8.3zm-3.6 9.6a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm7.2 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zM12 13.4l1.6 2.6h-3.2z"/></g></svg>',
-    sword: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><path d="M12 1 14.4 5.4V15.2H9.6V5.4z"/><path d="M5.2 15.2h13.6v2.4H5.2z"/><path d="M10.8 17.6h2.4v3.6h-2.4z"/><path d="M9.4 21.2h5.2v1.9H9.4z"/></svg>',
-    hammer: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><g transform="translate(-2.000 2.031)"><g transform="rotate(45 12 12)"><g transform="translate(12 12)"><g transform="scale(1.00000)"><g transform="translate(-12 -12)"><rect x="4.6" y="2.2" width="14.8" height="5.9" rx="1.4"/><rect x="10.8" y="8.1" width="2.4" height="13.8" rx="0.7"/></g></g></g></g></g></svg>',
-    smiley: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-3.6 6.8a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zm7.2 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zM6.8 14c1 2.2 3 3.6 5.2 3.6s4.2-1.4 5.2-3.6z"/></svg>',
-    pickaxe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><g transform="translate(-1.031 1.031)"><g transform="rotate(45 12 12)"><g transform="translate(12 12)"><g transform="scale(1.00000)"><g transform="translate(-12 -12)"><path d="M1.6 11.2C3.2 4.4 7.2 1.2 12 1.2s8.8 3.2 10.4 10c-2.6-4.2-6.1-6.2-10.4-6.2S4.2 7 1.6 11.2z"/><path d="M10.7 4.6h2.6V22.6h-2.6z"/></g></g></g></g></g></svg>',
-    tree: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><g transform="translate(0.000 -0.250)"><path d="M12 1.5 6.5 9.5h2.3L4.5 16h4.7l-3.5 6.5h12.6L15 16h4.5l-4.3-6.5h2.3z"/><rect x="10.6" y="19" width="2.8" height="4"/></g></svg>',
-    axe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><g transform="translate(0.750 2.375)"><g transform="rotate(45 12 12)"><g transform="translate(12 12)"><g transform="scale(1.00000)"><g transform="translate(-12 -12)"><path d="M13.4 3.8 3.9 1.4c-.9 3.8-.9 7.4 0 11L13.4 10.8z"/><path d="M10.9 3.8h2.5V22.6h-2.5z"/></g></g></g></g></g></svg>',
-    shield: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><g transform="translate(0.000 -0.250)"><path d="M12 1.8 3.5 5v6.2c0 5.4 3.6 9.8 8.5 11.5 4.9-1.7 8.5-6.1 8.5-11.5V5z"/></g></svg>',
-    heart: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><g transform="translate(0.000 0.156)"><path d="M12 21S2.5 14.6 2.5 8.2C2.5 5 5 2.7 8 2.7c1.8 0 3.3.9 4 2.3.7-1.4 2.2-2.3 4-2.3 3 0 5.5 2.3 5.5 5.5 0 6.4-9.5 12.8-9.5 12.8z"/></g></svg>',
-    anchor: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><g transform="translate(0.031 0.250)"><path fill-rule="evenodd" d="M12 1.8a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6zm-1.1 4.9h2.2v2.5h3.6v1.7h-3.6v8.3c2.3-.5 4-2.2 4.5-4.4h1.8c-.6 3.7-3.7 6.5-7.4 6.8v.1h-.1v-.1c-3.7-.3-6.8-3.1-7.4-6.8h1.8c.5 2.2 2.2 3.9 4.5 4.4V10.9H7.3V9.2h3.6z"/></g></svg>',
-    chest: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><path fill-rule="evenodd" d="M3 9.5h18v10.2H3zm7.2 3.3v2.3h3.6v-2.3h1.9c-.3 1.8-1.9 3.2-3.7 3.2s-3.4-1.4-3.7-3.2z"/><path d="M4.5 4.3h15l1.8 4.2H2.7z"/></svg>',
+    house: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><g transform="translate(0.000 0.250)"><path d="M12 2.2 1.5 11h3.2v10.3h6V15h2.6v6.3h6V11h3.2z"/></g></g></g></svg>',
+    skull: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><g transform="translate(0.000 0.750)"><path fill-rule="evenodd" d="M12 1.6c-5 0-8.6 3.7-8.6 8.3 0 3 1.5 5.2 3.4 6.7v3.1c0 .7.5 1.2 1.2 1.2h1v-2.2h1.6v2.2h2.8v-2.2h1.6v2.2h1c.7 0 1.2-.5 1.2-1.2v-3.1c1.9-1.5 3.4-3.7 3.4-6.7 0-4.6-3.6-8.3-8.6-8.3zm-3.6 9.6a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm7.2 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zM12 13.4l1.6 2.6h-3.2z"/></g></g></g></svg>',
+    sword: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><path d="M12 1 14.4 5.4V15.2H9.6V5.4z"/><path d="M5.2 15.2h13.6v2.4H5.2z"/><path d="M10.8 17.6h2.4v3.6h-2.4z"/><path d="M9.4 21.2h5.2v1.9H9.4z"/></g></g></svg>',
+    hammer: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><g transform="translate(-2.000 2.031)"><g transform="rotate(45 12 12)"><g transform="translate(12 12)"><g transform="scale(1.00000)"><g transform="translate(-12 -12)"><rect x="4.6" y="2.2" width="14.8" height="5.9" rx="1.4"/><rect x="10.8" y="8.1" width="2.4" height="13.8" rx="0.7"/></g></g></g></g></g></g></g></svg>',
+    smiley: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-3.6 6.8a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zm7.2 0a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8zM6.8 14c1 2.2 3 3.6 5.2 3.6s4.2-1.4 5.2-3.6z"/></g></g></svg>',
+    pickaxe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><g transform="translate(-1.031 1.031)"><g transform="rotate(45 12 12)"><g transform="translate(12 12)"><g transform="scale(1.00000)"><g transform="translate(-12 -12)"><path d="M1.6 11.2C3.2 4.4 7.2 1.2 12 1.2s8.8 3.2 10.4 10c-2.6-4.2-6.1-6.2-10.4-6.2S4.2 7 1.6 11.2z"/><path d="M10.7 4.6h2.6V22.6h-2.6z"/></g></g></g></g></g></g></g></svg>',
+    tree: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><g transform="translate(0.000 -0.250)"><path d="M12 1.5 6.5 9.5h2.3L4.5 16h4.7l-3.5 6.5h12.6L15 16h4.5l-4.3-6.5h2.3z"/><rect x="10.6" y="19" width="2.8" height="4"/></g></g></g></svg>',
+    axe: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><g transform="translate(0.750 2.375)"><g transform="rotate(45 12 12)"><g transform="translate(12 12)"><g transform="scale(1.00000)"><g transform="translate(-12 -12)"><path d="M13.4 3.8 3.9 1.4c-.9 3.8-.9 7.4 0 11L13.4 10.8z"/><path d="M10.9 3.8h2.5V22.6h-2.5z"/></g></g></g></g></g></g></g></svg>',
+    shield: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><g transform="translate(0.000 -0.250)"><path d="M12 1.8 3.5 5v6.2c0 5.4 3.6 9.8 8.5 11.5 4.9-1.7 8.5-6.1 8.5-11.5V5z"/></g></g></g></svg>',
+    heart: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><g transform="translate(0.000 0.156)"><path d="M12 21S2.5 14.6 2.5 8.2C2.5 5 5 2.7 8 2.7c1.8 0 3.3.9 4 2.3.7-1.4 2.2-2.3 4-2.3 3 0 5.5 2.3 5.5 5.5 0 6.4-9.5 12.8-9.5 12.8z"/></g></g></g></svg>',
+    anchor: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><g transform="translate(0.031 0.250)"><path fill-rule="evenodd" d="M12 1.8a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6zm-1.1 4.9h2.2v2.5h3.6v1.7h-3.6v8.3c2.3-.5 4-2.2 4.5-4.4h1.8c-.6 3.7-3.7 6.5-7.4 6.8v.1h-.1v-.1c-3.7-.3-6.8-3.1-7.4-6.8h1.8c.5 2.2 2.2 3.9 4.5 4.4V10.9H7.3V9.2h3.6z"/></g></g></g></svg>',
+    chest: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><path fill-rule="evenodd" d="M3 9.5h18v10.2H3zm7.2 3.3v2.3h3.6v-2.3h1.9c-.3 1.8-1.9 3.2-3.7 3.2s-3.4-1.4-3.7-3.2z"/><path d="M4.5 4.3h15l1.8 4.2H2.7z"/></g></g></svg>',
     /* vanha tunniste 'swords' varalta, jos joku ehti tallentaa merkin silla */
-    swords: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="#000"><path d="M12 1 14.4 5.4V15.2H9.6V5.4z"/><path d="M5.2 15.2h13.6v2.4H5.2z"/><path d="M10.8 17.6h2.4v3.6h-2.4z"/><path d="M9.4 21.2h5.2v1.9H9.4z"/></svg>'
+    swords: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><g fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><g transform="translate(12 12) scale(0.9) translate(-12 -12)"><path d="M12 1 14.4 5.4V15.2H9.6V5.4z"/><path d="M5.2 15.2h13.6v2.4H5.2z"/><path d="M10.8 17.6h2.4v3.6h-2.4z"/><path d="M9.4 21.2h5.2v1.9H9.4z"/></g></g></svg>'
+  };
+  /* Kunkin kuvakkeen "muste" (taytto+outline) ei tayta koko 24x24-ruutua
+     yhta tarkasti kuin ympyra tayttaa oman sateensa — siksi jokaiselle on
+     mitattu (cairosvg-rasteroinnilla) oma kerroin, jolla 1x-koossa kuvakkeen
+     lavistaja vastaa 1x-ympyran halkaisijaa (2 * baseR). Ks. pinStyle(). */
+  var ICON_SCALE = {
+    house: 2.39, skull: 2.59, sword: 2.28, hammer: 2.6, smiley: 2.49,
+    pickaxe: 2.64, tree: 2.33, axe: 2.31, shield: 2.39, heart: 2.61,
+    anchor: 2.49, chest: 2.66, swords: 2.28
   };
   /* Karttakuvakkeiden luontainen rasterikoko. SVG on vektori, mutta selain
      rasteroi sen tahan kokoon ennen kuin OpenLayers skaalaa sen merkin
@@ -538,6 +552,10 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + '.kspk-coord{position:absolute;top:10px;right:10px;z-index:46;padding:6px 12px;border-radius:9px;'
       + 'background:rgba(10,18,14,.85);color:#9db3a6;border:1px solid rgba(255,255,255,.16);'
       + 'font:12px/1.3 ui-monospace,monospace;pointer-events:none;white-space:nowrap}'
+      /* uNmINeDin oma ol.control.MousePosition (harmaanvalkoinen "palkki"
+         samassa kulmassa) piilotetaan — kayttajan oma tumma .kspk-coord
+         korvaa sen kokonaan, kahta paallekkaista koordinaattia ei tarvita. */
+      + '.ol-mouse-position{display:none!important}'
       + '.kspk-badge{position:absolute;left:10px;bottom:10px;z-index:40;padding:6px 11px;border-radius:999px;'
       + 'background:rgba(10,18,14,.85);color:#9db3a6;border:1px solid rgba(255,255,255,.14);'
       + 'font:12px system-ui,sans-serif;pointer-events:none}'
@@ -596,14 +614,22 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         break;
       default:
         if (iconUri) {
-          /* Kohta 25: mukautetut muodot (talo, paakallo, jne.) ovat inline-SVG
-             data-URIna — OpenLayersin Icon color-optio varjaa lapinakymattomat
-             pikselit merkin varilla piirtohetkella, riippumatta SVG:n omasta
-             taytovarista (siksi SVG:t on piirretty taysimustina yllä). */
+          /* Kohta 25 + korjaus: mukautetut muodot (talo, paakallo, jne.) ovat
+             inline-SVG data-URIna, valkoisella taytolla + mustalla outlinella.
+             OpenLayersin Icon color-optio varjaa kuvan "multiply"-sekoituksella:
+             valkoinen (255) -> tasan valittu vari, musta outline (0) pysyy aina
+             mustana. scale laskee kuvakkeen kokonaisen ICON_SCALE-kertoimen
+             kautta niin etta 1x-koossa kuvakkeen mitat vastaavat 1x-ympyran
+             halkaisijaa (2*baseR) — kuvakkeet eivat muuten tayta 24x24-ruutua
+             yhta tarkasti kuin ympyra oman sateensa. anchor on eksplisiittinen
+             (kuvan keskikohta), jotta merkki pysyy tasmalleen koordinaatissaan. */
           image = new olns.style.Icon({
             src: iconUri,
             color: fillColor,
-            scale: (baseR * 2.1) / ICON_PX,
+            anchor: [0.5, 0.5],
+            anchorXUnits: 'fraction',
+            anchorYUnits: 'fraction',
+            scale: (baseR * (ICON_SCALE[sym] || 2.4)) / ICON_PX,
             opacity: hidden ? 0.55 : 1
           });
         } else {
