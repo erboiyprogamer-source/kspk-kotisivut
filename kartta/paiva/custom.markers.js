@@ -593,9 +593,9 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     var c = p.color || CFG.colors[0];
     var hidden = !!p.hidden;
     var sym = p.symbol || 'dot';
-    /* Hiiren hover "nappimainen" pieni suurennus: baseR kasvaa max +18%
-       kun ht=1 (ks. hoverScale-animaatio boot()issa). */
-    var baseR = 8 * (p.size || 1) * vs * (1 + 0.18 * ht);
+    /* Hiiren hover "nappimainen" suurennus: baseR kasvaa max +21.6%
+       kun ht=1 (0.18 * 1.2, ks. hoverScale-animaatio boot()issa). */
+    var baseR = 8 * (p.size || 1) * vs * (1 + 0.216 * ht);
     var fillColor = hidden ? 'rgba(120,120,120,.45)' : c;
     /* Yhtenaistetty uusien SVG-kuvakkeiden kanssa: taysin musta (ei 65%
        lapinakyva) ja outline skaalautuu koon mukaan (baseR/6) kiintean
