@@ -594,9 +594,14 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     var sym = p.symbol || 'dot';
     var baseR = 8 * (p.size || 1) * vs;
     var fillColor = hidden ? 'rgba(120,120,120,.45)' : c;
-    var strokeColor = hidden ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.65)';
+    /* Yhtenaistetty uusien SVG-kuvakkeiden kanssa: taysin musta (ei 65%
+       lapinakyva) ja outline skaalautuu koon mukaan (baseR/6) kiintean
+       3px:n sijaan — muuten piste/nelio/kolmio/tahti/timantti nayttivat
+       paksummalta, vaaleammalta ja pehmeammalta kuin uudet kuvakkeet. */
+    var strokeColor = hidden ? 'rgba(255,255,255,.55)' : '#000';
+    var strokeW = Math.max(1, baseR / 6);
     var fill = new olns.style.Fill({ color: fillColor });
-    var stroke = new olns.style.Stroke({ color: strokeColor, width: 3, lineDash: hidden ? [3, 3] : undefined });
+    var stroke = new olns.style.Stroke({ color: strokeColor, width: strokeW, lineDash: hidden ? [3, 3] : undefined });
     var image;
     var iconUri = ICON_SVGS[sym] ? iconDataUri(sym) : null;
     switch (sym) {
