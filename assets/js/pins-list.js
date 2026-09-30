@@ -20,6 +20,27 @@
   var LS_PASS = 'kspk.pins.pass';
   var SS_DEV  = 'kspk.pins.dev';
   var SS_CODE = 'kspk.pins.devcode';
+  var LS_VIEW = 'kspk.pins.view';   // Kohta 7/8: sama avain kuin kartalla — jaettu oma nakyma
+
+  var SYMBOL_GLYPH = { dot: '●', square: '■', triangle: '▲', star: '★', diamond: '◆' };
+
+  /* Kohta 8: oma nakyma-asetus myos merkkilistalle (vain tama selain,
+     ei vaikuta palvelimelle eika muihin kayttajiin). Sama tallennuspaikka
+     kuin kartalla (custom.markers.js), joten piilotus on yhtenainen. */
+  function getView() {
+    try {
+      var v = JSON.parse(localStorage.getItem(LS_VIEW) || '{}');
+      return {
+        hideColors: Array.isArray(v.hideColors) ? v.hideColors : [],
+        hideSymbols: Array.isArray(v.hideSymbols) ? v.hideSymbols : [],
+        hideAuthors: Array.isArray(v.hideAuthors) ? v.hideAuthors : [],
+        scale: (typeof v.scale === 'number' && v.scale > 0) ? v.scale : 1
+      };
+    } catch (e) { return { hideColors: [], hideSymbols: [], hideAuthors: [], scale: 1 }; }
+  }
+  function setView(v) {
+    try { localStorage.setItem(LS_VIEW, JSON.stringify(v)); } catch (e) {}
+  }
 
   var root = document.getElementById('pin-list');
   if (!root) return;
@@ -128,7 +149,18 @@
       + '.pl-tag{padding:2px 8px;border-radius:999px;font-size:11px;'
       + 'background:rgba(255,209,102,.16);color:#ffd166;border:1px solid rgba(255,209,102,.35)}'
       + '.pl-empty{padding:26px;text-align:center;color:var(--muted,#9db3a6);'
-      + 'border:1px dashed var(--line,rgba(255,255,255,.14));border-radius:14px}';
+      + 'border:1px dashed var(--line,rgba(255,255,255,.14));border-radius:14px}'
+      + '.pl-filters{display:flex;flex-wrap:wrap;gap:16px 22px;align-items:flex-start;margin:0 0 18px;'
+      + 'padding:14px 16px;border-radius:14px;background:rgba(8,14,11,.45);border:1px solid var(--line,rgba(255,255,255,.1))}'
+      + '.pl-fgroup{display:grid;gap:7px}'
+      + '.pl-fgroup > span{font-size:11px;letter-spacing:.04em;color:var(--muted,#9db3a6)}'
+      + '.pl-chips{display:flex;flex-wrap:wrap;gap:7px}'
+      + '.pl-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;cursor:pointer;'
+      + 'font:inherit;font-size:.78rem;color:inherit;background:rgba(255,255,255,.06);'
+      + 'border:1px solid rgba(255,255,255,.18)}'
+      + '.pl-chip .sw{width:10px;height:10px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.5)}'
+      + '.pl-chip.off{opacity:.4;text-decoration:line-through}'
+      + '.pl-fclear{align-self:center;margin-left:auto}';
     document.head.appendChild(s);
   })();
 
@@ -148,6 +180,12 @@
         '<button class="pl-b pl-b--dev" id="pl-dev">Dev</button>' +
       '</div>' +
     '</div>' +
+    '<div class="pl-filters" id="pl-filters">' +
+      '<div class="pl-fgroup"><span>PIILOTA PELAAJA</span><div class="pl-chips" id="pl-f-authors"></div></div>' +
+      '<div class="pl-fgroup"><span>PIILOTA VARI</span><div class="pl-chips" id="pl-f-colors"></div></div>' +
+      '<div class="pl-fgroup"><span>PIILOTA SYMBOLI</span><div class="pl-chips" id="pl-f-symbols"></div></div>' +
+      '<button class="pl-b pl-fclear" id="pl-f-reset">Nollaa oma nakyma</button>' +
+    '</div>' +
     '<div class="pl-grid" id="pl-grid"></div>';
 
   var $name = document.getElementById('pl-name');
@@ -155,6 +193,10 @@
   var $grid = document.getElementById('pl-grid');
   var $n    = document.getElementById('pl-n');
   var $dev  = document.getElementById('pl-dev');
+  var $fAuthors = document.getElementById('pl-f-authors');
+  var $fColors  = document.getElementById('pl-f-colors');
+  var $fSymbols = document.getElementById('pl-f-symbols');
+  var $fReset   = document.getElementById('pl-f-reset');
 
   $name.value = get(LS_NAME);
   $pass.value = get(LS_PASS);
@@ -180,10 +222,68 @@
   };
   document.getElementById('pl-reload').onclick = load;
 
+  /* ---------- kohta 8: oma nakyma -suodattimet (vain tama selain) ---------- */
+  function chip(container, key, value, label, swatch) {
+    var v = getView();
+    var arr = v[key].slice();
+    var off = arr.indexOf(value) > -1;
+    var b = document.createElement('span');
+    b.className = 'pl-chip' + (off ? ' off' : '');
+    b.setAttribute('role', 'button');
+    b.setAttribute('aria-pressed', off ? 'true' : 'false');
+    b.title = off ? 'Piilotettu — klikkaa nayttaaksesi' : 'Nakyvissa — klikkaa piilottaaksesi';
+    b.innerHTML = (swatch ? '<span class="sw" style="background:' + esc(swatch) + '"></span>' : '') + esc(label);
+    b.onclick = function () {
+      var cur = getView();
+      var a = cur[key].slice();
+      var i = a.indexOf(value);
+      if (i > -1) a.splice(i, 1); else a.push(value);
+      cur[key] = a;
+      setView(cur);
+      render();
+      tellMap({ kspk: 'pins-reload' });
+    };
+    container.appendChild(b);
+  }
+  function renderFilters() {
+    var authors = [], colors = [], symbols = [], seenA = {}, seenC = {}, seenS = {};
+    rows.forEach(function (p) {
+      var a = p.author || 'Nimeton';
+      if (!seenA[a.toLowerCase()]) { seenA[a.toLowerCase()] = true; authors.push(a); }
+      var c = p.color || '#3ef08a';
+      if (!seenC[c]) { seenC[c] = true; colors.push(c); }
+      var s = p.symbol || 'dot';
+      if (!seenS[s]) { seenS[s] = true; symbols.push(s); }
+    });
+    $fAuthors.innerHTML = ''; $fColors.innerHTML = ''; $fSymbols.innerHTML = '';
+    authors.forEach(function (a) { chip($fAuthors, 'hideAuthors', a.toLowerCase(), a); });
+    colors.forEach(function (c) { chip($fColors, 'hideColors', c, c, c); });
+    symbols.forEach(function (s) { chip($fSymbols, 'hideSymbols', s, SYMBOL_GLYPH[s] || s); });
+    if (!authors.length && !colors.length && !symbols.length) {
+      document.getElementById('pl-filters').style.display = 'none';
+    } else {
+      document.getElementById('pl-filters').style.display = '';
+    }
+  }
+  $fReset.onclick = function () {
+    var v = getView();
+    setView({ hideColors: [], hideSymbols: [], hideAuthors: [], scale: v.scale });
+    render();
+    tellMap({ kspk: 'pins-reload' });
+  };
+
   /* ---------- piirto ---------- */
   function render() {
     var dev = isDev();
-    var visible = rows.filter(function (p) { return !p.hidden || dev; });
+    var v = getView();
+    renderFilters();
+    var visible = rows.filter(function (p) {
+      if (p.hidden && !dev) return false;
+      if (v.hideColors.indexOf(p.color || '#3ef08a') > -1) return false;
+      if (v.hideSymbols.indexOf(p.symbol || 'dot') > -1) return false;
+      if (v.hideAuthors.indexOf(String(p.author || 'Nimeton').toLowerCase()) > -1) return false;
+      return true;
+    });
     $n.textContent = '(' + visible.length + ')';
 
     if (!visible.length) {

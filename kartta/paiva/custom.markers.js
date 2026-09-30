@@ -115,9 +115,10 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       return {
         hideColors: Array.isArray(v.hideColors) ? v.hideColors : [],
         hideSymbols: Array.isArray(v.hideSymbols) ? v.hideSymbols : [],
+        hideAuthors: Array.isArray(v.hideAuthors) ? v.hideAuthors : [],
         scale: (typeof v.scale === 'number' && v.scale > 0) ? v.scale : 1
       };
-    } catch (e) { return { hideColors: [], hideSymbols: [], scale: 1 }; }
+    } catch (e) { return { hideColors: [], hideSymbols: [], hideAuthors: [], scale: 1 }; }
   }
   function setView(v) {
     try { localStorage.setItem(LS_VIEW, JSON.stringify(v)); } catch (e) {}
@@ -338,6 +339,9 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + 'background:rgba(10,18,14,.85);color:#9db3a6;border:1px solid rgba(255,255,255,.16)}'
       + '.kspk-view.on{background:#5aa9ff;color:#041018;border-color:#5aa9ff}'
       + '.kv-off{opacity:.28}'
+      + '.kspk-authors{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}'
+      + '.kspk-authors button{padding:6px 12px;border-radius:999px;border:2px solid rgba(255,255,255,.18);'
+      + 'background:rgba(255,255,255,.06);color:#eaf3ee;font:inherit;font-size:12.5px;cursor:pointer}'
       + '.kspk-ripple{position:absolute;z-index:44;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;'
       + 'pointer-events:none;border:2px solid #3ef08a;box-shadow:0 0 22px 4px rgba(62,240,138,.45);'
       + 'animation:kspkR .6s cubic-bezier(.2,.7,.3,1) forwards}'
@@ -574,6 +578,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         if (p.hidden && !isDev()) return;
         if (vw.hideColors.indexOf(p.color) > -1) return;
         if (vw.hideSymbols.indexOf(p.symbol || 'dot') > -1) return;
+        if (vw.hideAuthors.indexOf(String(p.author || '').toLowerCase()) > -1) return;
         var f = new olns.Feature({ geometry: new olns.geom.Point(toView(p.x, p.z)) });
         f.set('pin', p);
         f.setStyle(pinStyle(p, olns, vw.scale));
@@ -776,7 +781,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     viewBtn.title = 'Oma nakyma (vain tama selain)';
     function paintViewBtn() {
       var v = getView();
-      var active = v.hideColors.length || v.hideSymbols.length || Math.abs(v.scale - 1) > 0.001;
+      var active = v.hideColors.length || v.hideSymbols.length || v.hideAuthors.length || Math.abs(v.scale - 1) > 0.001;
       viewBtn.classList.toggle('on', !!active);
     }
     viewBtn.onclick = function () { openViewPanel(); };
@@ -789,7 +794,8 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       var card = el('div', 'kspk-card');
       card.innerHTML =
         '<h3>Oma nakyma</h3>' +
-        '<p class="sub">Nama asetukset vaikuttavat vain tahan selaimeen — eivat muihin pelaajiin eika palvelimelle.</p>' +
+        '<p class="sub">Nama asetukset vaikuttavat vain tahan selaimeen — eivat muihin pelaajiin eika palvelimelle. Sama asetus nakyy myos merkkilistassa.</p>' +
+        (rows.length ? '<label>Piilota pelaajat omasta nakymasta</label><div class="kspk-authors" id="kv-a" role="group"></div>' : '') +
         '<label>Piilota varit omasta nakymasta</label><div class="kspk-colors" id="kv-c" role="group"></div>' +
         '<label>Piilota symbolit omasta nakymasta</label><div class="kspk-symbols" id="kv-s" role="group"></div>' +
         '<label>Merkkien ja tekstin koko omassa nakymassa (<span id="kv-scale-val">' + v.scale.toFixed(1) + 'x</span>)</label>' +
@@ -805,6 +811,32 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       var $ = function (id) { return card.querySelector(id); };
       var hideColors = v.hideColors.slice();
       var hideSymbols = v.hideSymbols.slice();
+      var hideAuthors = v.hideAuthors.slice();
+
+      var abox = $('#kv-a');
+      if (abox) {
+        var authors = [], seenA = {};
+        rows.forEach(function (p) {
+          var a = p.author || 'Nimeton';
+          if (!seenA[a.toLowerCase()]) { seenA[a.toLowerCase()] = true; authors.push(a); }
+        });
+        authors.forEach(function (a) {
+          var key = a.toLowerCase();
+          var b = el('button', null, esc(a));
+          b.type = 'button';
+          var off = hideAuthors.indexOf(key) > -1;
+          b.setAttribute('aria-pressed', off ? 'false' : 'true');
+          if (off) b.classList.add('kv-off');
+          b.title = off ? 'Piilotettu — klikkaa nayttaaksesi' : 'Nakyvissa — klikkaa piilottaaksesi';
+          b.onclick = function () {
+            var i = hideAuthors.indexOf(key);
+            if (i > -1) { hideAuthors.splice(i, 1); b.classList.remove('kv-off'); b.setAttribute('aria-pressed', 'true'); }
+            else { hideAuthors.push(key); b.classList.add('kv-off'); b.setAttribute('aria-pressed', 'false'); }
+            apply();
+          };
+          abox.appendChild(b);
+        });
+      }
 
       var cbox = $('#kv-c');
       CFG.colors.forEach(function (c) {
@@ -842,7 +874,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       });
 
       function apply() {
-        setView({ hideColors: hideColors, hideSymbols: hideSymbols, scale: parseFloat($('#kv-scale').value) || 1 });
+        setView({ hideColors: hideColors, hideSymbols: hideSymbols, hideAuthors: hideAuthors, scale: parseFloat($('#kv-scale').value) || 1 });
         draw();
         paintViewBtn();
       }
@@ -853,9 +885,10 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       });
 
       $('#kv-reset').onclick = function () {
-        hideColors = []; hideSymbols = [];
+        hideColors = []; hideSymbols = []; hideAuthors = [];
         [].forEach.call(cbox.children, function (o) { o.classList.remove('kv-off'); o.setAttribute('aria-pressed', 'true'); });
         [].forEach.call(sbox.children, function (o) { o.classList.remove('kv-off'); o.setAttribute('aria-pressed', 'true'); });
+        if (abox) [].forEach.call(abox.children, function (o) { o.classList.remove('kv-off'); o.setAttribute('aria-pressed', 'true'); });
         $('#kv-scale').value = 1;
         $('#kv-scale-val').textContent = '1.0x';
         apply();
