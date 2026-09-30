@@ -536,8 +536,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + '.kspk-btn{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);color:inherit;'
       + 'padding:7px 13px;border-radius:9px;cursor:pointer;font:inherit;font-size:13px}'
       + '.kspk-btn:hover{background:rgba(255,255,255,.14)}'
+      + '.kspk-btn:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.6)}'
+      + '.kspk-btn:disabled:hover{background:rgba(255,255,255,.07)}'
       + '.kspk-btn--danger{border-color:rgba(255,107,107,.5);color:#ff8f8f}'
       + '.kspk-btn--primary{background:#3ef08a;border-color:#3ef08a;color:#05140c;font-weight:600}'
+      + '.kspk-btn--primary:disabled{background:#4a5a52;border-color:#4a5a52;color:#9fb3a9}'
       + '.kspk-modal{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;'
       + 'background:rgba(3,6,5,.62);padding:16px;overflow:auto}'
       + '.kspk-card{width:min(430px,100%);padding:22px;border-radius:16px;background:#0c1510;color:#eaf3ee;'
@@ -804,6 +807,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     var imgAddWrap = $('#kp-img-addwrap');
     var imgFile = $('#kp-img');
     var imgStatus = $('#kp-img-status');
+    var okBtn = $('#kp-ok');
 
     function renderImgGrid() {
       $('#kp-img-count').textContent = images.length + (pendingImage ? 1 : 0);
@@ -821,10 +825,17 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
           if (!c) return;
           b.disabled = true;
           Store.imageDelete(im.id, c).then(function () {
-            images = images.filter(function (o) { return o.id !== im.id; });
-            if (edit) p.images = images;
-            renderImgGrid(); draw(); announce();
+            /* Palvelin vahvisti poiston onnistuneen — nayta se HETI. Jos
+               tama jalkeinen UI-paivitys (renderImgGrid/draw/announce)
+               kaatuu esim. samaan aikaan tulleen realtime-paivityksen
+               takia, se ei enaa saa nakya kayttajalle epaonnistumisena:
+               kuva ON jo poistettu tietokannasta ja Storagesta. */
             toast('Kuva poistettu');
+            try {
+              images = images.filter(function (o) { return o.id !== im.id; });
+              if (edit) p.images = images;
+              renderImgGrid(); draw(); announce();
+            } catch (uiErr) {}
           }).catch(function (e) { toast(errText(e), false); b.disabled = false; });
         };
         imgGrid.appendChild(item);
@@ -838,8 +849,14 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       if (!f) {
         if (!edit) { pendingImage = null; renderImgGrid(); }
         imgStatus.style.display = 'none';
+        okBtn.disabled = false;
         return;
       }
+      /* Kuva kasittelyssa (pakkaus + tallennus tietokantaan) — Tallenna/
+         Lisaa merkki -nappi harmaaksi siksi aikaa, ettei paasta jatkamaan
+         ennen kuin kuva on OIKEASTI tietokannassa (tai pakkaus valmis
+         lisays-tilassa, jolloin kuva liitetaan vasta merkin lisayksessa). */
+      okBtn.disabled = true;
       imgStatus.style.display = ''; imgStatus.textContent = 'Pakataan kuvaa...';
       compressImage(f).then(function (res) {
         if (!edit) {
@@ -847,25 +864,31 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
           imgStatus.textContent = 'Kuva valmis (pikkukuva ~' + Math.round(res.thumbBytes / 1024) +
             ' kt, iso versio ~' + Math.round(res.fullBytes / 1024) + ' kt). Liitetaan kun merkki lisataan.';
           renderImgGrid();
+          okBtn.disabled = false;
           return;
         }
         var c = creds(p);
-        if (!c) { imgStatus.style.display = 'none'; imgFile.value = ''; return; }
+        if (!c) { imgStatus.style.display = 'none'; imgFile.value = ''; okBtn.disabled = false; return; }
         imgStatus.textContent = 'Lisataan kuvaa...';
         imgFile.disabled = true;
         Store.imageAdd(p.id, res, c).then(function (row) {
-          images.push(row);
-          p.images = images;
-          imgFile.value = ''; imgFile.disabled = false;
-          imgStatus.style.display = 'none';
-          renderImgGrid(); draw(); announce();
           toast('Kuva lisatty');
+          try {
+            images.push(row);
+            p.images = images;
+            imgFile.value = ''; imgFile.disabled = false;
+            imgStatus.style.display = 'none';
+            renderImgGrid(); draw(); announce();
+          } catch (uiErr) {}
+          okBtn.disabled = false;
         }).catch(function (e) {
           imgFile.disabled = false;
           imgStatus.textContent = errText(e);
+          okBtn.disabled = false;
         });
       }).catch(function () {
         imgStatus.textContent = 'Kuvan kasittely epaonnistui — kokeile toista kuvaa.';
+        okBtn.disabled = false;
       });
     });
 
