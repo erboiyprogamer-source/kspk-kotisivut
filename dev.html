@@ -75,6 +75,7 @@
         <button class="dv-tab on" data-t="wl" role="tab">Pelaajat</button>
         <button class="dv-tab" data-t="ln" role="tab">Linkit</button>
         <button class="dv-tab" data-t="ev" role="tab">Eventit</button>
+        <button class="dv-tab" data-t="lg" role="tab">Logo</button>
         <button class="dv-tab" data-t="tx" role="tab">Tekstit</button>
       </div>
 
@@ -111,6 +112,25 @@
         <div class="dv-bar"><button class="dv-b" id="ev-add">Lisää tapahtuma</button></div>
       </div>
 
+      <!-- LOGO -->
+      <div class="dv-pane" id="p-lg">
+        <p class="dv-hint">
+          Vaihda vaaleanvihreä "K"-merkki kaikkien sivujen ylä- ja alanurkassa omaksi kuvaksi tai symboliksi.
+          Kuva pienennetään ja tallennetaan suoraan asetuksiin — mitään erillistä tiedostoa ei tarvita.
+          Neliömäinen kuva läpinäkyvällä taustalla toimii parhaiten.
+        </p>
+        <div class="dv-row" style="align-items:center;flex-direction:row;display:flex;gap:16px;flex-wrap:wrap">
+          <div id="lg-preview" style="width:56px;height:56px;flex:none;border-radius:12px;
+            background:linear-gradient(145deg,var(--green),var(--green-deep));display:grid;place-items:center;overflow:hidden;
+            font-family:var(--font-pixel);font-size:.9rem;color:#04170c"></div>
+          <div class="dv-bar" style="margin:0">
+            <input class="dv" id="lg-file" type="file" accept="image/*" style="max-width:240px">
+            <button class="dv-b dv-b--danger" id="lg-reset">Palauta oletus (K)</button>
+          </div>
+        </div>
+        <p class="dv-msg" id="lg-status"></p>
+      </div>
+
       <!-- TEKSTIT -->
       <div class="dv-pane" id="p-tx">
         <p class="dv-hint">
@@ -138,7 +158,7 @@
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var lock = $('dv-lock'), app = $('dv-app');
-  var state = { players: [], links: [], texts: {}, events: [] };
+  var state = { players: [], links: [], texts: {}, events: [], logo: '' };
 
   /* Salasanageneraattori: kaksi sanaa ja numero — helppo sanoa kaverille */
   var SANAT = ['kivi','tammi','routa','lumi','kaira','halko','nuotio','ahven','sammal','petaja',
@@ -207,7 +227,9 @@
       }
       if (!state.events.length && window.SITE && SITE.events) state.events = JSON.parse(JSON.stringify(SITE.events));
       delete state.texts['@events'];
-      drawWl(); drawLn(); drawTx(); drawEv();
+      state.logo = state.texts['.brand__mark'] || '';
+      delete state.texts['.brand__mark'];
+      drawWl(); drawLn(); drawTx(); drawEv(); drawLg();
       msg('');
     }).catch(function () { msg('Haku ei onnistunut', 'bad'); });
   }
@@ -354,6 +376,52 @@
     drawEv();
   };
 
+  /* --- logo (kohta 10) --- */
+  function drawLg() {
+    var prev = $('lg-preview');
+    prev.innerHTML = state.logo ? state.logo : 'K';
+  }
+  function lgStatus(t, kind) {
+    var m = $('lg-status');
+    m.textContent = t || '';
+    m.className = 'dv-msg' + (kind ? ' ' + kind : '');
+  }
+  function resizeToDataUrl(file, maxDim) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var scale = Math.min(1, maxDim / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+        var cv = document.createElement('canvas');
+        cv.width = cw; cv.height = ch;
+        cv.getContext('2d').drawImage(img, 0, 0, cw, ch);
+        URL.revokeObjectURL(url);
+        resolve(cv.toDataURL('image/png'));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('IMG_LOAD_FAILED')); };
+      img.src = url;
+    });
+  }
+  $('lg-file').addEventListener('change', function (ev) {
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    lgStatus('Käsitellään kuvaa…');
+    resizeToDataUrl(f, 120).then(function (dataUrl) {
+      state.logo = '<img src="' + dataUrl + '" alt="' + (window.SITE ? SITE.name : 'Logo') +
+        '" style="width:100%;height:100%;object-fit:contain">';
+      drawLg();
+      lgStatus('Kuva valmis — muista painaa "Tallenna kaikki".', 'ok');
+    }).catch(function () { lgStatus('Kuvan käsittely epäonnistui — kokeile toista kuvaa.', 'bad'); });
+  });
+  $('lg-reset').onclick = function () {
+    state.logo = '';
+    $('lg-file').value = '';
+    drawLg();
+    lgStatus('Palautettu oletus — muista painaa "Tallenna kaikki".', 'ok');
+  };
+
   /* --- tekstit --- */
   function drawTx() {
     var box = $('tx-list');
@@ -402,12 +470,14 @@
     });
     var evs = state.events.filter(function (e) { return (e.title || '').trim() || (e.text || '').trim(); });
     if (evs.length) tx['@events'] = JSON.stringify(evs);
+    if (state.logo) tx['.brand__mark'] = state.logo;
     msg('Tallennetaan…');
     KSPK.rpc('players_save', { p_code: KSPK.code(), p_players: pl })
       .then(function () { return KSPK.save({ links: ln, texts: tx }); })
       .then(function () {
-      state.players = pl; state.links = ln; state.texts = tx;
-      drawWl(); drawLn(); drawTx(); drawEv();
+      state.players = pl; state.links = ln;
+      state.texts = Object.assign({}, tx); delete state.texts['@events']; delete state.texts['.brand__mark'];
+      drawWl(); drawLn(); drawTx(); drawEv(); drawLg();
       msg('Tallennettu — näkyy kaikille heti', 'ok');
     }).catch(function (e) {
       var m = String((e && e.message) || e);
