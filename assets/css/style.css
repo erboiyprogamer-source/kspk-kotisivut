@@ -118,6 +118,11 @@ p{margin:0 0 1.1em;color:#cfe5da}
   background:linear-gradient(100deg,#fff 8%,var(--green) 48%,var(--sky) 96%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
+.grad-text--gold{
+  background:linear-gradient(100deg,#ffe9b0 8%,#ffd166 48%,#ffb020 96%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.title-sm{font-size:clamp(1.35rem,2.4vw,1.9rem)}
 
 /* ---------- 4. Layout ---------- */
 .wrap{width:min(100% - 2*var(--pad),var(--max));margin-inline:auto}
@@ -734,12 +739,13 @@ tfoot td{padding:15px 18px;border-top:1px solid var(--line-strong);font-weight:6
   background:linear-gradient(180deg,transparent,rgba(62,240,138,.05));
   padding:clamp(44px,6vw,72px) 0 30px;
 }
-.footer__grid{display:grid;grid-template-columns:1.4fr repeat(2,1fr);gap:clamp(22px,3vw,40px)}
+.footer__grid{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:clamp(22px,3vw,40px)}
 @media (max-width:760px){.footer__grid{grid-template-columns:1fr 1fr}.footer__brand{grid-column:1/-1}}
 .footer h4{font-family:var(--font-pixel);font-size:.6rem;color:var(--green);letter-spacing:.06em;margin-bottom:18px}
 .footer ul{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .footer a{color:#b3cbc0;font-size:.9rem;transition:color .25s,transform .25s;display:inline-block}
 .footer a:hover{color:var(--green);transform:translateX(4px)}
+.footer__support h4{color:#ffd166}
 .footer__bottom{
   margin-top:40px;padding-top:22px;border-top:1px solid var(--line);
   display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
