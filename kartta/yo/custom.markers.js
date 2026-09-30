@@ -75,6 +75,15 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   var SS_DEV   = 'kspk.pins.dev';
   var SS_CODE  = 'kspk.pins.devcode';
 
+  /* Kohta 6: 5 valittavaa symbolia karttamerkeille (piste = oletus) */
+  var SYMBOLS = [
+    { id: 'dot',      glyph: '●' },
+    { id: 'square',   glyph: '■' },
+    { id: 'triangle', glyph: '▲' },
+    { id: 'star',     glyph: '★' },
+    { id: 'diamond',  glyph: '◆' }
+  ];
+
   /* ---------- apurit ---------- */
   function el(tag, cls, html) {
     var n = document.createElement(tag);
@@ -198,7 +207,8 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       return this.rpc('pin_add', {
         p_pass: c.pass, p_author: c.author,
         p_title: pin.title, p_message: pin.message || '',
-        p_color: pin.color, p_x: pin.x, p_z: pin.z
+        p_color: pin.color, p_x: pin.x, p_z: pin.z,
+        p_symbol: pin.symbol || 'dot', p_size: pin.size || 1, p_show_text: !!pin.show_text
       }).then(function (d) { return self.one(d); });
     },
     update: function (id, patch, c) {
@@ -211,7 +221,8 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       return this.rpc('pin_edit', {
         p_pass: c.pass, p_author: c.author, p_id: id,
         p_title: v('title'), p_message: v('message'), p_color: v('color'),
-        p_x: v('x'), p_z: v('z'), p_hidden: v('hidden')
+        p_x: v('x'), p_z: v('z'), p_hidden: v('hidden'),
+        p_symbol: v('symbol'), p_size: v('size'), p_show_text: v('show_text')
       });
     },
     remove: function (id, c) {
@@ -286,6 +297,14 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + '.kspk-colors{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px}'
       + '.kspk-colors button{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}'
       + '.kspk-colors button[aria-checked="true"]{border-color:#fff;transform:scale(1.15)}'
+      + '.kspk-symbols{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}'
+      + '.kspk-symbols button{width:34px;height:34px;border-radius:9px;border:2px solid rgba(255,255,255,.18);'
+      + 'background:rgba(255,255,255,.06);color:#eaf3ee;font-size:16px;line-height:1;cursor:pointer;padding:0;'
+      + 'display:grid;place-items:center}'
+      + '.kspk-symbols button[aria-checked="true"]{border-color:#3ef08a;background:rgba(62,240,138,.14);color:#3ef08a}'
+      + '.kspk-card input[type=range]{width:100%;margin:6px 0 0;accent-color:#3ef08a}'
+      + '.kspk-check{display:flex;align-items:center;gap:8px;margin:14px 0 0;font-size:13px;cursor:pointer;opacity:.9}'
+      + '.kspk-check input{width:auto;margin:0}'
       + '.kspk-card .row{display:flex;gap:9px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}'
       + '.kspk-hint{margin:14px 0 0;padding:10px 12px;border-radius:10px;font-size:12.5px;'
       + 'background:rgba(62,240,138,.08);border:1px solid rgba(62,240,138,.22);color:#b9f5d2}'
@@ -307,20 +326,34 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   function pinStyle(p, olns) {
     var c = p.color || CFG.colors[0];
     var hidden = !!p.hidden;
-    var s = new olns.style.Style({
-      image: new olns.style.Circle({
-        radius: 8,
-        fill: new olns.style.Fill({ color: hidden ? 'rgba(120,120,120,.45)' : c }),
-        stroke: new olns.style.Stroke({
-          color: hidden ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.65)',
-          width: 3, lineDash: hidden ? [3, 3] : undefined
-        })
-      })
-    });
-    if (p.title) {
+    var sym = p.symbol || 'dot';
+    var baseR = 8 * (p.size || 1);
+    var fillColor = hidden ? 'rgba(120,120,120,.45)' : c;
+    var strokeColor = hidden ? 'rgba(255,255,255,.55)' : 'rgba(0,0,0,.65)';
+    var fill = new olns.style.Fill({ color: fillColor });
+    var stroke = new olns.style.Stroke({ color: strokeColor, width: 3, lineDash: hidden ? [3, 3] : undefined });
+    var image;
+    switch (sym) {
+      case 'square':
+        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 4, radius: baseR * 1.15, angle: Math.PI / 4 });
+        break;
+      case 'triangle':
+        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 3, radius: baseR * 1.35, angle: 0 });
+        break;
+      case 'star':
+        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 5, radius: baseR * 1.35, radius2: baseR * 0.55, angle: 0 });
+        break;
+      case 'diamond':
+        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 4, radius: baseR * 1.3, angle: 0 });
+        break;
+      default:
+        image = new olns.style.Circle({ radius: baseR, fill: fill, stroke: stroke });
+    }
+    var s = new olns.style.Style({ image: image });
+    if (p.title && p.show_text) {
       s.setText(new olns.style.Text({
         text: p.title + (hidden ? ' (piilotettu)' : ''),
-        font: '600 13px system-ui,sans-serif', offsetY: -20,
+        font: '600 13px system-ui,sans-serif', offsetY: -20 - (baseR - 8),
         fill: new olns.style.Fill({ color: hidden ? '#b9c4bd' : '#ffffff' }),
         stroke: new olns.style.Stroke({ color: 'rgba(0,0,0,.85)', width: 3 })
       }));
@@ -352,6 +385,13 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       '</div>' +
 
       '<label>Vari</label><div class="kspk-colors" id="kp-c" role="radiogroup"></div>' +
+
+      '<label>Symboli</label><div class="kspk-symbols" id="kp-sym" role="radiogroup"></div>' +
+
+      '<label>Koko (<span id="kp-size-val">1.0x</span>)</label>' +
+      '<input id="kp-size" type="range" min="0.4" max="2.5" step="0.1" value="1">' +
+
+      '<label class="kspk-check"><input type="checkbox" id="kp-text"> Nayta otsikko kartalla</label>' +
 
       '<label>Pelinimesi *</label><input id="kp-a" maxlength="24" placeholder="Minecraft-nimesi">' +
       '<label>Salasanasi *</label><input id="kp-p" type="password" placeholder="' +
@@ -389,6 +429,31 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       };
       cbox.appendChild(b);
     });
+
+    var symbol = (edit ? p.symbol : null) || 'dot';
+    var sbox = $('#kp-sym');
+    SYMBOLS.forEach(function (sInfo) {
+      var b = el('button', null, sInfo.glyph);
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', sInfo.id === symbol ? 'true' : 'false');
+      b.title = sInfo.id;
+      b.onclick = function () {
+        symbol = sInfo.id;
+        [].forEach.call(sbox.children, function (o) { o.setAttribute('aria-checked', 'false'); });
+        b.setAttribute('aria-checked', 'true');
+      };
+      sbox.appendChild(b);
+    });
+
+    var sizeVal = (edit ? p.size : null) || 1;
+    $('#kp-size').value = sizeVal;
+    $('#kp-size-val').textContent = Number(sizeVal).toFixed(1) + 'x';
+    $('#kp-size').addEventListener('input', function () {
+      $('#kp-size-val').textContent = Number($('#kp-size').value).toFixed(1) + 'x';
+    });
+
+    $('#kp-text').checked = edit ? !!p.show_text : false;
 
     $('#kp-center').onclick = function () {
       if (opts.centre) {
@@ -437,8 +502,10 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       saveName(a);
       if (!isDev() || pw !== devCode()) savePass(pw);
       close();
-      done({ x: x, z: z, title: t, message: $('#kp-m').value.trim(), author: a, color: color },
-           { pass: pw, author: a });
+      done({
+        x: x, z: z, title: t, message: $('#kp-m').value.trim(), author: a, color: color,
+        symbol: symbol, size: parseFloat($('#kp-size').value) || 1, show_text: $('#kp-text').checked
+      }, { pass: pw, author: a });
     };
   }
 
