@@ -180,8 +180,12 @@
   }
 
   /* ---------- 7. Lightbox (galleria) ---------- */
-  const figs = $$('.gallery figure');
-  if (figs.length) {
+  /* Delegoitu klikkauskuuntelija .gallery-elementtiin (ei yksittaisiin
+     figure-elementteihin), jotta myos jalkeenpain (esim. Supabasesta,
+     galleria.html:n oma kayttajien kuvat -osio) lisatyt kuvat avautuvat
+     lightboxiin ilman erillista sidontaa. */
+  const galleries = $$('.gallery');
+  if (galleries.length) {
     const lb = document.createElement('div');
     lb.className = 'lightbox';
     lb.innerHTML = `<button class="lightbox__close" aria-label="Sulje">✕</button>
@@ -189,7 +193,9 @@
     document.body.append(lb);
     const img = $('img', lb), cap = $('.lightbox__cap', lb);
     const close = () => { lb.classList.remove('is-open'); document.body.style.overflow = ''; };
-    figs.forEach(f => f.addEventListener('click', () => {
+    galleries.forEach(gal => gal.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;   // esim. galleriakuvan oma "Poista"-nappi
+      const f = e.target.closest('figure'); if (!f || !gal.contains(f)) return;
       const i = $('img', f); if (!i) return;
       img.src = i.currentSrc || i.src;
       img.alt = i.alt || '';

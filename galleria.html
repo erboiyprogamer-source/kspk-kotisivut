@@ -39,15 +39,50 @@
       <figure><img src="assets/img/shot-7.svg" alt="Kaivos"><figcaption>Syvä kaivos</figcaption></figure>
       <figure><img src="assets/img/shot-8.svg" alt="Maatila"><figcaption>Automaattimaatila</figcaption></figure>
     </div>
+  </div>
+</section>
 
-    <div class="notice" style="margin-top:34px" data-reveal>
-      <b>Lisää kuvia:</b> pudota tiedostot kansioon <code>assets/img/</code> ja lisää
-      uusi <code>&lt;figure&gt;</code> yllä olevaan listaan. Lightbox toimii automaattisesti.
+<!-- ══════════ KAVEREIDEN OMAT KUVAT ══════════ -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">Yhteisö</span>
+      <h2>Lisää oma kuva galleriaan</h2>
+      <p class="lead">
+        Sama pelinimi ja salasana kuin kartan merkeissä. Kuva muutetaan automaattisesti
+        pieneksi WebP-tiedostoksi (~100 kt) selaimessasi ennen lähetystä — alkuperäistä
+        ei tallenneta. Yksi pelaaja voi lisätä enintään 50 kuvaa, koko galleria enintään 200.
+      </p>
+    </div>
+
+    <form class="gup" id="gallery-upload" data-reveal>
+      <div class="gup__row">
+        <label class="gup__f"><span>PELINIMI</span><input id="gup-name" maxlength="24" placeholder="Minecraft-nimesi" required></label>
+        <label class="gup__f"><span>SALASANA</span><input id="gup-pass" type="password" placeholder="Oma salasanasi" required></label>
+      </div>
+      <div class="gup__row">
+        <label class="gup__f" style="flex:2 1 220px"><span>KUVA</span><input id="gup-file" type="file" accept="image/*" required></label>
+        <label class="gup__f"><span>KUVATEKSTI (valinnainen)</span><input id="gup-caption" maxlength="140" placeholder="Mitä kuvassa on?"></label>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <button type="submit" class="btn btn--solid" id="gup-submit">Lisää galleriaan</button>
+        <span class="gup__count" id="gup-count"></span>
+      </div>
+      <p class="gup__status" id="gup-status"></p>
+    </form>
+
+    <div class="gallery" id="gallery-dynamic" style="margin-top:22px" data-reveal></div>
+
+    <div class="notice" style="margin-top:28px" data-reveal>
+      <b>Sivuston omat kuvat yllä:</b> pudota tiedostot kansioon <code>assets/img/</code> ja lisää
+      uusi <code>&lt;figure&gt;</code> ensimmäiseen galleriaan koodissa. Alempi galleria on
+      kaikkien kaverien yhdessä täyttämä ja tallentuu Supabaseen.
     </div>
   </div>
 </section>
 </main>
 <script src="assets/js/site.js"></script>
 <script src="assets/js/main.js"></script>
+<script src="assets/js/gallery.js"></script>
 </body>
 </html>
