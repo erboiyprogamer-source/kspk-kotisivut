@@ -30,6 +30,7 @@ const SITE = {
     { href:'serveri.html',   label:'Serveri',    foot:'Yhteisö' },
     { href:'kartta.html',    label:'Kartta',     foot:'Yhteisö' },
     { href:'projektit.html', label:'Dokumentit', foot:'Yhteisö' },
+    { href:'valtio.html',    label:'Valtio',     foot:'Yhteisö' },
     { href:'tietoa.html',    label:'Tietoa',     foot:'Sivusto' }
   ],
 
