@@ -18,6 +18,7 @@ const SITE = {
   youtube:   'https://www.youtube.com/@K-S-P-K_Minecraft_Official',
   email:     'kasapeka.official@gmail.com',      // yleinen yhteydenotto + liittymispyynnöt
   support:   'kasapeka.support@gmail.com',       // tuki- ja supportviestit
+  githubRepo: 'erboiyprogamer-source/kspk-kotisivut',  // tila.html: GitHub-repon koko/rajat
   // uNmINeD-kartat. Jokainen on oma kansionsa jossa on index.html + lib/ + tiles/
   mapDay:    'kartta/paiva/index.html',
   mapNight:  'kartta/yo/index.html',
@@ -33,7 +34,8 @@ const SITE = {
     { href:'videot.html',    label:'Videot',     foot:'Sivusto' },
     { href:'serveri.html',   label:'Serveri',    foot:'Yhteisö', nav:'muut' },
     { href:'projektit.html', label:'Dokumentit', foot:'Yhteisö', nav:'muut' },
-    { href:'tietoa.html',    label:'Tietoa',     foot:'Sivusto', nav:'muut' }
+    { href:'tietoa.html',    label:'Tietoa',     foot:'Sivusto', nav:'muut' },
+    { href:'tila.html',      label:'Tila',       foot:'Yhteisö', nav:'muut' }
   ],
 
   events: [

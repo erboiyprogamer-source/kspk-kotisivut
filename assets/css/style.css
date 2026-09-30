@@ -960,3 +960,23 @@ pre,code{overflow-wrap:anywhere;word-break:break-word}
   [data-reveal="left"],[data-reveal="right"]{transform:translateY(26px)}
   .cursor-glow{display:none}
 }
+
+/* ---------- 23. Tila (projektin hyvinvointi) ---------- */
+.meter{margin-bottom:24px}
+.meter__head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.meter__label{font-weight:600;font-size:.95rem}
+.meter__label small{display:block;font-weight:400;font-size:.78rem;color:var(--muted);margin-top:2px}
+.meter__val{font:12px/1 ui-monospace,monospace;color:var(--muted);white-space:nowrap}
+.meter__val b{color:var(--text);font-size:.95rem}
+.meter__track{height:12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line);overflow:hidden}
+.meter__fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--green),var(--green-2));transition:width .8s var(--ease-out);width:0}
+.meter__fill.is-warn{background:linear-gradient(90deg,#ffd166,#ff9f43)}
+.meter__fill.is-crit{background:linear-gradient(90deg,#ff6b6b,#ff4d4d)}
+.meter--skeleton .meter__fill{width:100%;opacity:.08;animation:pulse-op 1.4s infinite}
+@keyframes pulse-op{50%{opacity:.18}}
+.status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;margin-top:18px}
+.status-stat{padding:14px 16px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-align:center}
+.status-stat b{display:block;font-size:1.4rem;font-family:var(--font-pixel);color:var(--green)}
+.status-stat span{font-size:.74rem;color:var(--muted);letter-spacing:.03em}
+.status-updated{font-size:.8rem;color:var(--muted);margin-top:8px}
+.status-err{font-size:.85rem;color:#ff8f8f;margin-top:8px}

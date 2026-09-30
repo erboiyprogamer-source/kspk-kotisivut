@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="fi" class="is-loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tila | K-S-P-K Minecraft SMP</title>
+<meta name="description" content="Projektin hyvinvointi: Supabase-tietokannan ja -tallennustilan käyttöaste sekä GitHub-repon tila reaaliajassa.">
+<meta property="og:title" content="Tila | K-S-P-K Minecraft SMP">
+<meta property="og:description" content="Projektin hyvinvointi: Supabase-tietokannan ja -tallennustilan käyttöaste sekä GitHub-repon tila reaaliajassa.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#060a08">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Siirry sisältöön</a>
+<main id="main">
+
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>Tekniikka</span>
+    <h1 data-reveal><span class="grad-text">Projektin tila</span></h1>
+    <p class="lead" data-reveal>
+      Sivuston ja tietokannan hyvinvointi reaaliajassa, suoraan Supabasesta ja GitHubista haettuna.
+      Ei arvattuja lukuja — vain sitä mitä oikeasti pystytään mittaamaan täältä.
+    </p>
+  </div>
+</section>
+
+<!-- ══════════ SUPABASE ══════════ -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">Tietokanta</span>
+      <h2>Supabase <span class="grad-text">(ilmaistaso)</span></h2>
+      <p class="lead">Karttamerkit, kuvat ja pelaajalista asuvat täällä.</p>
+    </div>
+
+    <div class="card" data-reveal>
+      <div class="meter meter--skeleton" id="m-db">
+        <div class="meter__head">
+          <span class="meter__label">Tietokannan koko<small>PostgreSQL, kaikki taulut yhteensä</small></span>
+          <span class="meter__val">Ladataan…</span>
+        </div>
+        <div class="meter__track"><div class="meter__fill"></div></div>
+      </div>
+
+      <div class="meter meter--skeleton" id="m-storage">
+        <div class="meter__head">
+          <span class="meter__label">Tallennustila<small>Kaikki ladatut kuvat (karttamerkit + galleria)</small></span>
+          <span class="meter__val">Ladataan…</span>
+        </div>
+        <div class="meter__track"><div class="meter__fill"></div></div>
+      </div>
+
+      <div class="status-grid" id="sb-stats">
+        <div class="status-stat"><b>—</b><span>Karttamerkkiä</span></div>
+        <div class="status-stat"><b>—</b><span>Merkkien kuvaa</span></div>
+        <div class="status-stat"><b>—</b><span>Galleriakuvaa</span></div>
+        <div class="status-stat"><b>—</b><span>Pelaajaa listalla</span></div>
+      </div>
+      <p class="status-updated" id="sb-updated">Ladataan…</p>
+    </div>
+
+    <div class="notice" style="margin-top:24px" data-reveal>
+      <b>Huom:</b> Supabasen ilmaistason kuukausittaista kaistankäyttöä ja API-kutsumäärää
+      ei voi hakea tälle sivulle julkisesti — ne näkyvät vain projektin omassa Supabase-hallintapaneelissa.
+      Yllä olevat palkit näyttävät sen sijaan suoraan mitatun tietokannan ja tallennustilan koon,
+      joka on aina ajantasainen ja tarkka.
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ GITHUB ══════════ -->
+<section>
+  <div class="wrap">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">Koodi</span>
+      <h2>GitHub <span class="grad-text">-repo</span></h2>
+      <p class="lead">Sivuston koodi ja GitHub Pages -julkaisu.</p>
+    </div>
+
+    <div class="card" data-reveal>
+      <div class="meter meter--skeleton" id="m-gh">
+        <div class="meter__head">
+          <span class="meter__label">Repon koko<small>GitHubin julkinen REST-API</small></span>
+          <span class="meter__val">Ladataan…</span>
+        </div>
+        <div class="meter__track"><div class="meter__fill"></div></div>
+      </div>
+
+      <div class="status-grid" id="gh-stats">
+        <div class="status-stat"><b>—</b><span>Avointa issueta</span></div>
+        <div class="status-stat"><b>—</b><span>Oletushaara</span></div>
+        <div class="status-stat"><b>—</b><span>Näkyvyys</span></div>
+        <div class="status-stat"><b>—</b><span>Viimeisin push</span></div>
+      </div>
+      <p class="status-updated" id="gh-updated">Ladataan…</p>
+    </div>
+
+    <div class="notice" style="margin-top:24px" data-reveal>
+      <b>Huom:</b> GitHub Pages -sivustoille ei ole tiukkaa kovaa kokorajaa, mutta suositus on pysyä
+      selvästi alle 1 Gt:n jotta build ja julkaisu pysyvät nopeina. Rajaa käytetään yllä vain
+      suuntaa-antavana vertailukohtana.
+    </div>
+  </div>
+</section>
+
+</main>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/tila.js"></script>
+</body>
+</html>
