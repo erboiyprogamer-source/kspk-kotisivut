@@ -556,6 +556,14 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
          samassa kulmassa) piilotetaan — kayttajan oma tumma .kspk-coord
          korvaa sen kokonaan, kahta paallekkaista koordinaattia ei tarvita. */
       + '.ol-mouse-position{display:none!important}'
+      /* Hiiren hover -nimilappu merkin yla puolella — hiipuu nakyviin
+         opacity-transitiolla (mini-fade in), itse merkki suurenee samaan
+         aikaan pinStyle()in hoverT-parametrilla animoituna. */
+      + '.kspk-hoverlabel{position:absolute;transform:translate(-50%,0);z-index:47;padding:5px 10px;'
+      + 'border-radius:8px;background:rgba(10,18,14,.92);color:#eaf3ee;border:1px solid rgba(255,255,255,.18);'
+      + 'font:600 12.5px system-ui,sans-serif;white-space:nowrap;pointer-events:none;'
+      + 'opacity:0;transition:opacity .15s ease;box-shadow:0 4px 14px rgba(0,0,0,.35)}'
+      + '.kspk-hoverlabel.show{opacity:1}'
       + '.kspk-badge{position:absolute;left:10px;bottom:10px;z-index:40;padding:6px 11px;border-radius:999px;'
       + 'background:rgba(10,18,14,.85);color:#9db3a6;border:1px solid rgba(255,255,255,.14);'
       + 'font:12px system-ui,sans-serif;pointer-events:none}'
@@ -587,12 +595,15 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
   }
 
   /* ---------- merkin tyyli ---------- */
-  function pinStyle(p, olns, viewScale) {
+  function pinStyle(p, olns, viewScale, hoverT) {
     var vs = (typeof viewScale === 'number' && viewScale > 0) ? viewScale : 1;
+    var ht = (typeof hoverT === 'number' && hoverT > 0) ? Math.min(1, hoverT) : 0;
     var c = p.color || CFG.colors[0];
     var hidden = !!p.hidden;
     var sym = p.symbol || 'dot';
-    var baseR = 8 * (p.size || 1) * vs;
+    /* Hiiren hover "nappimainen" pieni suurennus: baseR kasvaa max +18%
+       kun ht=1 (ks. hoverScale-animaatio boot()issa). */
+    var baseR = 8 * (p.size || 1) * vs * (1 + 0.18 * ht);
     var fillColor = hidden ? 'rgba(120,120,120,.45)' : c;
     /* Yhtenaistetty uusien SVG-kuvakkeiden kanssa: taysin musta (ei 65%
        lapinakyva) ja outline skaalautuu koon mukaan (baseR/6) kiintean
@@ -650,7 +661,16 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         stroke: new olns.style.Stroke({ color: 'rgba(0,0,0,.85)', width: 3 })
       }));
     }
-    return s;
+    /* Tumma, lapinakyva "varjoympyra" ikonin/muodon alla — hieman pienempi
+       kuin itse merkki, antaa pientä syvyytta ja auttaa erottumaan vaaleista
+       karttapohjista. Piirretaan ensin (taustimmaisena tyylina). */
+    var shadow = new olns.style.Style({
+      image: new olns.style.Circle({
+        radius: baseR * 0.86,
+        fill: new olns.style.Fill({ color: hidden ? 'rgba(0,0,0,.15)' : 'rgba(0,0,0,.32)' })
+      })
+    });
+    return [shadow, s];
   }
 
   /* ---------- lomake (lisays + muokkaus) ---------- */
@@ -909,6 +929,42 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       tellParentBusy(false);
     }
 
+    /* --- hover: pieni "nappimainen" suurennus + nimilappu ---------------
+       hoverOverlay seuraa karttaa automaattisesti (pan/zoom), hoverEl saa
+       CSS-fade-transition .kspk-hoverlabel.show-luokalla. Itse merkin
+       skaalausanimaatio hoitaa setHoverTarget() alla (pinStyle:n hoverT). */
+    var hoverEl = el('div', 'kspk-hoverlabel');
+    var hoverOverlay = new olns.Overlay({ element: hoverEl, positioning: 'bottom-center', stopEvent: false, offset: [0, -10] });
+    map.addOverlay(hoverOverlay);
+    var hoverFeature = null;
+    function setHoverTarget(f, target, vwScale) {
+      if (!f) return;
+      var prevRaf = f.get('_hoverRaf');
+      if (prevRaf) cancelAnimationFrame(prevRaf);
+      var from = f.get('_hoverT') || 0;
+      if (from === target) return;
+      var t0 = null, dur = 150;
+      function step(ts) {
+        if (t0 === null) t0 = ts;
+        var k = Math.min(1, (ts - t0) / dur);
+        var eased = 1 - Math.pow(1 - k, 2);
+        var val = from + (target - from) * eased;
+        f.set('_hoverT', val);
+        f.setStyle(pinStyle(f.get('pin'), olns, vwScale, val));
+        if (k < 1) f.set('_hoverRaf', requestAnimationFrame(step));
+        else f.set('_hoverRaf', null);
+      }
+      f.set('_hoverRaf', requestAnimationFrame(step));
+    }
+    function clearHover() {
+      if (hoverFeature) setHoverTarget(hoverFeature, 0, getView().scale);
+      hoverFeature = null;
+      hoverEl.classList.remove('show');
+      hoverOverlay.setPosition(undefined);
+      var t = map.getTargetElement();
+      if (t) t.style.cursor = '';
+    }
+
     function toView(x, z) { return olns.proj.transform([x, z], unmined.dataProjection, unmined.viewProjection); }
     function toBlock(c)   { return olns.proj.transform(c, unmined.viewProjection, unmined.dataProjection); }
     function centre()     { return toBlock(map.getView().getCenter()); }
@@ -1082,6 +1138,36 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         { hitTolerance: 10, layerFilter: function (l) { return l === layer; } });
       if (hit) openPop(hit.get('pin')); else closePop();
     });
+
+    map.on('pointermove', function (evt) {
+      if (evt.dragging) { clearHover(); return; }
+      var f = map.forEachFeatureAtPixel(evt.pixel, function (ff) { return ff.get('pin') ? ff : null; },
+        { hitTolerance: 10, layerFilter: function (l) { return l === layer; } });
+      var t = map.getTargetElement();
+      if (t) t.style.cursor = f ? 'pointer' : '';
+      if (f === hoverFeature) return;
+      var vwScale = getView().scale;
+      if (hoverFeature) setHoverTarget(hoverFeature, 0, vwScale);
+      hoverFeature = f;
+      if (f) {
+        setHoverTarget(f, 1, vwScale);
+        var p = f.get('pin');
+        if (p && p.title) {
+          hoverEl.textContent = p.title + (p.hidden ? ' (piilotettu)' : '');
+          var r = 8 * (p.size || 1) * vwScale * 1.18;
+          hoverOverlay.setOffset([0, -(r + 10)]);
+          hoverOverlay.setPosition(f.getGeometry().getCoordinates());
+          requestAnimationFrame(function () { hoverEl.classList.add('show'); });
+        } else {
+          hoverEl.classList.remove('show');
+          hoverOverlay.setPosition(undefined);
+        }
+      } else {
+        hoverEl.classList.remove('show');
+        hoverOverlay.setPosition(undefined);
+      }
+    });
+    map.getViewport().addEventListener('pointerleave', clearHover);
 
     /* --- kolmoisnapautus / kolmoisklikkaus ------------------------------
        Mobiilikorjaus: kahden sormen zoomaus ei saa enaa vahingossa
