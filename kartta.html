@@ -92,10 +92,13 @@
     <div class="map-toolbar" data-reveal hidden id="map-tools">
       <button class="btn btn--sm btn--solid" type="button" data-map="day">☀️ Päiväkuva</button>
       <button class="btn btn--sm" type="button" data-map="night">🌙 Yökuva</button>
-      <button class="btn btn--sm" type="button" data-map="k5">🔍 1:1 tarkka</button>
+      <button class="btn btn--sm" type="button" data-map="k5">🔍 Suuri kartta</button>
       <a class="btn btn--sm btn--ghost" id="map-open" href="#" target="_blank" rel="noopener">Avaa koko näytölle</a>
       <button class="btn btn--sm btn--ghost" type="button" id="map-reload">Lataa uudelleen</button>
     </div>
+    <p class="muted" id="map-note" hidden style="margin:10px 2px 0;font-size:.92rem">
+      Ei zoom-mahdollisuutta, mutta kartta yli 100 000 000 m² (100 km²).
+    </p>
 
     <div class="map-frame" data-reveal="zoom">
       <iframe id="map-frame" src="about:blank" title="K-S-P-K maailmankartta (uNmINeD)"></iframe>
@@ -176,6 +179,8 @@
     document.querySelectorAll('[data-map]').forEach(function(b){
       b.classList.toggle('btn--solid', b.dataset.map === which);
     });
+    var note = document.getElementById('map-note');
+    if (note) note.hidden = (which !== 'k5');
     exists(url).then(function(ok){
       if (ok) { ph.hidden = true;  f.style.visibility = '';        f.src = url; }
       else    { ph.hidden = false; f.style.visibility = 'hidden';  f.src = 'about:blank'; }
