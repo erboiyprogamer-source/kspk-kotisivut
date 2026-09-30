@@ -132,7 +132,75 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     if (m.indexOf('NO_RIGHTS')       > -1) return 'Ei oikeuksia — tarkista salasana ja pelinimi';
     if (m.indexOf('NO_AUTHOR')       > -1) return 'Pelinimi puuttuu';
     if (m.indexOf('NOT_FOUND')       > -1) return 'Merkkia ei loytynyt';
+    if (m.indexOf('THUMB_TOO_BIG')   > -1) return 'Kuvan pikkukuva jai liian isoksi';
+    if (m.indexOf('FULL_TOO_BIG')    > -1) return 'Kuva jai pakkauksen jalkeenkin liian isoksi';
+    if (m.indexOf('UPLOAD_FAILED')   > -1) return 'Kuvan lataus palvelimelle epaonnistui';
+    if (m.indexOf('NO_IMAGE')        > -1) return 'Kuva puuttuu';
     return 'Toiminto ei onnistunut';
+  }
+
+  /* ---------- kohta 9: kuvan pakkaus selaimessa (canvas) ---------- */
+  function loadImageFile(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () { resolve({ img: img, url: url }); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('IMG_LOAD_FAILED')); };
+      img.src = url;
+    });
+  }
+  function canvasJpeg(img, maxDim, quality) {
+    var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    var scale = Math.min(1, maxDim / Math.max(w, h));
+    var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+    var cv = document.createElement('canvas');
+    cv.width = cw; cv.height = ch;
+    cv.getContext('2d').drawImage(img, 0, 0, cw, ch);
+    return new Promise(function (resolve) { cv.toBlob(function (b) { resolve(b); }, 'image/jpeg', quality); });
+  }
+  /* Kokeilee laskevia laatuja kunnes tavoitekoko alittuu; palauttaa
+     pienimman loydetyn jos tavoitetta ei saavuteta. */
+  function shrinkToTarget(img, maxDim, targetBytes) {
+    var qualities = [0.82, 0.7, 0.58, 0.46, 0.36, 0.28];
+    var i = 0, best = null;
+    function next() {
+      if (i >= qualities.length) return Promise.resolve(best);
+      var q = qualities[i++];
+      return canvasJpeg(img, maxDim, q).then(function (b) {
+        if (b && (!best || b.size < best.size)) best = b;
+        if (b && b.size <= targetBytes) return b;
+        return next();
+      });
+    }
+    return next();
+  }
+  function blobToBase64(blob) {
+    return new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () { resolve(String(r.result).split(',')[1] || ''); };
+      r.onerror = function () { reject(new Error('READ_FAILED')); };
+      r.readAsDataURL(blob);
+    });
+  }
+  /* Tuottaa pikkukuvan (~20 kt) ja isomman version (max ~500 kt)
+     mista tahansa selaimeen valitusta kuvasta. */
+  function compressImage(file) {
+    return loadImageFile(file).then(function (loaded) {
+      return shrinkToTarget(loaded.img, 260, 20 * 1024).then(function (thumbBlob) {
+        return shrinkToTarget(loaded.img, 1600, 500 * 1024).then(function (fullBlob) {
+          URL.revokeObjectURL(loaded.url);
+          if (!thumbBlob || !fullBlob) throw new Error('COMPRESS_FAILED');
+          return Promise.all([blobToBase64(thumbBlob), blobToBase64(fullBlob)]).then(function (arr) {
+            return { thumbB64: arr[0], fullB64: arr[1], thumbBytes: thumbBlob.size, fullBytes: fullBlob.size };
+          });
+        });
+      });
+    });
+  }
+  function mayEditImage(p) {
+    if (isDev()) return true;
+    var n = savedName();
+    return !!n && !!p.image_added_by && n.toLowerCase() === String(p.image_added_by).toLowerCase();
   }
 
   /* Pelinimi + oma salasana muokkausta/poistoa varten.
@@ -250,6 +318,34 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         return Promise.resolve();
       }
       return this.rpc('pin_delete', { p_pass: c.pass, p_author: c.author, p_id: id });
+    },
+    /* Kohta 9: kuvaliitteet. Kulkee Edge Functionin kautta koska
+       tiedoston tavuja ei voi laittaa suoraan RPC:lle — service-role-
+       avain (joka voi kirjoittaa Storageen) asuu vain funktiossa,
+       ei koskaan taalla clientilla. */
+    imageSet: function (id, img, c) {
+      if (!SHARED) return Promise.reject(new Error('NO_SHARED'));
+      return fetch(this.base() + '/functions/v1/pin-image', {
+        method: 'POST', headers: this.head(),
+        body: JSON.stringify({ action: 'set', pass: c.pass, author: c.author, id: id, thumb: img.thumbB64, full: img.fullB64 })
+      }).then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (data) {
+          if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
+          return data;
+        });
+      });
+    },
+    imageClear: function (id, c) {
+      if (!SHARED) return Promise.reject(new Error('NO_SHARED'));
+      return fetch(this.base() + '/functions/v1/pin-image', {
+        method: 'POST', headers: this.head(),
+        body: JSON.stringify({ action: 'clear', pass: c.pass, author: c.author, id: id })
+      }).then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (data) {
+          if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
+          return data;
+        });
+      });
     }
   };
 
@@ -342,6 +438,10 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + '.kspk-authors{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}'
       + '.kspk-authors button{padding:6px 12px;border-radius:999px;border:2px solid rgba(255,255,255,.18);'
       + 'background:rgba(255,255,255,.06);color:#eaf3ee;font:inherit;font-size:12.5px;cursor:pointer}'
+      + '.kspk-imgrow{display:flex;align-items:center;gap:10px;margin-top:6px}'
+      + '.kspk-imgprev{width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,.18);display:block}'
+      + '.kspk-card input[type=file]{width:100%;box-sizing:border-box;padding:9px 10px;border-radius:10px;'
+      + 'background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:inherit;font:inherit;font-size:12.5px}'
       + '.kspk-ripple{position:absolute;z-index:44;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;'
       + 'pointer-events:none;border:2px solid #3ef08a;box-shadow:0 0 22px 4px rgba(62,240,138,.45);'
       + 'animation:kspkR .6s cubic-bezier(.2,.7,.3,1) forwards}'
@@ -421,6 +521,17 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
       '<label class="kspk-check"><input type="checkbox" id="kp-text"> Nayta otsikko kartalla</label>' +
 
+      '<label>Kuva (valinnainen)</label>' +
+      (edit && p.image_thumb_url
+        ? '<div class="kspk-imgrow" id="kp-img-cur">' +
+            '<a href="' + esc(p.image_full_url) + '" target="_blank" rel="noopener">' +
+              '<img src="' + esc(p.image_thumb_url) + '" class="kspk-imgprev" alt="Merkin kuva"></a>' +
+            (mayEditImage(p) ? '<button type="button" class="kspk-btn kspk-btn--danger" id="kp-img-del">Poista kuva</button>' : '') +
+          '</div>'
+        : '') +
+      '<input id="kp-img" type="file" accept="image/*">' +
+      '<div id="kp-img-status" class="kspk-hint" style="display:none"></div>' +
+
       '<label>Pelinimesi *</label><input id="kp-a" maxlength="24" placeholder="Minecraft-nimesi">' +
       '<label>Salasanasi *</label><input id="kp-p" type="password" placeholder="' +
         (isDev() ? 'Tyhja = yllapitokoodi' : 'Oma salasanasi') + '">' +
@@ -483,6 +594,38 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
     $('#kp-text').checked = edit ? !!p.show_text : false;
 
+    var pendingImage = null;
+    var imgDel = $('#kp-img-del');
+    if (imgDel) {
+      imgDel.onclick = function () {
+        if (!confirm('Poistetaanko kuva merkilta? Itse merkki sailyy.')) return;
+        var c = creds(p);
+        if (!c) return;
+        imgDel.disabled = true;
+        Store.imageClear(p.id, c).then(function () {
+          p.image_thumb_url = null; p.image_full_url = null;
+          p.image_thumb_path = null; p.image_full_path = null; p.image_added_by = null;
+          var row = $('#kp-img-cur'); if (row) row.remove();
+          draw(); announce();
+          toast('Kuva poistettu');
+        }).catch(function (e) { toast(errText(e), false); imgDel.disabled = false; });
+      };
+    }
+    $('#kp-img').addEventListener('change', function (ev) {
+      var f = ev.target.files && ev.target.files[0];
+      var st = $('#kp-img-status');
+      if (!f) { pendingImage = null; st.style.display = 'none'; return; }
+      st.style.display = ''; st.textContent = 'Pakataan kuvaa...';
+      compressImage(f).then(function (res) {
+        pendingImage = res;
+        st.textContent = 'Kuva valmis (pikkukuva ~' + Math.round(res.thumbBytes / 1024) +
+          ' kt, iso versio ~' + Math.round(res.fullBytes / 1024) + ' kt).';
+      }).catch(function () {
+        pendingImage = null;
+        st.textContent = 'Kuvan kasittely epaonnistui — kokeile toista kuvaa.';
+      });
+    });
+
     $('#kp-center').onclick = function () {
       if (opts.centre) {
         var c = opts.centre();
@@ -533,7 +676,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       done({
         x: x, z: z, title: t, message: $('#kp-m').value.trim(), author: a, color: color,
         symbol: symbol, size: parseFloat($('#kp-size').value) || 1, show_text: $('#kp-text').checked
-      }, { pass: pw, author: a });
+      }, { pass: pw, author: a }, pendingImage);
     };
   }
 
@@ -600,12 +743,22 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     function addAt(coordinate, pixel) {
       var b = toBlock(coordinate);
       if (pixel) ripple(pixel);
-      pinForm({ mode: 'add', x: b[0], z: b[1], centre: centre }, function (pin, c) {
+      pinForm({ mode: 'add', x: b[0], z: b[1], centre: centre }, function (pin, c, img) {
         Store.add(pin, c).then(function (saved) {
           if (saved) rows.push(saved);
           draw(); announce();
           toast(SHARED ? 'Merkki lisatty — nakyy kaikille' : 'Merkki lisatty (vain tassa selaimessa)');
-          if (SHARED) refresh();
+          var after = Promise.resolve();
+          if (img && saved && SHARED) {
+            after = Store.imageSet(saved.id, img, c).then(function (r) {
+              Object.assign(saved, {
+                image_thumb_url: r.thumb_url, image_full_url: r.full_url,
+                image_thumb_path: r.thumb_path, image_full_path: r.full_path, image_added_by: c.author
+              });
+              draw(); announce(); toast('Kuva lisatty merkille');
+            }).catch(function (e) { toast('Merkki tallennettu, mutta kuva ei onnistunut: ' + errText(e), false); });
+          }
+          after.then(function () { if (SHARED) refresh(); });
         }).catch(function (e) { toast(errText(e), false); });
       });
     }
@@ -618,6 +771,10 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       popEl.innerHTML =
         '<h4><span class="dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' + esc(p.title) +
           (p.hidden ? '<span class="kspk-tag">piilotettu</span>' : '') + '</h4>' +
+        (p.image_thumb_url
+          ? '<a href="' + esc(p.image_full_url) + '" target="_blank" rel="noopener">' +
+              '<img src="' + esc(p.image_thumb_url) + '" class="kspk-imgprev" alt="Merkin kuva" style="margin:0 0 8px">' +
+            '</a>' : '') +
         (p.message ? '<p>' + esc(p.message) + '</p>' : '') +
         '<p class="meta">' + esc(p.author || 'Nimeton') + ' &middot; X ' + p.x + ', Z ' + p.z + '</p>' +
         '<div class="row">' +
@@ -633,9 +790,18 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
       popEl.querySelector('#kp-e').onclick = function () {
         closePop();
-        pinForm({ mode: 'edit', pin: p, centre: centre }, function (v, c) {
+        pinForm({ mode: 'edit', pin: p, centre: centre }, function (v, c, img) {
           Store.update(p.id, v, c).then(function () {
             Object.assign(p, v); draw(); announce(); toast('Merkki paivitetty');
+            if (img) {
+              Store.imageSet(p.id, img, c).then(function (r) {
+                Object.assign(p, {
+                  image_thumb_url: r.thumb_url, image_full_url: r.full_url,
+                  image_thumb_path: r.thumb_path, image_full_path: r.full_path, image_added_by: c.author
+                });
+                draw(); announce(); toast('Kuva lisatty/vaihdettu');
+              }).catch(function (e) { toast('Kuva ei tallentunut: ' + errText(e), false); });
+            }
           }).catch(function (e) { toast(errText(e), false); });
         });
       };

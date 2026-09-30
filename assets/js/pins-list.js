@@ -94,6 +94,20 @@
     return 'Toiminto ei onnistunut';
   }
 
+  /* Kohta 9: kuvan poisto merkilta (Edge Function — sama kuin kartalla) */
+  function imageClear(id, c) {
+    return fetch(CFG.url + '/functions/v1/pin-image', {
+      method: 'POST',
+      headers: { 'apikey': CFG.key, 'Authorization': 'Bearer ' + CFG.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'clear', pass: c.pass, author: c.author, id: id })
+    }).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (data) {
+        if (!r.ok) throw new Error((data && data.error) || ('HTTP ' + r.status));
+        return data;
+      });
+    });
+  }
+
   /* Pelinimi + oma salasana. Dev-tilassa yllapitokoodi kelpaa. */
   function creds(pin) {
     if (isDev() && devCode()) {
@@ -112,6 +126,13 @@
     if (isDev()) return true;
     var n = get(LS_NAME), pw = get(LS_PASS);
     return !!n && !!pw && n.toLowerCase() === String(p.author || '').toLowerCase();
+  }
+  /* Kohta 9: kuvan poisto-oikeus — dev tai kuvan alun perin liittanyt
+     kayttaja, ei valttamatta sama kuin merkin omistaja. */
+  function mayEditImage(p) {
+    if (isDev()) return true;
+    var n = get(LS_NAME), pw = get(LS_PASS);
+    return !!n && !!pw && !!p.image_added_by && n.toLowerCase() === String(p.image_added_by).toLowerCase();
   }
 
   function tellMap(msg) {
@@ -138,6 +159,8 @@
       + '.pl-t{display:flex;align-items:center;gap:9px;font-weight:600;font-size:1rem}'
       + '.pl-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 2px rgba(0,0,0,.5)}'
       + '.pl-msg{margin:0;white-space:pre-wrap;word-break:break-word;font-size:.92rem;color:var(--text,#eaf3ee)}'
+      + '.pl-img{width:100%;max-height:140px;object-fit:cover;border-radius:10px;'
+      + 'border:1px solid var(--line,rgba(255,255,255,.12));display:block}'
       + '.pl-meta{font-size:.8rem;color:var(--muted,#9db3a6);display:flex;flex-wrap:wrap;gap:10px}'
       + '.pl-acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}'
       + '.pl-b{border:1px solid var(--line,rgba(255,255,255,.14));background:rgba(255,255,255,.05);'
@@ -296,9 +319,14 @@
       var can = mayEdit(p);
       var c = document.createElement('div');
       c.className = 'pl-card' + (p.hidden ? ' is-hidden' : '');
+      var canImg = mayEditImage(p);
       c.innerHTML =
         '<div class="pl-t"><span class="pl-dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' +
           esc(p.title) + (p.hidden ? ' <span class="pl-tag">piilotettu</span>' : '') + '</div>' +
+        (p.image_thumb_url
+          ? '<a href="' + esc(p.image_full_url) + '" target="_blank" rel="noopener">' +
+              '<img class="pl-img" src="' + esc(p.image_thumb_url) + '" alt="Merkin kuva" loading="lazy"></a>'
+          : '') +
         (p.message ? '<p class="pl-msg">' + esc(p.message) + '</p>' : '') +
         '<div class="pl-meta"><span>&#128100; ' + esc(p.author || 'Nimeton') + '</span>' +
           '<span>&#128205; X ' + p.x + ', Z ' + p.z + '</span></div>' +
@@ -306,6 +334,7 @@
           '<button class="pl-b" data-a="go">Nayta kartalla</button>' +
           (can ? '<button class="pl-b" data-a="hide">' + (p.hidden ? 'Palauta nakyviin' : 'Piilota') + '</button>' : '') +
           (can ? '<button class="pl-b pl-b--danger" data-a="del">Poista</button>' : '') +
+          (p.image_thumb_url && canImg ? '<button class="pl-b pl-b--danger" data-a="imgdel">Poista kuva</button>' : '') +
         '</div>';
 
       c.querySelector('[data-a="go"]').onclick = function () {
@@ -336,6 +365,18 @@
             rows = rows.filter(function (o) { return o.id !== p.id; });
             render(); tellMap({ kspk: 'pins-reload' });
           }).catch(function (e) { alert(errText(e)); });
+      };
+      var idl = c.querySelector('[data-a="imgdel"]');
+      if (idl) idl.onclick = function () {
+        if (!confirm('Poistetaanko kuva merkilta "' + p.title + '"? Itse merkki sailyy.')) return;
+        var cr = creds(p);
+        if (!cr) return;
+        idl.disabled = true;
+        imageClear(p.id, cr).then(function () {
+          p.image_thumb_url = null; p.image_full_url = null;
+          p.image_thumb_path = null; p.image_full_path = null; p.image_added_by = null;
+          render(); tellMap({ kspk: 'pins-reload' });
+        }).catch(function (e) { alert(errText(e)); idl.disabled = false; });
       };
 
       $grid.appendChild(c);
