@@ -115,7 +115,7 @@
       <!-- LOGO -->
       <div class="dv-pane" id="p-lg">
         <p class="dv-hint">
-          Vaihda vaaleanvihreä "K"-merkki kaikkien sivujen ylä- ja alanurkassa omaksi kuvaksi tai symboliksi.
+          Vaihda sivuston logo kaikkien sivujen ylä- ja alanurkassa omaksi kuvaksi tai symboliksi.
           Kuva pienennetään ja tallennetaan suoraan asetuksiin — mitään erillistä tiedostoa ei tarvita.
           Neliömäinen kuva läpinäkyvällä taustalla toimii parhaiten.
         </p>
@@ -125,7 +125,7 @@
             font-family:var(--font-pixel);font-size:.9rem;color:#04170c"></div>
           <div class="dv-bar" style="margin:0">
             <input class="dv" id="lg-file" type="file" accept="image/*" style="max-width:240px">
-            <button class="dv-b dv-b--danger" id="lg-reset">Palauta oletus (K)</button>
+            <button class="dv-b dv-b--danger" id="lg-reset">Palauta oletuslogo</button>
           </div>
         </div>
         <p class="dv-msg" id="lg-status"></p>
@@ -379,7 +379,7 @@
   /* --- logo (kohta 10) --- */
   function drawLg() {
     var prev = $('lg-preview');
-    prev.innerHTML = state.logo ? state.logo : 'K';
+    prev.innerHTML = state.logo ? state.logo : '<img src="assets/img/logo-k.webp" alt="" style="width:100%;height:100%;object-fit:contain">';
   }
   function lgStatus(t, kind) {
     var m = $('lg-status');

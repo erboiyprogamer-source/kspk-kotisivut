@@ -30,7 +30,6 @@ const SITE = {
     { href:'serveri.html',   label:'Serveri',    foot:'Yhteisö' },
     { href:'kartta.html',    label:'Kartta',     foot:'Yhteisö' },
     { href:'projektit.html', label:'Dokumentit', foot:'Yhteisö' },
-    { href:'valtio.html',    label:'Valtio',     foot:'Yhteisö' },
     { href:'tietoa.html',    label:'Tietoa',     foot:'Sivusto' }
   ],
 
@@ -56,11 +55,11 @@ const SITE = {
     { type:'doc', name:'Tapahtumat ja aikataulu',
       desc:'Tulevat tapahtumat ja juhlapäivät — samat jotka näkyvät etusivun tapahtumaruudussa.',
       url:'https://docs.google.com/document/d/12wYYRjaOHw0prvTeoTThPj4EvZbeQ5brqQ0SlcsBNX4/edit' },
-    { type:'sheet', name:'Taulukko 1',
-      desc:'Jaettu Google Sheets -taulukko.',
+    { type:'sheet', name:'Kirjanpito 1',
+      desc:'Kanavan jaettu kirjanpitotaulukko Google Sheetsissä — tulot, menot ja tapahtumat.',
       url:'https://docs.google.com/spreadsheets/d/1baCsEkqB7ju4edqqqLlZL1XVtyUNTjxYw3aluWYzqvI/edit' },
-    { type:'sheet', name:'Taulukko 2',
-      desc:'Jaettu Google Sheets -taulukko.',
+    { type:'sheet', name:'Kirjanpito 2',
+      desc:'Kanavan toinen jaettu kirjanpitotaulukko Google Sheetsissä.',
       url:'https://docs.google.com/spreadsheets/d/1TfEYMlFrk1aIjjBv5dfb6gE6jaXtWOGU2gToiA5ZuwQ/edit' }
   ]
 };
@@ -85,7 +84,7 @@ const DOC_TYPES = {
   nav.innerHTML = `
     <div class="nav__inner">
       <a class="brand" href="index.html" aria-label="${SITE.full} — etusivu">
-        <span class="brand__mark" aria-hidden="true">K</span>
+        <span class="brand__mark" aria-hidden="true"><img src="assets/img/logo-k.webp" alt="" width="38" height="38" loading="eager"></span>
         <span class="brand__txt"><b>${SITE.name}</b><span>Minecraft SMP</span></span>
       </a>
       <nav aria-label="Päävalikko">
@@ -115,7 +114,7 @@ const DOC_TYPES = {
       <div class="footer__grid">
         <div class="footer__brand" data-reveal>
           <a class="brand" href="index.html" style="margin-bottom:18px">
-            <span class="brand__mark" aria-hidden="true">K</span>
+            <span class="brand__mark" aria-hidden="true"><img src="assets/img/logo-k.webp" alt="" width="38" height="38" loading="lazy"></span>
             <span class="brand__txt"><b>${SITE.name}</b><span>Minecraft SMP</span></span>
           </a>
           <p class="muted" style="max-width:38ch;font-size:.92rem">
