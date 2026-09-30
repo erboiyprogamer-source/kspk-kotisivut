@@ -606,19 +606,27 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     var fill = new olns.style.Fill({ color: fillColor });
     var stroke = new olns.style.Stroke({ color: strokeColor, width: strokeW, lineDash: hidden ? [3, 3] : undefined });
     var image;
+    var visR = baseR; /* varjoympyran koon perustana, ks. alla */
     var iconUri = ICON_SVGS[sym] ? iconDataUri(sym) : null;
     switch (sym) {
+      /* Ekan 5 symbolin (piste mukaanlukien alla) scaalaa pienennetty 20%
+         (kerroin * 0.8) kayttajan pyynnosta. visR seuraa mukana, jottei
+         varjoympyra jaa nain pienennettya symbolia isommaksi. */
       case 'square':
-        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 4, radius: baseR * 1.15, angle: Math.PI / 4 });
+        visR = baseR * 1.15 * 0.8;
+        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 4, radius: visR, angle: Math.PI / 4 });
         break;
       case 'triangle':
-        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 3, radius: baseR * 1.35, angle: 0 });
+        visR = baseR * 1.35 * 0.8;
+        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 3, radius: visR, angle: 0 });
         break;
       case 'star':
-        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 5, radius: baseR * 1.35, radius2: baseR * 0.55, angle: 0 });
+        visR = baseR * 1.35 * 0.8;
+        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 5, radius: visR, radius2: baseR * 0.55 * 0.8, angle: 0 });
         break;
       case 'diamond':
-        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 4, radius: baseR * 1.3, angle: 0 });
+        visR = baseR * 1.3 * 0.8;
+        image = new olns.style.RegularShape({ fill: fill, stroke: stroke, points: 4, radius: visR, angle: 0 });
         break;
       default:
         if (iconUri) {
@@ -641,7 +649,8 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
             opacity: hidden ? 0.55 : 1
           });
         } else {
-          image = new olns.style.Circle({ radius: baseR, fill: fill, stroke: stroke });
+          visR = baseR * 0.8;
+          image = new olns.style.Circle({ radius: visR, fill: fill, stroke: stroke });
         }
     }
     var s = new olns.style.Style({ image: image });
@@ -664,7 +673,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
        karttapohjista. Piirretaan ensin (taustimmaisena tyylina). */
     var shadow = new olns.style.Style({
       image: new olns.style.Circle({
-        radius: baseR * 0.86,
+        radius: visR * 0.86,
         fill: new olns.style.Fill({ color: hidden ? 'rgba(0,0,0,.15)' : 'rgba(0,0,0,.32)' })
       })
     });
