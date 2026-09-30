@@ -572,7 +572,7 @@ window.KSPK = KSPK;
     function play(triggerBtn) {
       var id = card.dataset.yt;
       var w = document.createElement('div');
-      w.className = 'video-card__thumb is-playing';
+      w.className = triggerBtn.className.replace(/\byt-btn\b/, '').trim() + ' is-playing';
       w.innerHTML = '<button type="button" class="yt-close" aria-label="Sulje video">&times;</button>'
         + '<iframe src="https://www.youtube-nocookie.com/embed/' + id +
         '?autoplay=1&rel=0" title="YouTube-video" loading="lazy" allowfullscreen ' +

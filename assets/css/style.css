@@ -467,6 +467,24 @@ html.ready .hero__stats{animation:fadeUp .9s var(--ease-out) .7s forwards}
 .video-card__body h3{font-size:1.05rem;margin-bottom:.35em}
 .video-card__meta{font-size:.8rem;color:var(--dim);display:flex;gap:14px;flex-wrap:wrap}
 
+/* ---------- 12b. Shorts-kortit (9:16) ---------- */
+.shorts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+.short-card{padding:0;display:flex;flex-direction:column}
+.short-card__thumb{
+  position:relative;aspect-ratio:9/16;overflow:hidden;border-radius:var(--radius);
+  background:linear-gradient(140deg,#13241b,#0a120e);
+}
+.short-card__thumb img{width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease-out),filter .5s}
+.short-card:hover .short-card__thumb img{transform:scale(1.07);filter:saturate(1.15)}
+.short-card__thumb::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,transparent 55%,rgba(6,10,8,.92));
+}
+.short-card__thumb.is-playing::after{display:none}
+.short-card__thumb.is-playing iframe{width:100%;height:100%;border:0;display:block}
+.short-card .play{width:44px;height:44px}
+.short-card__cap{position:absolute;inset:auto 0 0 0;padding:10px;font-size:.76rem;line-height:1.35;color:#eaf3ee}
+
 /* ---------- 13. Galleria ---------- */
 .gallery{
   columns:3 260px;column-gap:16px;
@@ -850,13 +868,14 @@ tfoot td{padding:15px 18px;border-top:1px solid var(--line-strong);font-weight:6
 /* =====================================================================
    14. VIDEOKORTIN TOISTOPAINIKE + UPOTUS
    ===================================================================== */
-button.video-card__thumb{
+button.video-card__thumb,button.short-card__thumb{
   display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;
   font:inherit;color:inherit;text-align:left;
 }
-button.video-card__thumb:focus-visible{outline:2px solid var(--green,#3ef08a);outline-offset:-2px}
+button.video-card__thumb:focus-visible,button.short-card__thumb:focus-visible{outline:2px solid var(--green,#3ef08a);outline-offset:-2px}
 .video-card__thumb.is-playing{aspect-ratio:16/9}
 .video-card__thumb.is-playing iframe{width:100%;height:100%;border:0;display:block}
+.short-card__thumb.is-playing{aspect-ratio:9/16}
 .yt-close{
   position:absolute;top:10px;right:10px;z-index:5;
   width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong,rgba(255,255,255,.18));
