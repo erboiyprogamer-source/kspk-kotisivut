@@ -1384,30 +1384,29 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     var needsGridFix = false;
     try { needsGridFix = map.getView().getMaxZoom() <= 1 && typeof unmined.updateGraticule === 'function'; } catch (e) {}
 
-    function rebuildGrid() {
-      if (!needsGridFix) return;
-      var view = map.getView();
-      var origGetMaxZoom = view.getMaxZoom;
-      view.getMaxZoom = function () { return 12; };
-      try { unmined.updateGraticule(); } catch (e) {}
-      view.getMaxZoom = origGetMaxZoom;
+    /* Korjataan updateGraticule ITSE eika yksittaisia valikkotoimintoja.
+       Kaikki ruudukkoasetukset (nayta/piilota, tihea ruudukko, binaarinen
+       ruudukko) kutsuvat tata, joten yksi kaare kattaa ne kaikki — myos ne
+       joiden nimea emme tienneet. Aiempi versio kaarsi nimilla, ja
+       "tihea ruudukko" (uNmINeDissa toggleGridInterval, ei
+       toggleDenseGrid) jai sen ulkopuolelle: sita painamalla ruudukko
+       rakentui taas vaarilla valeilla ja katosi kokonaan. */
+    if (needsGridFix) {
+      var origUpdateGraticule = unmined.updateGraticule.bind(unmined);
+      unmined.updateGraticule = function () {
+        var view = map.getView();
+        var origGetMaxZoom = view.getMaxZoom;
+        view.getMaxZoom = function () { return 12; };
+        try { origUpdateGraticule(); }
+        finally { view.getMaxZoom = origGetMaxZoom; }
+      };
+      unmined.updateGraticule();
     }
-    rebuildGrid();
-
-    /* Kaytajan omat ruudukkovalinnat kutsuvat updateGraticulea sisaisesti,
-       joten ne rakentaisivat ruudukon taas vaarilla valeilla — rakennetaan
-       se jokaisen jalkeen uudelleen. */
-    ['toggleGrid', 'toggleDenseGrid'].forEach(function (name) {
-      if (typeof unmined[name] !== 'function') return;
-      var orig = unmined[name].bind(unmined);
-      unmined[name] = function () { orig(); rebuildGrid(); };
-    });
 
     if (typeof unmined.toggleBinaryGrid === 'function') {
       var origToggleBinaryGrid = unmined.toggleBinaryGrid.bind(unmined);
       unmined.toggleBinaryGrid = function () {
         origToggleBinaryGrid();
-        rebuildGrid();
         syncCoordVisibility();
       };
     }
