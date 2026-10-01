@@ -105,6 +105,9 @@
   function errText(e) {
     var m = String((e && e.message) || e || '');
     if (m.indexOf('BAD_PASSWORD')    > -1) return 'Vaara salasana';
+    if (m.indexOf('PIN_LIMIT_REACHED')         > -1) return 'Merkkien yläraja täynnä (' + (m.split('PIN_LIMIT_REACHED:')[1]||'').replace(/\D.*$/,'') + ' merkkiä/pelaaja) — poista vanhoja merkkejä';
+    if (m.indexOf('IMAGE_TOTAL_LIMIT_REACHED') > -1) return 'Koko sivuston merkkikuvien yläraja on täynnä — ota yhteyttä ylläpitoon';
+    if (m.indexOf('IMAGE_LIMIT_REACHED')       > -1) return 'Kuvien yläraja täynnä (' + (m.split('IMAGE_LIMIT_REACHED:')[1]||'').replace(/\D.*$/,'') + ' kuvaa/pelaaja) — poista vanhoja kuvia';
     if (m.indexOf('NOT_WHITELISTED') > -1) return 'Pelinimi ei ole sallittujen listalla';
     if (m.indexOf('NO_RIGHTS')       > -1) return 'Ei oikeuksia — tarkista salasana ja pelinimi';
     if (m.indexOf('NO_AUTHOR')       > -1) return 'Pelinimi puuttuu';
