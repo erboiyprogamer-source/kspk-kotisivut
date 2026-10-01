@@ -194,6 +194,33 @@
   });
   document.getElementById('map-reload').addEventListener('click', function(){ show(current); });
 
+  /* --- Merkkikoodin varmistus ----------------------------------------
+     Merkkijarjestelma asuu tassa repossa (assets/js/map-markers.js) ja
+     karttakansioissa on vain kolmen rivin kaynnistin joka lataa sen.
+     Jos se kaynnistin katoaa uNmINeD-renderin yhteydessa, kartta jaisi
+     ilman merkkeja. Siksi tama sivu ruiskuttaa saman koodin iframeen
+     itse, jos sita ei ole ladattu. Sama origin sallii taman.
+     Erillinen "Avaa koko naytolle" -sivu nojaa yha kaynnistimeen. --- */
+  var MARKERS_SRC = 'assets/js/map-markers.js';
+  f.addEventListener('load', function () {
+    var w;
+    try { w = f.contentWindow; } catch (e) { return; }   // eri origin -> ei tehtavissa
+    if (!w) return;
+    setTimeout(function () {
+      try {
+        if (w.__kspkMarkersLoaded) return;               // kaynnistin hoiti tyon
+        var d = w.document;
+        if (!d || !d.head) return;
+        w.__kspkMarkersLoaded = true;
+        if (!w.KSPK_MAP) w.KSPK_MAP = { allowBrowserZoom: current === 'k5' };
+        var s = d.createElement('script');
+        s.src = new URL(MARKERS_SRC, location.href).href;
+        s.async = false;
+        d.head.appendChild(s);
+      } catch (e) {}                                     // ei kaada sivua
+    }, 1200);
+  });
+
   /* --- Vierityslukko -------------------------------------------------
      Kartta on iframe, joka nappaa hiiren rullan itselleen. Sen päällä on
      läpinäkyvä kerros, joka päästää rullan sivulle => sivu skrollaa
