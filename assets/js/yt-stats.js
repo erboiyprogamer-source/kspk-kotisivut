@@ -47,6 +47,10 @@
       }
     }
     if (pateEl) pateEl.textContent = muoto.pate;
+
+    /* Tilaajaluku on HTML:ssa piilossa, koska keksittya lukua ei haluta
+       nayttaa. Se tulee nakyviin vasta kun oikea luku on haettu. */
+    el.hidden = false;
   }
 
   fetch(FN, { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } })
