@@ -520,6 +520,22 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + '.ol-attribution ul{background:transparent!important;text-shadow:none!important;color:#3ef08a!important;font-size:11px!important}'
       + '.ol-attribution a{color:#3ef08a!important}'
       + '.ol-attribution button{display:none!important}'
+      /* Hiiren oikean napin valikko (Copy /tp, Lisaa merkki tahan, Show grid
+         jne) oli oletuksena vaalea/valkoinen — yhtenaistetty samaan tummaan
+         teemaan kuin merkin lisays- ja infolaatikot (kspk-card/kspk-pop). */
+      + '.ol-ctx-menu-container{background:rgba(10,18,14,.97)!important;color:#eaf3ee!important;'
+      + 'border:1px solid rgba(255,255,255,.16)!important;border-radius:10px!important;'
+      + 'box-shadow:0 18px 44px -18px #000!important}'
+      + '.ol-ctx-menu-container li:not(.ol-ctx-menu-separator):hover{'
+      + 'background-color:rgba(62,240,138,.16)!important;color:#3ef08a!important}'
+      + '.ol-ctx-menu-container li.ol-ctx-menu-separator hr{'
+      + 'background-image:linear-gradient(to left,transparent,rgba(255,255,255,.3),transparent)!important}'
+      + '.ol-ctx-menu-container li.ol-ctx-menu-submenu .ol-ctx-menu-container{'
+      + 'background:rgba(10,18,14,.97)!important;border:1px solid rgba(255,255,255,.16)!important}'
+      + '.ol-ctx-menu-container li.ol-ctx-menu-submenu:after{border-color:#eaf3ee!important}'
+      + '.ol-ctx-menu-container li.ol-ctx-menu-submenu:hover:after{border-color:#3ef08a!important}'
+      + '.menuitem-checked::before{color:#3ef08a!important}'
+      + '.menuitem-unchecked::before{color:#9db3a6!important}'
       + '.kspk-pop{position:absolute;bottom:14px;left:-184px;width:368px;padding:14px 16px;'
       + 'background:rgba(10,18,14,.96);color:#eaf3ee;border:1px solid rgba(255,255,255,.18);'
       + 'border-radius:14px;box-shadow:0 18px 44px -18px #000;font:14px/1.5 system-ui,sans-serif;z-index:60}'
@@ -1297,6 +1313,30 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     map.getViewport().addEventListener('pointerleave', function () {
       coordEl.innerHTML = 'X: — &nbsp; Z: —';
     });
+
+    /* "Binary coordinates" -valikkokohta ei nayta enaa mitaan, koska oma
+       .kspk-coord-laatikko korvasi uNmINeDin natiivin mouse-position-
+       kontrollin kokonaan (se ei kuunnellut binaryGrid-asetusta edes
+       alunperin, se vaikutti vain ruudukon viivavaliin). Kaytetaan sita
+       silti talla sivulla ohjaamaan oman laatikon nakyvyytta, jotta
+       valikosta loytyy taas jokin nakyva tapa piilottaa/nayttaa se. */
+    function binaryGridOn() {
+      try {
+        var s = JSON.parse(localStorage.getItem('mapSettings') || '{}');
+        return s.binaryGrid !== false; // oletus: paalla (sama kuin uNmINeDin oma oletus)
+      } catch (e) { return true; }
+    }
+    function syncCoordVisibility() {
+      coordEl.style.display = binaryGridOn() ? '' : 'none';
+    }
+    syncCoordVisibility();
+    if (typeof unmined.toggleBinaryGrid === 'function') {
+      var origToggleBinaryGrid = unmined.toggleBinaryGrid.bind(unmined);
+      unmined.toggleBinaryGrid = function () {
+        origToggleBinaryGrid();
+        syncCoordVisibility();
+      };
+    }
 
     /* --- dev-nappi --- */
     var dev = el('div', 'kspk-dev' + (isDev() ? ' on' : ''), '&#128295;');
