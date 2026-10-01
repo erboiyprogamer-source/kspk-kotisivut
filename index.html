@@ -37,10 +37,12 @@
         <a class="btn btn--solid" data-site-href="youtube" target="_blank" rel="noopener" href="#"><span class="btn__ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.3 3.6-6.3 3.6Z"/></svg></span>Katso videot</a>
         <a class="btn btn--ghost" href="serveri.html">Liity serverille</a>
       </div>
+      <!-- Luvut haetaan YouTubesta assets/js/yt-stats.js:lla. HTML:n arvot
+           ovat varalla siita hetkesta jos haku ei vastaa. -->
       <div class="hero__stats">
-        <div class="stat"><b><span data-count="120">0</span>+</b><span>Videota</span></div>
-        <div class="stat"><b><span data-count="4" data-dec="1">0</span>k</b><span>Katsojaa</span></div>
-        <div class="stat"><b><span data-count="18">0</span></b><span>Buildia</span></div>
+        <div class="stat" data-ytstat="videos" data-ytstat-raw="1"><b><span data-count="120">0</span><span data-ytstat-suffix>+</span></b><span>Videota</span></div>
+        <div class="stat" data-ytstat="views"><b><span data-count="4" data-dec="1">0</span><span data-ytstat-suffix>k</span></b><span>Katselukertaa</span></div>
+        <div class="stat" data-ytstat="subscribers"><b><span data-count="0">0</span><span data-ytstat-suffix></span></b><span>Tilaajaa</span></div>
       </div>
     </div>
 
@@ -202,5 +204,6 @@
 </main>
 <script src="assets/js/site.js"></script>
 <script src="assets/js/main.js"></script>
+<script src="assets/js/yt-stats.js"></script>
 </body>
 </html>
