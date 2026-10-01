@@ -47,7 +47,10 @@
 
 /* ---------- 2. Perusta ---------- */
 *,*::before,*::after{box-sizing:border-box}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;scrollbar-width:none;-ms-overflow-style:none}
+/* Tausta myos html-elementille: iOS:n kuminauhavieritys ja Androidin
+   ylivieritysalue ottavat varinsa siita, ei bodysta. Ilman tata
+   sivun ylä- ja alareunassa valahtaa vaalea kaista venytettaessa. */
+html{background:var(--bg);scroll-behavior:smooth;-webkit-text-size-adjust:100%;scrollbar-width:none;-ms-overflow-style:none}
 html.is-loading{scroll-behavior:auto}
 html::-webkit-scrollbar{width:0;height:0}
 body::-webkit-scrollbar{width:0;height:0}
