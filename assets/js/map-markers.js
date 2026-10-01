@@ -1552,9 +1552,15 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       if (overlay.getPosition()) { closePop(); return; }
       if (embedded) { try { window.parent.postMessage({ kspk: 'map-escape' }, '*'); } catch (err) {} }
       else {
+        /* HUOM: suhteellinen '../../kartta.html' toimi kun kartat asuivat
+           sivuston omassa repossa. Kartat ovat nyt omassa repossaan
+           (kspk-kartat), jolloin sama polku osuisi hostin juureen eika
+           sivustolle. Siksi tassa on koko osoite. */
+        var back = (window.KSPK_MAP && window.KSPK_MAP.backUrl) ||
+                   'https://erboiyprogamer-source.github.io/kspk-kotisivut/kartta.html';
         var ref = document.referrer || '';
         if (ref && ref.indexOf(location.origin) === 0 && history.length > 1) history.back();
-        else location.href = '../../kartta.html';
+        else location.href = back;
       }
     });
     if (!embedded) {
