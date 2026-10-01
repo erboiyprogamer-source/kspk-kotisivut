@@ -5,6 +5,11 @@
 
 /* ---------- 1. Muuttujat ---------- */
 :root{
+  /* Kertoo selaimelle etta sivu on tumma. Talloin vierityspalkit,
+     lomakekentat, pudotusvalikot ja sivun oma pohjavari piirtyvat
+     tummina ilman eri saatoa. Ilman tata ne ovat vaaleita
+     tumman sivun paalla. */
+  color-scheme: dark;
   --bg:#060a08;
   --bg-2:#0a110d;
   --bg-3:#0e1813;
