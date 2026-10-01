@@ -295,6 +295,23 @@ section{position:relative;padding:clamp(70px,9vw,130px) 0}
 .btn__ico{width:16px;height:16px;flex:none;display:inline-flex}
 .btn__ico svg{width:100%;height:100%;fill:currentColor;display:block}
 
+/* Napit, navigaatio ja muu kayttoliittymachrome eivat ole sisaltoa —
+   estetaan vahingossa tapahtuva tekstinvalinta/ylivetaminen niiden paalla.
+   Ei vaikuta leipatekstiin, kortteihin tai popup-sisaltoon: ne pysyvat
+   normaalisti valittavina. */
+.btn,
+button,
+.nav__links a,
+.nav__drop-btn,
+.nav__drop-menu a,
+.nav__toggle,
+.brand,
+.tag,
+.map-toolbar,
+.map-lock__pill{
+  -webkit-user-select:none;-moz-user-select:none;user-select:none;
+}
+
 /* ---------- 7. Kortit ---------- */
 .card{
   position:relative;
