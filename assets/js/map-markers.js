@@ -1368,10 +1368,46 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       coordEl.style.display = binaryGridOn() ? '' : 'none';
     }
     syncCoordVisibility();
+    /* --- Ruudukon korjaus 1:1-kartalle -------------------------------
+       uNmINeD laskee ruudukon valit kaavalla maxZoom + 2. Suurella
+       kartalla (1:1, ei zoomia) maxZoom on 0, joten valeja syntyy vain
+       kaksi: 16 ja 32 lohkoa. Koko ~100 km2:n kartta mahtuu yhteen
+       ruutuun, jolloin 32 lohkon vali on murto-osa pikselista — OpenLayers
+       ei piirra sita lainkaan ja ruudukko nayttaa puuttuvan kokonaan,
+       vaikka asetus on paalla ja taso on olemassa ja nakyva.
+
+       Korjaus: kerrotaan ruudukon rakennushetkella etta zoom-tasoja on
+       enemman, jolloin valilistaan tulee myos isot valit (16 lohkosta
+       ylospain kaksinkertaistuen). Nakyvyys ja kaikki muut asetukset
+       sailyvat ennallaan, koska uNmINeDin oma updateGraticule hoitaa ne.
+       Tama EI liity karttojen repon vaihtoon — sama vika oli ennenkin. */
+    var needsGridFix = false;
+    try { needsGridFix = map.getView().getMaxZoom() <= 1 && typeof unmined.updateGraticule === 'function'; } catch (e) {}
+
+    function rebuildGrid() {
+      if (!needsGridFix) return;
+      var view = map.getView();
+      var origGetMaxZoom = view.getMaxZoom;
+      view.getMaxZoom = function () { return 12; };
+      try { unmined.updateGraticule(); } catch (e) {}
+      view.getMaxZoom = origGetMaxZoom;
+    }
+    rebuildGrid();
+
+    /* Kaytajan omat ruudukkovalinnat kutsuvat updateGraticulea sisaisesti,
+       joten ne rakentaisivat ruudukon taas vaarilla valeilla — rakennetaan
+       se jokaisen jalkeen uudelleen. */
+    ['toggleGrid', 'toggleDenseGrid'].forEach(function (name) {
+      if (typeof unmined[name] !== 'function') return;
+      var orig = unmined[name].bind(unmined);
+      unmined[name] = function () { orig(); rebuildGrid(); };
+    });
+
     if (typeof unmined.toggleBinaryGrid === 'function') {
       var origToggleBinaryGrid = unmined.toggleBinaryGrid.bind(unmined);
       unmined.toggleBinaryGrid = function () {
         origToggleBinaryGrid();
+        rebuildGrid();
         syncCoordVisibility();
       };
     }
