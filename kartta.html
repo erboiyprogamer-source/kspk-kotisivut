@@ -70,10 +70,11 @@
 
 <!-- =====================================================================
      KARTTASIVU
-     Kun uNmINeD-renderöinnit ovat valmiit, kopioi ne kansioihin
-     kartta/paiva/ ja kartta/yo/ — sivu vaihtaa automaattisesti
-     "tulossa"-tilasta oikeaan karttaan, mitään ei tarvitse muuttaa täällä.
-     Tekniset ohjeet ja koko­rajat: kartta/README.md
+     Kartat asuvat omassa repossaan: erboiyprogamer-source/kspk-kartat
+     (kansiot paiva/, yo/ ja 5k/). Osoitteet tulevat SITE.mapDay/mapNight/map5k
+     -asetuksista assets/js/site.js:ssä — tällä sivulla ei tarvitse muuttaa
+     mitään kun karttoja päivitetään.
+     Tekniset ohjeet ja kokorajat: karttarepon README.md
      ===================================================================== -->
 
 <section class="page-head">
@@ -163,9 +164,10 @@
   var ph    = document.getElementById('map-ph');
   var tools = document.getElementById('map-tools');
   var open  = document.getElementById('map-open');
-  var paths = { day:  (window.SITE && SITE.mapDay)   || 'kartta/paiva/index.html',
-                night:(window.SITE && SITE.mapNight) || 'kartta/yo/index.html',
-                k5:   (window.SITE && SITE.map5k)    || 'kartta/5k/index.html' };
+  var MAPS = 'https://erboiyprogamer-source.github.io/kspk-kartat/';
+  var paths = { day:  (window.SITE && SITE.mapDay)   || MAPS + 'paiva/index.html',
+                night:(window.SITE && SITE.mapNight) || MAPS + 'yo/index.html',
+                k5:   (window.SITE && SITE.map5k)    || MAPS + '5k/index.html' };
   var current = 'day';
 
   function exists(url){

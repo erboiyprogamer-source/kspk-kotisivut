@@ -80,13 +80,13 @@
     <div class="section-head" data-reveal>
       <span class="eyebrow">Koodi</span>
       <h2>GitHub <span class="grad-text">-repo</span></h2>
-      <p class="lead">Sivuston koodi ja GitHub Pages -julkaisu.</p>
+      <p class="lead">Sivuston koodi ja kartat ovat omissa repoissaan — kartat kasvavat, koodi ei.</p>
     </div>
 
     <div class="card" data-reveal>
       <div class="meter meter--skeleton" id="m-gh">
         <div class="meter__head">
-          <span class="meter__label">Repon koko<small>GitHubin julkinen REST-API</small></span>
+          <span class="meter__label">Sivustorepo <code>kspk-kotisivut</code><small>Pelkkä koodi — pysyy pienenä</small></span>
           <span class="meter__val">Ladataan…</span>
         </div>
         <div class="meter__track"><div class="meter__fill"></div></div>
@@ -101,10 +101,36 @@
       <p class="status-updated" id="gh-updated">Ladataan…</p>
     </div>
 
+    <div class="card" style="margin-top:24px" data-reveal>
+      <div class="meter meter--skeleton" id="m-gh-maps">
+        <div class="meter__head">
+          <span class="meter__label">Karttarepo <code>kspk-kartat</code><small>uNmINeD-kartat — tämä on se joka kasvaa</small></span>
+          <span class="meter__val">Ladataan…</span>
+        </div>
+        <div class="meter__track"><div class="meter__fill"></div></div>
+      </div>
+
+      <div class="status-grid" id="gh-maps-stats">
+        <div class="status-stat"><b>—</b><span>Avointa issueta</span></div>
+        <div class="status-stat"><b>—</b><span>Oletushaara</span></div>
+        <div class="status-stat"><b>—</b><span>Näkyvyys</span></div>
+        <div class="status-stat"><b>—</b><span>Viimeisin push</span></div>
+      </div>
+      <p class="status-updated" id="gh-maps-updated">Ladataan…</p>
+    </div>
+
     <div class="notice" style="margin-top:24px" data-reveal>
       <b>Huom:</b> GitHub Pages -sivustoille ei ole tiukkaa kovaa kokorajaa, mutta suositus on pysyä
       selvästi alle 1 Gt:n jotta build ja julkaisu pysyvät nopeina. Rajaa käytetään yllä vain
       suuntaa-antavana vertailukohtana.
+    </div>
+
+    <div class="notice" style="margin-top:16px" data-reveal>
+      <b>Miksi karttarepo kasvaa:</b> git säilyttää jokaisen vanhan tiilikuvan ikuisesti,
+      eivätkä kuvat pakkaudu erotuksena edelliseen. Jokainen täysi karttapäivitys lisää
+      historiaan suunnilleen oman kokonsa verran, vaikka julkaistu kartta pysyy
+      samankokoisena. Kun mittari lähestyy rajaa, karttarepo poistetaan ja luodaan
+      uudelleen samalla nimellä — osoite säilyy eikä sivustoon tarvitse koskea.
     </div>
   </div>
 </section>

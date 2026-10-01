@@ -19,10 +19,16 @@ const SITE = {
   email:     'kasapeka.official@gmail.com',      // yleinen yhteydenotto + liittymispyynnöt
   support:   'kasapeka.support@gmail.com',       // tuki- ja supportviestit
   githubRepo: 'erboiyprogamer-source/kspk-kotisivut',  // tila.html: GitHub-repon koko/rajat
-  // uNmINeD-kartat. Jokainen on oma kansionsa jossa on index.html + lib/ + tiles/
-  mapDay:    'kartta/paiva/index.html',
-  mapNight:  'kartta/yo/index.html',
-  map5k:     'kartta/5k/index.html',
+  githubMapsRepo: 'erboiyprogamer-source/kspk-kartat', // tila.html: karttarepon koko/rajat
+  /* uNmINeD-kartat asuvat omassa repossaan (kspk-kartat), jotta niiden
+     git-historia ei kasvata taman repon kokoa. Sama GitHub Pages -host, eli
+     sama origin kuin sivustolla -> iframe, Supabase, realtime ja localStorage
+     toimivat tasmalleen kuten ennenkin. Osoite ei muutu vaikka karttarepo
+     joskus tyhjennettaisiin (poisto + uudelleenluonti samalla nimella). */
+  mapsBase:  'https://erboiyprogamer-source.github.io/kspk-kartat/',
+  mapDay:    'https://erboiyprogamer-source.github.io/kspk-kartat/paiva/index.html',
+  mapNight:  'https://erboiyprogamer-source.github.io/kspk-kartat/yo/index.html',
+  map5k:     'https://erboiyprogamer-source.github.io/kspk-kartat/5k/index.html',
 
   /* nav:'muut' -> nakyy ylapalkissa "Muut"-pudotusvalikon alla erillisen
      linkin sijaan (Serveri, Dokumentit, Tietoa). Footer nakyttaa nama

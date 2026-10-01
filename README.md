@@ -22,7 +22,6 @@ assets/css/style.css   Kaikki tyylit
 assets/js/site.js      ASETUKSET + Google Docs -linkit + jaettu navi & footer
 assets/js/main.js      Scroll-animaatiot ja efektit
 assets/img/            Kuvat (nyt paikkamerkkejä)
-kartta/                uNmINeD-export tähän
 ```
 
 ## Muokkaus
@@ -68,9 +67,22 @@ Lisää mihin tahansa elementtiin:
 Kaikki animaatiot kytkeytyvät pois, jos käyttäjän järjestelmässä on
 *reduce motion* päällä.
 
-## Kartan lisääminen
+## Kartat
 
-Katso `kartta/README.md`.
+Kartat **eivät ole tässä repossa** vaan omassaan:
+[`erboiyprogamer-source/kspk-kartat`](https://github.com/erboiyprogamer-source/kspk-kartat).
+
+Syy: jokainen uNmINeD-render jättää tuhannet vanhat tiilikuvat git-historiaan
+pysyvästi, joten kartat kasvattaisivat tätä repoa jatkuvasti vaikka julkaistu
+sivusto pysyy samankokoisena. Erillisessä repossa karttahistorian voi tyhjentää
+milloin tahansa koskematta koodihistoriaan.
+
+Kartat tarjoillaan samasta GitHub Pages -hostista, eli **sama origin** kuin
+sivustolla — iframe-upotus, Supabase, realtime ja `localStorage`-personointi
+toimivat täsmälleen kuten ennenkin.
+
+Osoitteet asetetaan kohdassa `SITE.mapDay` / `mapNight` / `map5k`
+tiedostossa `assets/js/site.js`. Päivitysohjeet: karttarepon `README.md`.
 
 ## Julkaisu (GitHub Pages)
 

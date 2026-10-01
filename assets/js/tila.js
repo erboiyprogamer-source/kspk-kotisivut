@@ -18,7 +18,11 @@
     url: 'https://zfgwjxtruqoacxtkqprp.supabase.co',
     key: 'sb_publishable_MwLjfXP5LCtZe8tZ3IIf7w_5a3zqoKc'
   };
-  var GH_REPO = (window.SITE && SITE.githubRepo) || 'erboiyprogamer-source/kspk-kotisivut';
+  var GH_REPO      = (window.SITE && SITE.githubRepo)     || 'erboiyprogamer-source/kspk-kotisivut';
+  /* Kartat asuvat omassa repossaan, ja juuri SE on se joka kasvaa:
+     jokainen uNmINeD-render jattaa vanhat tiilet git-historiaan. Siksi
+     molemmat repot naytetaan erikseen omina mittareinaan. */
+  var GH_MAPS_REPO = (window.SITE && SITE.githubMapsRepo) || 'erboiyprogamer-source/kspk-kartat';
 
   var LIMITS = {
     db: 500 * 1024 * 1024,        // Supabase free: 500 MB tietokanta
@@ -85,14 +89,14 @@
     });
   }
 
-  function loadGithub() {
-    return fetch('https://api.github.com/repos/' + GH_REPO).then(function (r) {
+  function loadGithub(repo, meterId, statsId, updId) {
+    return fetch('https://api.github.com/repos/' + repo).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     }).then(function (d) {
       var sizeBytes = (d.size || 0) * 1024; // GitHub API antaa koon kilotavuina
-      paintMeter('m-gh', sizeBytes, LIMITS.ghRepo);
-      var grid = document.getElementById('gh-stats');
+      paintMeter(meterId, sizeBytes, LIMITS.ghRepo);
+      var grid = document.getElementById(statsId);
       if (grid) {
         grid.innerHTML =
           '<div class="status-stat"><b>' + (d.open_issues_count || 0) + '</b><span>Avointa issueta</span></div>' +
@@ -100,13 +104,14 @@
           '<div class="status-stat"><b>' + (d.visibility === 'public' ? 'Julkinen' : 'Yksityinen') + '</b><span>Näkyvyys</span></div>' +
           '<div class="status-stat"><b>' + new Date(d.pushed_at).toLocaleDateString('fi-FI') + '</b><span>Viimeisin push</span></div>';
       }
-      var upd = document.getElementById('gh-updated');
+      var upd = document.getElementById(updId);
       if (upd) upd.textContent = 'Päivitetty juuri nyt, GitHubin julkisesta API:sta.';
     }).catch(function (e) {
-      meterError('m-gh', 'GitHubiin ei saatu yhteyttä (' + e.message + ')');
+      meterError(meterId, 'GitHubiin ei saatu yhteyttä (' + e.message + ')');
     });
   }
 
   loadSupabase();
-  loadGithub();
+  loadGithub(GH_REPO,      'm-gh',      'gh-stats',      'gh-updated');
+  loadGithub(GH_MAPS_REPO, 'm-gh-maps', 'gh-maps-stats', 'gh-maps-updated');
 })();
