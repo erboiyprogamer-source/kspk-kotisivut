@@ -77,7 +77,6 @@
         <button class="dv-tab" data-t="ev" role="tab">Eventit</button>
         <button class="dv-tab" data-t="lg" role="tab">Logo</button>
         <button class="dv-tab" data-t="tx" role="tab">Tekstit</button>
-        <button class="dv-tab" data-t="yt" role="tab">YouTube</button>
       </div>
 
       <!-- PELAAJAT -->
@@ -132,23 +131,6 @@
         <p class="dv-msg" id="lg-status"></p>
       </div>
 
-      <!-- YOUTUBE -->
-      <div class="dv-pane" id="p-yt">
-        <p class="dv-hint">
-          Etusivun luvut (videot, katselukerrat, tilaajat) haetaan suoraan YouTubelta.
-          Se vaatii ilmaisen API-avaimen: <b>console.cloud.google.com</b> &rarr; uusi projekti &rarr;
-          hae &quot;YouTube Data API v3&quot; &rarr; Enable &rarr; Credentials &rarr; Create credentials &rarr; API key.
-          Avain tallentuu Supabasen suojattuun tauluun eikä näy sivuston koodissa, repossa eikä muille.
-          Kun avain on tallennettu, sitä ei voi enää katsoa täältä — vain korvata uudella.
-        </p>
-        <div class="dv-bar">
-          <input class="dv" id="yt-key" type="password" placeholder="Liitä API-avain tähän" autocomplete="off" style="max-width:360px">
-          <button class="dv-b dv-b--go" id="yt-save">Tallenna avain</button>
-          <button class="dv-b" id="yt-test">Testaa luvut</button>
-          <button class="dv-b dv-b--danger" id="yt-clear">Poista avain</button>
-        </div>
-        <p class="dv-msg" id="yt-status"></p>
-      </div>
 
       <!-- TEKSTIT -->
       <div class="dv-pane" id="p-tx">
@@ -224,8 +206,6 @@
       [].forEach.call(document.querySelectorAll('.dv-pane'), function (o) { o.classList.remove('on'); });
       b.classList.add('on');
       $('p-' + b.dataset.t).classList.add('on');
-      /* YouTube-valilehti kertoo avautuessaan onko avain jo tallennettu. */
-      if (b.dataset.t === 'yt' && typeof ytTarkistaTila === 'function') ytTarkistaTila();
     };
   });
 
@@ -441,56 +421,6 @@
     $('lg-file').value = '';
     drawLg();
     lgStatus('Palautettu oletus — muista painaa "Tallenna kaikki".', 'ok');
-  };
-
-  /* --- YouTube-avain -------------------------------------------------
-     Avain menee suoraan Supabasen secrets-tauluun youtube_key_save-RPC:lla.
-     Se ei kulje sivuston koodin, repon eika minkaan valimuistin kautta, eika
-     sita voi lukea takaisin — vain korvata uudella tai poistaa. --- */
-  function ytStatus(t, k) {
-    var el = $('yt-status');
-    el.textContent = t || '';
-    el.className = 'dv-msg' + (k ? ' ' + k : '');
-  }
-  function ytTarkistaTila() {
-    KSPK.rpc('youtube_key_status', { p_code: KSPK.code() })
-      .then(function (on) {
-        ytStatus(on ? 'Avain on tallennettu.' : 'Avainta ei ole viela tallennettu — etusivu nayttaa toistaiseksi kiintet luvut.', on ? 'ok' : '');
-      })
-      .catch(function () { /* ei kriittinen */ });
-  }
-  $('yt-save').onclick = function () {
-    var k = $('yt-key').value.trim();
-    if (!k) { ytStatus('Liita avain kenttaan ensin.', 'bad'); return; }
-    ytStatus('Tallennetaan...');
-    KSPK.rpc('youtube_key_save', { p_code: KSPK.code(), p_key: k })
-      .then(function () {
-        $('yt-key').value = '';
-        ytStatus('Avain tallennettu. Paina "Testaa luvut" niin naet toimiiko se.', 'ok');
-      })
-      .catch(function (e) { ytStatus('Tallennus epaonnistui: ' + (e && e.message ? e.message : e), 'bad'); });
-  };
-  $('yt-clear').onclick = function () {
-    if (!confirm('Poistetaanko YouTube-avain? Etusivun luvut jaavat viimeisimpiin haettuihin.')) return;
-    KSPK.rpc('youtube_key_save', { p_code: KSPK.code(), p_key: '' })
-      .then(function () { ytStatus('Avain poistettu.', 'ok'); })
-      .catch(function (e) { ytStatus('Poisto epaonnistui: ' + (e && e.message ? e.message : e), 'bad'); });
-  };
-  $('yt-test').onclick = function () {
-    ytStatus('Haetaan YouTubelta...');
-    fetch('https://zfgwjxtruqoacxtkqprp.supabase.co/functions/v1/youtube-stats?force=1')
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (!d || d.error) {
-          ytStatus(d && d.error === 'NO_API_KEY'
-            ? 'Avainta ei ole tallennettu.'
-            : 'YouTube ei vastannut: ' + (d && d.error ? d.error : 'tuntematon virhe'), 'bad');
-          return;
-        }
-        ytStatus('Toimii: ' + d.videos + ' videota, ' + d.views + ' katselukertaa, ' +
-                 d.subscribers + ' tilaajaa.', 'ok');
-      })
-      .catch(function (e) { ytStatus('Haku epaonnistui: ' + e.message, 'bad'); });
   };
 
   /* --- tekstit --- */
