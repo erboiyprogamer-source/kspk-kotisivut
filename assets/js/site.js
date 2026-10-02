@@ -36,6 +36,7 @@ const SITE = {
   pages: [
     { href:'index.html',     label:'Etusivu',    foot:'Sivusto' },
     { href:'kartta.html',    label:'Kartta',     foot:'Yhteisö' },
+    { href:'reitti.html',    label:'Reitit',     foot:'Yhteisö' },
     { href:'galleria.html',  label:'Galleria',   foot:'Sivusto' },
     { href:'videot.html',    label:'Videot',     foot:'Sivusto' },
     { href:'serveri.html',   label:'Serveri',    foot:'Yhteisö', nav:'muut' },

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fi" class="is-loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reittihaku | K-S-P-K</title>
+<meta name="description" content="K-S-P-K:n oma navigointipalvelu: hae kaksi kohdetta kartalta, piirrä reitti ja katso matka sekä arvioitu aika eri kulkutavoilla.">
+<meta property="og:title" content="Reittihaku | K-S-P-K">
+<meta property="og:description" content="Hae kohteet, piirrä reitti ja katso matka-aika kävellen, hevosella, veneellä tai elytralla.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#060a08">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://erboiyprogamer-source.github.io/kspk-kartat/paiva/lib/ol.css">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Siirry sisältöön</a>
+<main id="main">
+
+<section class="page-head">
+  <div class="wrap">
+    <span class="eyebrow" data-reveal>Navigointi</span>
+    <h1 data-reveal>Reitti<span class="grad-text">haku</span></h1>
+    <p class="lead" data-reveal>Valitse lähtöpaikka ja määränpää — kartan merkeistä, koordinaateilla tai klikkaamalla karttaa. Saat matkan linnuntietä ja arvioidun ajan jokaisella kulkutavalla.</p>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="nav2" id="nav2">
+
+      <div class="nav2__panel">
+        <div class="nav2__field" data-point="a">
+          <span class="nav2__dot nav2__dot--a"></span>
+          <input type="text" id="n2-a" autocomplete="off" placeholder="Mistä? Merkin nimi tai X Z">
+          <button type="button" class="nav2__pick" data-pick="a" title="Valitse klikkaamalla karttaa">⊕</button>
+          <div class="nav2__sug" id="n2-sug-a" hidden></div>
+        </div>
+
+        <button type="button" class="nav2__swap" id="n2-swap" title="Vaihda päät">⇅</button>
+
+        <div class="nav2__field" data-point="b">
+          <span class="nav2__dot nav2__dot--b"></span>
+          <input type="text" id="n2-b" autocomplete="off" placeholder="Minne? Merkin nimi tai X Z">
+          <button type="button" class="nav2__pick" data-pick="b" title="Valitse klikkaamalla karttaa">⊕</button>
+          <div class="nav2__sug" id="n2-sug-b" hidden></div>
+        </div>
+
+        <div class="nav2__row">
+          <button type="button" class="btn btn--ghost btn--sm" id="n2-clear">Tyhjennä</button>
+          <button type="button" class="btn btn--ghost btn--sm" id="n2-share">Kopioi linkki</button>
+          <span class="nav2__maps">
+            <button type="button" class="nav2__map is-on" data-map="paiva">Päivä</button>
+            <button type="button" class="nav2__map" data-map="yo">Yö</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="nav2__mapwrap">
+        <div id="n2-map" class="nav2__map-el"></div>
+        <div class="nav2__coord" id="n2-coord">X –, Z –</div>
+        <div class="nav2__hint" id="n2-hint" hidden>Klikkaa kartalta piste</div>
+      </div>
+
+      <div class="nav2__out" id="n2-out" hidden></div>
+      <p class="nav2__note">Matka lasketaan linnuntietä (suoraa viivaa) vaakatasossa. Maastoa, vesistöjä tai korkeuseroja ei oteta huomioon, joten kävely- ja hevosajat ovat alarajoja — elytra ja vene vastaavat todellisuutta tarkimmin.</p>
+    </div>
+  </div>
+</section>
+</main>
+<script src="https://erboiyprogamer-source.github.io/kspk-kartat/paiva/lib/ol.js"></script>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/reitti.js"></script>
+</body>
+</html>
