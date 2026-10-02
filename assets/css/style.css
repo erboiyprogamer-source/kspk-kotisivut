@@ -1270,6 +1270,18 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-navbar__stop:hover{border-color:var(--danger);color:#ff9f9f}
 .kn-app.is-nav .kn-zoomnote{display:none}
 
+/* vahvistus navigoinnin lopetukselle */
+.kn-confirm{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9;
+  background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:16px;
+  box-shadow:var(--shadow);padding:20px 22px;text-align:center;max-width:calc(100% - 32px)}
+.kn-confirm p{margin:0 0 15px;font-size:15px;font-weight:600}
+.kn-confirm__row{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+.kn-confirm .kn-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 15px}
+.kn-confirm .kn-btn span{
+  font-size:10.5px;letter-spacing:.06em;padding:3px 7px;border-radius:6px;
+  background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.18);opacity:.85}
+
 /* paneelin piilotus */
 .kn-collapse{
   position:absolute;top:50%;transform:translateY(-50%);z-index:6;width:26px;height:56px;

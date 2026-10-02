@@ -1043,6 +1043,7 @@
   }
   function stopNav() {
     navigating = false;
+    $('kn-confirm').hidden = true;
     app.classList.remove('is-nav');
     app.classList.remove('is-collapsed');
     $('kn-navbar').hidden = true;
@@ -1063,14 +1064,15 @@
     btn.innerHTML = '&#8249;';
     btn.title = 'Piilota paneeli';
   }
-  $('kn-collapse').onclick = function () {
+  function toggleCollapse() {
     app.classList.toggle('is-collapsed');
     placeCollapseBtn();
     sizeSoon();
     /* Reitti sovitetaan uusiksi, jolloin se asettuu nyt koko ruudun
        keskelle (tai paneelin viereen kun paneeli palaa). */
     setTimeout(function () { if (legs()) drawRoute(true); }, 120);
-  };
+  }
+  $('kn-collapse').onclick = toggleCollapse;
   window.addEventListener('resize', placeCollapseBtn);
 
   /* kokonaytto */
@@ -1102,11 +1104,29 @@
   var openBtn = $('kn-full-open');
   if (openBtn) openBtn.onclick = function () { fullOn(); app.scrollIntoView({ block: 'start' }); };
 
+  /* Vahvistus: navigoinnin aikana Esc ei lopeta heti vaan kysyy. Enter
+     tai "Jatka" sulkee kysymyksen, toinen Esc tai "Lopeta" paattaa. */
+  function askStop() {
+    $('kn-confirm').hidden = false;
+    $('kn-keep').focus();
+  }
+  function closeAsk() { $('kn-confirm').hidden = true; }
+  $('kn-keep').onclick = closeAsk;
+  $('kn-end').onclick = function () { closeAsk(); stopNav(); };
+
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !$('kn-confirm').hidden) { e.preventDefault(); closeAsk(); return; }
     if (e.key !== 'Escape') return;
+    if (!$('kn-confirm').hidden) { closeAsk(); stopNav(); return; }
     if (picking !== null) { setPicking(null); return; }
     if (!$('kn-place').hidden) { closePlace(); return; }
-    if (navigating) { stopNav(); return; }
+    if (navigating) {
+      /* Ensin Esc piilottaa paneelin, ja vasta piilotettuna se kysyy
+         lopetetaanko navigointi. */
+      if (!app.classList.contains('is-collapsed')) { toggleCollapse(); return; }
+      askStop();
+      return;
+    }
     /* Valitut kohteet tyhjentyvat ja navigointi loppuu ennen kuin Esc
        sulkee koko naytön nakyman. */
     if (stops.some(function (st) { return !!st; })) {

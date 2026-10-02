@@ -87,6 +87,15 @@
         <!-- navigointipalkki (nakyy vasta kun navigointi on aloitettu) -->
         <div class="kn-navbar" id="kn-navbar" hidden></div>
 
+        <!-- vahvistus navigoinnin lopetukselle -->
+        <div class="kn-confirm" id="kn-confirm" hidden>
+          <p>Lopetetaanko navigointi?</p>
+          <div class="kn-confirm__row">
+            <button type="button" class="kn-btn kn-btn--primary" id="kn-keep">Jatka navigointia <span>Enter</span></button>
+            <button type="button" class="kn-btn" id="kn-end">Lopeta <span>Esc</span></button>
+          </div>
+        </div>
+
         <!-- paneelin piilotus / avaus -->
         <button type="button" class="kn-collapse" id="kn-collapse" title="Piilota paneeli">&#8249;</button>
 
