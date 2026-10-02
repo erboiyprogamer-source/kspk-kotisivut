@@ -281,9 +281,11 @@
       + '.pl-tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
       + '.pl-sub{display:flex;flex-wrap:wrap;gap:10px;font-size:.8rem;color:var(--muted,#9db3a6);align-items:center}'
       + '.pl-imgn{color:#ffd166;font-weight:600}'
-      + '.pl-more{display:grid;gap:9px;grid-template-rows:0fr;opacity:0;'
+      /* Yksiriviseen grid-kaareen perustuva korkeusanimaatio: sisalto on
+         yhdessa lapsessa, jolloin gap ei jata korkeutta suljettuna. */
+      + '.pl-more{display:grid;grid-template-rows:0fr;opacity:0;'
       + 'transition:grid-template-rows .3s ease,opacity .25s ease,margin-top .3s ease;margin-top:0}'
-      + '.pl-more > *{overflow:hidden;min-height:0}'
+      + '.pl-more__in{overflow:hidden;min-height:0;display:grid;gap:9px}'
       + '.pl-card:hover .pl-more,.pl-card:focus-within .pl-more,.pl-card.is-open .pl-more'
       + '{grid-template-rows:1fr;opacity:1;margin-top:3px}'
       + '@media (prefers-reduced-motion:reduce){.pl-more{transition:none}}'
@@ -533,7 +535,7 @@
         '<span>&#128205; X ' + p.x + ', Z ' + p.z + '</span>' +
         (imgs.length ? '<span class="pl-imgn">&#128247; ' + imgWord(imgs.length) + '</span>' : '') +
       '</div>' +
-      '<div class="pl-more">' +
+      '<div class="pl-more"><div class="pl-more__in">' +
         (imgs.length ? '<div class="pl-imggrid" data-imggrid></div>' : '') +
         (p.message ? '<p class="pl-msg">' + esc(p.message) + '</p>' : '') +
         '<div class="pl-meta"><span>&#128100; ' + esc(p.author || 'Nimeton') + '</span>' +
@@ -547,7 +549,7 @@
           (can ? '<button class="pl-b" data-a="kind">' + (p.is_nav ? 'Poista navigoinnista' : 'Merkitse navigoinniksi') + '</button>' : '') +
           (can ? '<button class="pl-b pl-b--danger" data-a="del">Poista</button>' : '') +
         '</div>' +
-      '</div>';
+      '</div></div>';
 
     /* Kosketuslaitteella ei ole hoveria, joten kortin saa auki myos
        napauttamalla sen otsikkoriviä. */
