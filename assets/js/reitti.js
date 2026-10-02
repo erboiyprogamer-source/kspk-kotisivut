@@ -264,7 +264,7 @@
   function setPicking(slot) {
     picking = slot;
     $('n2-hint').hidden = !slot;
-    root.querySelectorAll('.nav2__pick').forEach(function (b) {
+    document.querySelectorAll('.nav2__pick').forEach(function (b) {
       b.classList.toggle('is-on', !!slot && b.dataset.pick === slot);
     });
     if (map) map.getTargetElement().style.cursor = slot ? 'crosshair' : '';
@@ -382,9 +382,9 @@
     });
   });
   document.addEventListener('click', function (e) {
-    if (!e.target.closest('.nav2__field')) root.querySelectorAll('.nav2__sug').forEach(function (b) { b.hidden = true; });
+    if (!e.target.closest('.nav2__field')) document.querySelectorAll('.nav2__sug').forEach(function (b) { b.hidden = true; });
   });
-  root.querySelectorAll('.nav2__pick').forEach(function (b) {
+  document.querySelectorAll('.nav2__pick').forEach(function (b) {
     b.addEventListener('click', function () { setPicking(picking === b.dataset.pick ? null : b.dataset.pick); });
   });
   $('n2-swap').addEventListener('click', function () {
@@ -402,9 +402,9 @@
     var done = function () { btn.textContent = 'Kopioitu!'; setTimeout(function () { btn.textContent = 'Kopioi linkki'; }, 1600); };
     if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, done); else done();
   });
-  root.querySelectorAll('.nav2__map').forEach(function (b) {
+  document.querySelectorAll('.nav2__map').forEach(function (b) {
     b.addEventListener('click', function () {
-      root.querySelectorAll('.nav2__map').forEach(function (x) { x.classList.remove('is-on'); });
+      document.querySelectorAll('.nav2__map').forEach(function (x) { x.classList.remove('is-on'); });
       b.classList.add('is-on');
       loadMeta(b.dataset.map).then(buildMap).catch(function () {});
     });
@@ -459,8 +459,8 @@
         '<div class="kn__outwrap" id="kn-outslot"></div>' +
       '</div>';
     document.body.appendChild(knBox);
-    knMove(root.querySelector('.nav2__mapwrap'), knBox.querySelector('#kn-mapslot'));
-    knMove(root.querySelector('.nav2__panel'),   knBox.querySelector('#kn-panelslot'));
+    knMove(document.querySelector('.nav2__mapwrap'), knBox.querySelector('#kn-mapslot'));
+    knMove(document.querySelector('.nav2__panel'),   knBox.querySelector('#kn-panelslot'));
     knMove($('n2-out'),                          knBox.querySelector('#kn-outslot'));
     document.body.classList.add('kn-on');
 
