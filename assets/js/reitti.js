@@ -141,6 +141,12 @@
   var map = null, view = null, tileLayer = null, pinLayer = null, routeLayer = null;
   var pendingView = null, curMap = 'paiva';
   var pins = [], picking = null, dirMode = false;
+  /* Automaattinen kartanvalinta: paivakartta on tarkka mutta kattaa vain
+     keskusta-alueen, suuri kartta kattaa koko maailman. Kun kaikki reitin
+     pisteet mahtuvat keskustan sisaan, kaytetaan tarkkaa paivakarttaa.
+     Kayttajan oma valinta Tasot-valikosta lopettaa automatiikan. */
+  var autoMapOn = true;
+  var AUTO_RADIUS = 1000;
   var stops = [null, null];        // {x, z, label}
   var hideSymbols = {};            // kategoriasiruilla piilotetut
   var showNav = true;
@@ -392,6 +398,7 @@
     box.hidden = false;
     var item = { x: p.x, z: p.z, label: p.title };
     $('kn-place-x').onclick = closePlace;
+    applyAutoMap([{ x: p.x, z: p.z }], false);
 
     /* Sama kulku kuin karttapalveluissa: haku vie paikkaan, ja vasta
        Reittiohjeet avaa reitin — kohde on valmiina ja lahtokentta jaa
@@ -588,6 +595,26 @@
     return { pts: pts, legs: out, total: total };
   }
 
+  function wantedMap(points) {
+    if (!points.length) return curMap;
+    var r = 0;
+    points.forEach(function (p) { r = Math.max(r, Math.abs(p.x), Math.abs(p.z)); });
+    return r <= AUTO_RADIUS ? 'paiva' : '5k';
+  }
+  function applyAutoMap(points, refit) {
+    if (!autoMapOn) return false;
+    var want = wantedMap(points);
+    if (want === curMap) return false;
+    var menu = $('kn-layers-menu');
+    menu.querySelectorAll('[data-map]').forEach(function (x) { x.classList.toggle('is-on', x.dataset.map === want); });
+    loadMeta(want).then(function (meta) {
+      buildMap(meta);
+      drawPins();
+      drawRoute(!!refit);
+    }).catch(function () {});
+    return true;
+  }
+
   function drawRoute(fit) {
     if (!routeLayer) return;
     var s = routeLayer.getSource(); s.clear();
@@ -606,7 +633,12 @@
       }));
     }
     renderRouteInfo(r);
-    if (fit && r) fitRoute(r);
+    if (fit && r) {
+      /* Vaihto rakentaa kartan uudelleen ja piirtaa reitin sitten uudelleen,
+         joten tassa ei enaa sovitettaisi oikeaan nakymaan. */
+      if (applyAutoMap(r.pts, true)) return;
+      fitRoute(r);
+    }
   }
 
   function fitRoute(r) {
@@ -756,7 +788,10 @@
       $('kn-layers-menu').querySelectorAll('[data-map]').forEach(function (x) { x.classList.remove('is-on'); });
       b.classList.add('is-on');
       $('kn-layers-menu').hidden = true;
-      loadMeta(b.dataset.map).then(buildMap).catch(function () {});
+      autoMapOn = false;   // kayttajan oma valinta voittaa automatiikan
+      loadMeta(b.dataset.map).then(function (meta) {
+        buildMap(meta); drawPins(); drawRoute(false);
+      }).catch(function () {});
     };
   });
 
@@ -777,8 +812,8 @@
     document.body.classList.add('kn-lock');
     $('kn-full').innerHTML = '&#10005;';
     $('kn-full').title = 'Sulje koko näyttö (Esc)';
-    var big = $('kn-layers-menu').querySelector('[data-map="5k"]');
-    if (big && !big.classList.contains('is-on')) { big.click(); setTimeout(sizeSoon, 420); }
+    var r = legs();
+    if (r && applyAutoMap(r.pts, true)) setTimeout(sizeSoon, 450);
     else sizeSoon();
   }
   function fullOff() {
