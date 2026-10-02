@@ -176,6 +176,7 @@
   var selected = null;             // paikkakortissa nakyva merkki
   var hoveredId = null;            // merkki jonka paalla hiiri on
   var navigating = false;          // navigointi aloitettu
+  var navDist = 0;                 // kuljettu matka lohkoina navigoinnin aikana
   var placeToken = 0;              // estaa vanhentunutta kuvahakua kirjoittamasta uuteen korttiin
 
   /* ---------- kartta ---------- */
@@ -313,6 +314,12 @@
         '<g clip-path="url(#c)">' + sq + '</g>' +
       '</svg>');
   })();
+  var arrowIconUrl = svgUrl(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">' +
+      '<circle cx="14" cy="14" r="12" fill="#06110b" stroke="#3ef08a" stroke-width="2"/>' +
+      '<path d="M14 6l6 12-6-3-6 3z" fill="#3ef08a"/>' +
+    '</svg>');
+
   function bigLabel(text, dy) {
     return new ol.style.Text({
       text: text || '', offsetY: dy, font: '700 16px Outfit, sans-serif',
@@ -368,10 +375,34 @@
   }
 
   function routeStyle(f) {
-    if (f.getGeometry().getType() === 'Point') return f.get('style');
+    var g = f.getGeometry().getType();
+    if (g === 'Point') {
+      if (f.get('arrow')) {
+        /* Nuoli kulkee viivaa pitkin samaan tahtiin laskurin kanssa. */
+        return new ol.style.Style({
+          image: new ol.style.Icon({
+            src: arrowIconUrl, anchor: [0.5, 0.5], rotation: f.get('rot') || 0, rotateWithView: true
+          })
+        });
+      }
+      return f.get('style');
+    }
+
+    /* Taakse jaanyt osuus harmaantuu navigoinnin aikana. */
+    var done = navigating && navDist >= (f.get('end') || 0) - 0.5;
+    var col = done ? 'rgba(150,170,160,.75)' : '#3ef08a';
     return [
       new ol.style.Style({ stroke: new ol.style.Stroke({ color: 'rgba(0,0,0,.7)', width: 8 }) }),
-      new ol.style.Style({ stroke: new ol.style.Stroke({ color: '#3ef08a', width: 4 }) })
+      new ol.style.Style({
+        stroke: new ol.style.Stroke({ color: col, width: 4 }),
+        /* Pieni etaisyysteksti kulkee viivan suuntaisesti. */
+        text: new ol.style.Text({
+          text: nf(f.get('d') || 0) + ' m', placement: 'line', textBaseline: 'bottom', offsetY: -4,
+          font: '600 12px Outfit, sans-serif',
+          fill: new ol.style.Fill({ color: done ? '#c8d6ce' : '#eafff2' }),
+          stroke: new ol.style.Stroke({ color: '#06110b', width: 4 })
+        })
+      })
     ];
   }
 
@@ -789,9 +820,18 @@
     });
 
     if (r) {
-      s.addFeature(new ol.Feature({
-        geometry: new ol.geom.LineString(r.pts.map(function (p) { return toView(p.x, p.z); }))
-      }));
+      /* Jokainen osuus on oma viivansa, jotta sen voi varittaa ja
+         nimeta erikseen. */
+      var acc = 0;
+      r.legs.forEach(function (l, i) {
+        var f = new ol.Feature({
+          geometry: new ol.geom.LineString([toView(l.from.x, l.from.z), toView(l.to.x, l.to.z)])
+        });
+        f.set('leg', i); f.set('d', l.d);
+        f.set('start', acc); acc += l.d; f.set('end', acc);
+        s.addFeature(f);
+      });
+      if (navigating) addArrow(r);
     }
     renderRouteInfo(r);
     renderNav();
@@ -808,6 +848,45 @@
   /* Sovitus lasketaan kerralla valmiiksi ja ajetaan yhtena animaationa.
      Aiemmin zoomia kokeiltiin askel kerrallaan ajastimilla, mika nakyi
      nykivana sarjana hyppyja. */
+  /* Nuoli asetetaan kuljetun matkan kohdalle ja kaannetaan osuuden
+     suuntaan. Vauhti on sama kuin laskurissa: tasainen nopeus. */
+  function arrowAt(r, dist) {
+    var left = Math.max(0, Math.min(dist, r.total));
+    for (var i = 0; i < r.legs.length; i++) {
+      var l = r.legs[i];
+      if (left <= l.d || i === r.legs.length - 1) {
+        var t = l.d ? Math.min(1, left / l.d) : 0;
+        var x = l.from.x + (l.to.x - l.from.x) * t;
+        var z = l.from.z + (l.to.z - l.from.z) * t;
+        /* OpenLayersin kierto kasvaa myotapaivaan ja Z kasvaa alaspain. */
+        var rot = Math.atan2(l.to.x - l.from.x, -(l.to.z - l.from.z));
+        return { x: x, z: z, rot: rot };
+      }
+      left -= l.d;
+    }
+    return null;
+  }
+  function addArrow(r) {
+    var a = arrowAt(r, navDist);
+    if (!a) return;
+    var f = new ol.Feature({ geometry: new ol.geom.Point(toView(a.x, a.z)) });
+    f.set('arrow', true); f.set('rot', a.rot);
+    routeLayer.getSource().addFeature(f);
+  }
+  function updateArrow() {
+    if (!routeLayer) return;
+    var r = legs();
+    if (!r) return;
+    var src = routeLayer.getSource();
+    var f = src.getFeatures().filter(function (o) { return o.get('arrow'); })[0];
+    var a = arrowAt(r, navDist);
+    if (!a) return;
+    if (!f) { addArrow(r); return; }
+    f.setGeometry(new ol.geom.Point(toView(a.x, a.z)));
+    f.set('rot', a.rot);
+    routeLayer.changed();
+  }
+
   function fitRoute(r) {
     if (!map || !view) return;
     var size = map.getSize();
@@ -1053,7 +1132,7 @@
       return '<li class="kn-step">' +
         '<span class="kn-step__dot"></span>' +
         '<span class="kn-step__txt">' +
-          '<strong>' + esc(l.to.label) + '</strong>' +
+          '<strong>' + esc(l.from.label) + ' &rarr; ' + esc(l.to.label) + '</strong>' +
           '<em>' + nf(l.d) + ' m · ' + dur(sec) + '</em>' +
         '</span>' +
         '<span class="kn-step__eta">' + fmtClock(new Date(t)) + '</span>' +
@@ -1118,6 +1197,11 @@
   function tickNav() {
     if (!navigating) return;
     var left = navTotalSec - (Date.now() - navStart) / 1000;
+    var r = legs();
+    if (r) {
+      navDist = Math.max(0, Math.min(r.total, r.total * (1 - left / navTotalSec)));
+      updateArrow();
+    }
     var elBig = $('kn-count'), bar = $('kn-count-bar');
     if (!elBig) return;
     elBig.textContent = left > 0 ? mmss(left) : 'Perillä';
@@ -1129,6 +1213,7 @@
     if (!legs() || !stops.every(function (st) { return !!st; })) return;
     navigating = true;
     navStart = Date.now();
+    navDist = 0;
     app.classList.add('is-nav');
     $('kn-dir').hidden = true;
     renderNav();
@@ -1139,6 +1224,7 @@
   }
   function stopNav() {
     navigating = false;
+    navDist = 0;
     clearInterval(navTimer); navTimer = null;
     $('kn-confirm').hidden = true;
     $('kn-nav').hidden = true;
