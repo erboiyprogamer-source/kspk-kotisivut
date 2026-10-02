@@ -754,6 +754,38 @@
     view.fit(ol.extent.buffer(e, pad), {
       size: map.getSize(), duration: 420, maxZoom: view.getMaxZoom(), padding: padding
     });
+
+    /* Kartoilla on vain muutama kiintea zoom-taso, joten sovitus voi
+       paatya askeleen liian lahelle ja paatepiste jaada paneelin alle
+       tai ruudun ulkopuolelle. Tarkistetaan lopputulos pikseleina ja
+       loitonnetaan tarvittaessa askel kerrallaan. */
+    setTimeout(function () { ensureVisible(r, padding, 3); }, 480);
+  }
+
+  function ensureVisible(r, padding, tries) {
+    if (!map || !tries) return;
+    var size = map.getSize();
+    if (!size) return;
+    var okAll = r.pts.every(function (p) {
+      var px = map.getPixelFromCoordinate(toView(p.x, p.z));
+      if (!px) return false;
+      return px[0] > padding[3] && px[0] < size[0] - padding[1] &&
+             px[1] > padding[0] && px[1] < size[1] - padding[2];
+    });
+    if (okAll) return;
+    var z = view.getZoom();
+    if (z <= view.getMinZoom()) return;
+    view.setZoom(z - 1);
+    /* Keskitetaan reitti vapaan alueen keskelle: siirretaan keskipistetta
+       paneelin varaaman tilan verran. */
+    var e2 = ol.extent.boundingExtent(r.pts.map(function (p) { return toView(p.x, p.z); }));
+    var c = ol.extent.getCenter(e2);
+    var res = view.getResolution();
+    view.setCenter([
+      c[0] - ((padding[3] - padding[1]) / 2) * res,
+      c[1] + ((padding[0] - padding[2]) / 2) * res
+    ]);
+    setTimeout(function () { ensureVisible(r, padding, tries - 1); }, 60);
   }
 
   function curMode() {
