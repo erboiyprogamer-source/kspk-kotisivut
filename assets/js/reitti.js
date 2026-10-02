@@ -741,7 +741,7 @@
       }));
     }
     renderRouteInfo(r);
-    renderNavbar();
+    renderNav();
     if (fit && r) {
       /* Vaihto rakentaa kartan uudelleen ja piirtaa reitin sitten uudelleen,
          joten tassa ei enaa sovitettaisi oikeaan nakymaan. Vaihto tehdaan
@@ -752,82 +752,53 @@
     }
   }
 
+  /* Sovitus lasketaan kerralla valmiiksi ja ajetaan yhtena animaationa.
+     Aiemmin zoomia kokeiltiin askel kerrallaan ajastimilla, mika nakyi
+     nykivana sarjana hyppyja. */
   function fitRoute(r) {
+    if (!map || !view) return;
+    var size = map.getSize();
+    if (!size) return;
+
     var e = ol.extent.boundingExtent(r.pts.map(function (p) { return toView(p.x, p.z); }));
-    /* Marginaali on 40 % reitin pituudesta, mutta vahintaan 150 lohkoa,
-       jottei lyhyt reitti zoomaudu kiinni paatepisteisiin. */
+    /* Marginaali: 18 % reitin pituudesta, vahintaan 70 lohkoa, jottei
+       lyhyt reitti zoomaudu kiinni paatepisteisiin. */
     var span = Math.max(ol.extent.getWidth(e), ol.extent.getHeight(e));
-    var pad = Math.max(span * 0.18, 70 / BPD);
+    e = ol.extent.buffer(e, Math.max(span * 0.18, 70 / BPD));
 
     /* Reunukset mitataan paneelin todellisesta koosta, jottei reitti jaa
-       sen alle. Jos paneeli ei mahdu kartan viereen, se varaa tilaa
-       ylhaalta — mutta enintaan reilun puolet korkeudesta, jotta reitille
-       jaa jarkeva alue. */
+       sen alle. [ylos, oikea, alas, vasen] */
     var el = map.getTargetElement().getBoundingClientRect();
     var panel = document.querySelector('.kn-left');
-    var pr = panel ? panel.getBoundingClientRect() : { width: 0, height: 0 };
+    var hidden = app.classList.contains('is-collapsed') || !panel ||
+                 getComputedStyle(panel).display === 'none';
+    var pr = hidden ? { width: 0, height: 0 } : panel.getBoundingClientRect();
     var sideFits = (el.width - pr.width) > 340;
-    var padding = sideFits
-      ? [90, 60, 60, Math.round(pr.width) + 36]
-      : [Math.min(Math.round(pr.height) + 24, Math.round(el.height * 0.55)), 50, 70, 50];
+    var pad = hidden
+      ? [80, 60, 90, 60]
+      : (sideFits ? [90, 60, 90, Math.round(pr.width) + 36]
+                  : [Math.min(Math.round(pr.height) + 24, Math.round(el.height * 0.55)), 50, 90, 50]);
 
-    view.fit(ol.extent.buffer(e, pad), {
-      size: map.getSize(), duration: 420, maxZoom: view.getMaxZoom(), padding: padding
+    var freeW = Math.max(80, size[0] - pad[1] - pad[3]);
+    var freeH = Math.max(80, size[1] - pad[0] - pad[2]);
+
+    /* Tiilia on vain kokonaisille tasoille, joten valitaan suoraan lahin
+       taso jolla reitti viela mahtuu vapaalle alueelle. */
+    var need = Math.max(ol.extent.getWidth(e) / freeW, ol.extent.getHeight(e) / freeH);
+    var res = view.getResolutions() || [view.getResolution()];
+    var pick = res.length - 1;
+    for (var i = 0; i < res.length; i++) { if (res[i] >= need) pick = i; }
+    var r0 = res[pick];
+
+    /* Keskipiste siirretaan niin etta reitti asettuu vapaan alueen
+       keskelle eika paneelin alle. */
+    var c = ol.extent.getCenter(e);
+    view.animate({
+      center: [c[0] - ((pad[3] - pad[1]) / 2) * r0, c[1] + ((pad[0] - pad[2]) / 2) * r0],
+      resolution: r0,
+      duration: 450,
+      easing: ol.easing.inAndOut
     });
-
-    /* Kartoilla on vain muutama kiintea zoom-taso, joten sovitus voi
-       paatya askeleen liian lahelle ja paatepiste jaada paneelin alle
-       tai ruudun ulkopuolelle. Tarkistetaan lopputulos pikseleina ja
-       loitonnetaan tarvittaessa askel kerrallaan. */
-    setTimeout(function () { refineFit(r, padding, 0); }, 480);
-  }
-
-  /* Zoom-tasoja on vain muutama, joten sovitus jaa helposti askeleen
-     liian kauas tai liian lahelle. Hienosaadetaan kokonaisilla tasoilla:
-     ensin loitonnetaan kunnes kaikki pisteet mahtuvat vapaalle alueelle,
-     sitten kokeillaan askel lahemmas niin kauan kuin ne yha mahtuvat.
-     Vain kokonaiset tasot, koska tiilia on olemassa vain niille. */
-  function fitsInside(r, padding) {
-    var size = map && map.getSize();
-    if (!size) return false;
-    return r.pts.every(function (p) {
-      var px = map.getPixelFromCoordinate(toView(p.x, p.z));
-      if (!px) return false;
-      return px[0] > padding[3] && px[0] < size[0] - padding[1] &&
-             px[1] > padding[0] && px[1] < size[1] - padding[2];
-    });
-  }
-  function centerOnRoute(r, padding) {
-    var e2 = ol.extent.boundingExtent(r.pts.map(function (p) { return toView(p.x, p.z); }));
-    var c = ol.extent.getCenter(e2);
-    var res = view.getResolution();
-    view.setCenter([
-      c[0] - ((padding[3] - padding[1]) / 2) * res,
-      c[1] + ((padding[0] - padding[2]) / 2) * res
-    ]);
-  }
-  function refineFit(r, padding, guard) {
-    if (!map || !view || guard > 6) return;
-    var z = Math.round(view.getZoom());
-    if (view.getZoom() !== z) view.setZoom(z);
-    centerOnRoute(r, padding);
-    setTimeout(function () {
-      if (!fitsInside(r, padding)) {
-        if (z > view.getMinZoom()) {
-          view.setZoom(z - 1);
-          centerOnRoute(r, padding);
-          setTimeout(function () { refineFit(r, padding, guard + 1); }, 60);
-        }
-        return;
-      }
-      if (z >= view.getMaxZoom()) return;
-      view.setZoom(z + 1);
-      centerOnRoute(r, padding);
-      setTimeout(function () {
-        if (fitsInside(r, padding)) refineFit(r, padding, guard + 1);
-        else { view.setZoom(z); centerOnRoute(r, padding); }
-      }, 60);
-    }, 60);
   }
 
   function curMode() {
@@ -846,7 +817,7 @@
       '</button>';
     }).join('');
     modesBox.querySelectorAll('.kn-mode').forEach(function (b) {
-      b.onclick = function () { localStorage.setItem(LS_MODE, b.dataset.m); renderRouteInfo(legs()); renderNavbar(); };
+      b.onclick = function () { localStorage.setItem(LS_MODE, b.dataset.m); renderRouteInfo(legs()); renderNav(); };
     });
 
     if (!r) {
@@ -1002,39 +973,125 @@
   function fmtClock(d) {
     return ('0' + d.getHours()).slice(-2) + '.' + ('0' + d.getMinutes()).slice(-2);
   }
-  function renderNavbar() {
-    var bar = $('kn-navbar');
-    var r = legs();
-    if (!navigating || !r) { bar.hidden = true; return; }
-    var m = curMode();
-    var sec = r.total / m.v;
-    var eta = new Date(Date.now() + sec * 1000);
-    var last = r.pts[r.pts.length - 1];
-    bar.innerHTML =
-      '<span class="kn-navbar__ico">' + m.ico + '</span>' +
-      '<span class="kn-navbar__main">' +
-        '<strong>' + dur(sec) + '</strong>' +
-        '<span>' + nf(r.total) + ' m · perillä noin ' + fmtClock(eta) + '</span>' +
-      '</span>' +
-      '<span class="kn-navbar__to">' + esc(last.label) + '</span>' +
-      '<button type="button" class="kn-navbar__stop" id="kn-stopnav">Lopeta</button>';
-    bar.hidden = false;
-    $('kn-stopnav').onclick = stopNav;
+  function mmss(sec) {
+    sec = Math.max(0, Math.round(sec));
+    var m = Math.floor(sec / 60), ss = sec % 60;
+    if (m >= 60) return Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+    return m + ':' + ('0' + ss).slice(-2);
   }
+
+  var navStart = 0, navTimer = null, navTotalSec = 0;
+
+  /* Navigointinakyma korvaa reittipaneelin kokonaan: reitti pystyviivana,
+     jokainen osuus omana vaiheenaan matkoineen, kestoineen ja arvioituine
+     saapumisaikoineen, seka laskuri perillaoloon. */
+  function renderNav() {
+    var box = $('kn-nav');
+    var r = legs();
+    if (!navigating || !r) { box.hidden = true; return; }
+    var m = curMode();
+    navTotalSec = r.total / m.v;
+    var eta = new Date(navStart + navTotalSec * 1000);
+
+    var t = navStart;
+    var stepHtml = r.legs.map(function (l, i) {
+      var sec = l.d / m.v;
+      t += sec * 1000;
+      return '<li class="kn-step">' +
+        '<span class="kn-step__dot"></span>' +
+        '<span class="kn-step__txt">' +
+          '<strong>' + esc(l.to.label) + '</strong>' +
+          '<em>' + nf(l.d) + ' m · ' + dur(sec) + '</em>' +
+        '</span>' +
+        '<span class="kn-step__eta">' + fmtClock(new Date(t)) + '</span>' +
+      '</li>';
+    }).join('');
+
+    box.innerHTML =
+      '<div class="kn-nav__head">' +
+        '<span class="kn-nav__ico">' + m.ico + '</span>' +
+        '<span class="kn-nav__title">' +
+          '<strong>' + esc(r.pts[r.pts.length - 1].label) + '</strong>' +
+          '<em>' + esc(m.name) + ' · ' + nf(r.total) + ' m</em>' +
+        '</span>' +
+        '<button type="button" class="kn-nav__x" id="kn-nav-x" title="Lopeta navigointi">&#10005;</button>' +
+      '</div>' +
+
+      '<div class="kn-count">' +
+        '<div class="kn-count__big" id="kn-count">' + mmss(navTotalSec) + '</div>' +
+        '<div class="kn-count__sub">jäljellä · perillä noin <strong>' + fmtClock(eta) + '</strong></div>' +
+        '<div class="kn-count__bar"><span id="kn-count-bar"></span></div>' +
+      '</div>' +
+
+      '<ol class="kn-steps">' +
+        '<li class="kn-step kn-step--start">' +
+          '<span class="kn-step__dot"></span>' +
+          '<span class="kn-step__txt"><strong>' + esc(r.pts[0].label) + '</strong>' +
+          '<em>lähtö · ' + fmtClock(new Date(navStart)) + '</em></span>' +
+        '</li>' + stepHtml +
+      '</ol>' +
+
+      '<div class="kn-nav__modes" id="kn-nav-modes">' + MODES.map(function (o) {
+        return '<button type="button" class="kn-mode' + (o.id === m.id ? ' is-on' : '') + '" data-m="' + o.id + '">' +
+          '<span class="kn-mode__ico">' + o.ico + '</span>' +
+          '<span class="kn-mode__t">' + dur(r.total / o.v) + '</span></button>';
+      }).join('') + '</div>' +
+
+      '<p class="kn-nav__note">' + esc(m.note) + ' Arviot ovat linnuntietä eivätkä huomioi maastoa.</p>' +
+
+      '<div class="kn-nav__foot">' +
+        '<button type="button" class="kn-link" id="kn-nav-copy">Kopioi linkki</button>' +
+        '<button type="button" class="kn-link kn-link--danger" id="kn-nav-stop">Lopeta navigointi</button>' +
+      '</div>';
+
+    box.hidden = false;
+
+    $('kn-nav-x').onclick = askStop;
+    $('kn-nav-stop').onclick = askStop;
+    $('kn-nav-copy').onclick = function () {
+      var b = this, url = routeUrl();
+      var done = function () { b.textContent = 'Kopioitu!'; setTimeout(function () { b.textContent = 'Kopioi linkki'; }, 1600); };
+      if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, done); else done();
+    };
+    box.querySelectorAll('.kn-nav__modes .kn-mode').forEach(function (b) {
+      b.onclick = function () {
+        localStorage.setItem(LS_MODE, b.dataset.m);
+        navStart = Date.now();           // uusi kulkutapa = uusi arvio
+        renderNav(); renderRouteInfo(legs());
+      };
+    });
+  }
+
+  function tickNav() {
+    if (!navigating) return;
+    var left = navTotalSec - (Date.now() - navStart) / 1000;
+    var elBig = $('kn-count'), bar = $('kn-count-bar');
+    if (!elBig) return;
+    elBig.textContent = left > 0 ? mmss(left) : 'Perillä';
+    elBig.classList.toggle('is-done', left <= 0);
+    if (bar) bar.style.width = Math.min(100, Math.max(0, (1 - left / navTotalSec) * 100)) + '%';
+  }
+
   function startNav() {
     if (!legs() || !stops.every(function (st) { return !!st; })) return;
     navigating = true;
+    navStart = Date.now();
     app.classList.add('is-nav');
-    renderNavbar();
+    $('kn-dir').hidden = true;
+    renderNav();
+    clearInterval(navTimer);
+    navTimer = setInterval(tickNav, 1000);
     placeCollapseBtn();
     drawRoute(true);
   }
   function stopNav() {
     navigating = false;
+    clearInterval(navTimer); navTimer = null;
     $('kn-confirm').hidden = true;
+    $('kn-nav').hidden = true;
     app.classList.remove('is-nav');
     app.classList.remove('is-collapsed');
-    $('kn-navbar').hidden = true;
+    if (dirMode) $('kn-dir').hidden = false;
     placeCollapseBtn();
     sizeSoon();
     setTimeout(function () { if (legs()) drawRoute(true); }, 120);

@@ -1252,22 +1252,52 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
   background:linear-gradient(140deg,var(--green),var(--green-2));
   transition:filter .2s var(--ease),transform .2s var(--ease)}
 .kn-start:hover{filter:brightness(1.08);transform:translateY(-1px)}
-.kn-navbar{
-  position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:7;
-  display:flex;align-items:center;gap:14px;max-width:min(620px,calc(100% - 24px));
-  padding:11px 14px;border-radius:14px;background:var(--panel-solid);
-  border:1px solid var(--line-strong);box-shadow:var(--shadow)}
-.kn-navbar__ico{font-size:20px;line-height:1}
-.kn-navbar__main{display:grid;line-height:1.25}
-.kn-navbar__main strong{font:700 19px/1.2 var(--font-body);color:var(--green)}
-.kn-navbar__main span{font-size:12.5px;color:var(--muted)}
-.kn-navbar__to{
-  font-size:13px;color:var(--text);max-width:170px;overflow:hidden;
-  text-overflow:ellipsis;white-space:nowrap;border-left:1px solid var(--line);padding-left:14px}
-.kn-navbar__stop{
-  border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);
-  padding:9px 14px;border-radius:10px;cursor:pointer;font:inherit;font-size:.82rem}
-.kn-navbar__stop:hover{border-color:var(--danger);color:#ff9f9f}
+/* navigointinakyma: oma paneeli reittipaneelin tilalle */
+.kn-nav{
+  background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:16px;
+  box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:12px;
+  overflow:auto;flex:1 1 auto;min-height:0}
+.kn-nav__head{display:flex;align-items:center;gap:11px}
+.kn-nav__ico{font-size:22px;line-height:1}
+.kn-nav__title{display:grid;min-width:0;flex:1}
+.kn-nav__title strong{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kn-nav__title em{font-style:normal;font-size:12.5px;color:var(--muted)}
+.kn-nav__x{
+  width:30px;height:30px;flex:0 0 auto;border-radius:50%;border:1px solid var(--line);
+  background:none;color:var(--muted);cursor:pointer;font-size:12px}
+.kn-nav__x:hover{color:var(--text);border-color:var(--line-strong)}
+
+.kn-count{text-align:center;padding:10px 0 2px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.kn-count__big{font:700 40px/1 var(--font-body);color:var(--green);letter-spacing:.02em}
+.kn-count__big.is-done{color:var(--gold);font-size:30px}
+.kn-count__sub{font-size:12.5px;color:var(--muted);margin-top:6px}
+.kn-count__sub strong{color:var(--text)}
+.kn-count__bar{height:4px;border-radius:999px;background:rgba(255,255,255,.08);margin:11px 0 10px;overflow:hidden}
+.kn-count__bar span{display:block;height:100%;width:0;border-radius:999px;
+  background:linear-gradient(90deg,var(--green-2),var(--green));transition:width 1s linear}
+
+.kn-steps{list-style:none;margin:0;padding:0 0 0 4px;display:grid;gap:0}
+.kn-step{position:relative;display:flex;align-items:flex-start;gap:12px;padding:9px 0 9px 18px}
+.kn-step::before{
+  content:'';position:absolute;left:4px;top:0;bottom:0;width:2px;background:var(--line)}
+.kn-step:first-child::before{top:50%}
+.kn-step:last-child::before{bottom:50%}
+.kn-step__dot{
+  position:absolute;left:0;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;
+  background:var(--sky);box-shadow:0 0 0 3px var(--panel-solid)}
+.kn-step--start .kn-step__dot{background:var(--green)}
+.kn-step:last-child .kn-step__dot{background:var(--gold)}
+.kn-step__txt{display:grid;min-width:0;flex:1}
+.kn-step__txt strong{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kn-step__txt em{font-style:normal;font-size:12px;color:var(--muted)}
+.kn-step__eta{font-size:12.5px;color:var(--text);flex:0 0 auto;padding-top:2px}
+
+.kn-nav__modes{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;
+  border-top:1px solid var(--line);padding-top:10px}
+.kn-nav__note{margin:0;font-size:12px;color:var(--dim);line-height:1.5}
+.kn-nav__foot{display:flex;gap:14px;justify-content:space-between;
+  border-top:1px solid var(--line);padding-top:10px}
+.kn-link--danger{color:#ff8f8f}
 .kn-app.is-nav .kn-zoomnote{display:none}
 
 /* vahvistus navigoinnin lopetukselle */
@@ -1317,8 +1347,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
   .kn-left > .kn-sug,.kn-left > .kn-place,.kn-left > .kn-dir{margin-top:52px}
 }
 @media (max-width:860px){
-  .kn-navbar{left:12px;right:12px;transform:none;max-width:none;bottom:70px}
-  .kn-navbar__to{display:none}
+  .kn-nav{max-height:58vh}
   .kn-left{width:calc(100% - 80px)}
   /* kapealla ruudulla paneeli jattaa kartalle enemman tilaa, jotta koko
      reitti mahtuu nakyviin */
