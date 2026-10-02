@@ -1342,6 +1342,10 @@ body.kn-page .to-top,body.kn-page .skip{display:none!important}
   position:absolute;left:100%;top:50%;transform:translateY(-50%);
   display:grid;gap:2px;padding-left:4px;z-index:7}
 .kn-rail[hidden]{display:none}
+/* kapealla ruudulla kahva mahtuu vain paneelin sisapuolelle */
+.kn-rail--inside{left:auto;right:6px;padding-left:0}
+.kn-rail--inside .kn-rail__b{color:rgba(255,255,255,.6)}
+.kn-rail--inside .kn-rail__b:hover{color:#fff}
 .kn-rail__b{
   width:26px;height:30px;border:0;background:none;cursor:pointer;padding:0;
   color:rgba(255,255,255,.75);font-size:17px;line-height:1;

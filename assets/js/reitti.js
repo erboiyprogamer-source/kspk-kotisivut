@@ -1500,6 +1500,15 @@
     var cl = $('kn-close');
     if (cl) cl.hidden = collapsed;    // suljettavaa ei ole kun paneeli on piilossa
 
+    /* Jos paneeli ulottuu lahes kartan reunaan, kahva ei mahdu sen
+       viereen — silloin se siirtyy paneelin sisapuolelle. */
+    if (rail) {
+      var lf = document.querySelector('.kn-left');
+      var mw = map ? map.getTargetElement().getBoundingClientRect().width : 0;
+      var fits = !collapsed && lf && mw && (mw - lf.getBoundingClientRect().right) > 34;
+      rail.classList.toggle('kn-rail--inside', !fits && !collapsed);
+    }
+
     /* Tasot-nappi pysyy nurkassa, ja siirtyy sivuun vasta jos paneeli
        oikeasti yltaa sen paalle. */
     if (!layers) return;
