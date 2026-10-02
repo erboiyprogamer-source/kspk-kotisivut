@@ -1096,3 +1096,49 @@ pre,code{overflow-wrap:anywhere;word-break:break-word}
   .nav2__swap:hover{transform:rotate(270deg)}
   .nav2__maps{margin-left:0;width:100%;justify-content:center}
 }
+
+/* ---------- KasaNavigointi: koko näytön navigointinäkymä ---------- */
+.kn-cta{display:grid;gap:10px;justify-items:start;margin-top:22px;max-width:640px}
+.kn-cta__note{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
+.kn-cta__note strong{color:var(--gold);font-weight:600}
+
+body.kn-on{overflow:hidden}
+.kn{position:fixed;inset:0;z-index:9999;background:#070d0a;animation:knIn .25s var(--ease-out)}
+@keyframes knIn{from{opacity:0}to{opacity:1}}
+.kn__map{position:absolute;inset:0}
+.kn__map .nav2__mapwrap{height:100%;border:0;border-radius:0}
+.kn__map .nav2__map-el{height:100%}
+.kn__map .nav2__coord{right:14px;bottom:14px}
+
+.kn__ui{
+  position:absolute;top:0;left:0;z-index:5;display:flex;flex-direction:column;gap:10px;
+  width:min(400px,100%);max-height:100%;padding:14px;pointer-events:none}
+.kn__ui > *{pointer-events:auto}
+.kn__bar{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;
+  background:var(--panel-solid);border:1px solid var(--line);box-shadow:var(--shadow)}
+.kn__brand{font-weight:600;font-size:15px}
+.kn__beta{
+  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
+  background:rgba(255,201,77,.15);color:var(--gold);border:1px solid rgba(255,201,77,.4)}
+.kn__close{
+  margin-left:auto;width:32px;height:32px;border-radius:9px;cursor:pointer;
+  background:transparent;border:1px solid var(--line);color:var(--muted);font-size:14px}
+.kn__close:hover{color:var(--text);border-color:var(--line-strong)}
+
+.kn__panel .nav2__panel{grid-template-columns:1fr;box-shadow:var(--shadow);background:var(--panel-solid)}
+.kn__panel .nav2__swap{justify-self:center;transform:rotate(90deg)}
+.kn__panel .nav2__swap:hover{transform:rotate(270deg)}
+.kn__panel .nav2__maps{margin-left:0;width:100%;justify-content:center}
+.kn__outwrap{overflow:auto;max-height:52vh;border-radius:14px}
+.kn__outwrap .nav2__out{
+  padding:13px;border-radius:14px;background:var(--panel-solid);
+  border:1px solid var(--line);box-shadow:var(--shadow)}
+.kn__outwrap .nav2__modes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.kn__outwrap .nav2__sum{grid-template-columns:1fr}
+.kn__outwrap .nav2__sum strong{font-size:22px}
+
+@media (max-width:760px){
+  .kn__ui{width:100%}
+  .kn__outwrap{max-height:38vh}
+}

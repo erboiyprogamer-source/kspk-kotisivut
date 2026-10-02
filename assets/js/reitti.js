@@ -409,7 +409,85 @@
       loadMeta(b.dataset.map).then(buildMap).catch(function () {});
     });
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setPicking(null); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (picking) { setPicking(null); return; }
+    knClose();
+  });
+
+  /* ---------- KasaNavigointi: koko naytön navigointinakyma ----------
+     Ei omaa karttaa eika omaa logiikkaa: samat DOM-elementit (paneeli,
+     karttalaatikko ja tulokset) siirretaan koko naytön kehykseen ja
+     takaisin, jolloin haku, reitti ja kuuntelijat sailyvat sellaisenaan.
+     Paikat merkitaan kommenttisolmuilla, jotta ne palautuvat tasmalleen
+     omille paikoilleen sivulla. */
+  var knBox = null, knMarks = [];
+
+  function knMove(node, into) {
+    var ph = document.createComment('kspk-kn');
+    node.parentNode.insertBefore(ph, node);
+    knMarks.push({ node: node, ph: ph });
+    into.appendChild(node);
+  }
+  function knRestore() {
+    knMarks.forEach(function (m) {
+      if (m.ph.parentNode) m.ph.parentNode.insertBefore(m.node, m.ph);
+      if (m.ph.parentNode) m.ph.parentNode.removeChild(m.ph);
+    });
+    knMarks = [];
+  }
+  function knSize() {
+    if (!map) return;
+    map.updateSize();
+    requestAnimationFrame(function () { map.updateSize(); });
+    setTimeout(function () { map.updateSize(); if (pt.a && pt.b) fitRoute(); }, 320);
+  }
+
+  function knOpen() {
+    if (knBox) return;
+    knBox = document.createElement('div');
+    knBox.className = 'kn';
+    knBox.innerHTML =
+      '<div class="kn__map" id="kn-mapslot"></div>' +
+      '<div class="kn__ui">' +
+        '<div class="kn__bar">' +
+          '<span class="kn__brand">&#129517; KasaNavigointi</span>' +
+          '<span class="kn__beta">beta</span>' +
+          '<button type="button" class="kn__close" id="kn-close" title="Sulje (Esc)">&#10005;</button>' +
+        '</div>' +
+        '<div class="kn__panel" id="kn-panelslot"></div>' +
+        '<div class="kn__outwrap" id="kn-outslot"></div>' +
+      '</div>';
+    document.body.appendChild(knBox);
+    knMove(root.querySelector('.nav2__mapwrap'), knBox.querySelector('#kn-mapslot'));
+    knMove(root.querySelector('.nav2__panel'),   knBox.querySelector('#kn-panelslot'));
+    knMove($('n2-out'),                          knBox.querySelector('#kn-outslot'));
+    document.body.classList.add('kn-on');
+
+    /* Koko naytön nakymassa kaytetaan suurta karttaa, kuten napin
+       kuvauksessa luvataan. Vaihto rakentaa kartan uudelleen, joten
+       koko paivitetaan vasta sen jalkeen. */
+    var big = root.querySelector('.nav2__map[data-map="5k"]');
+    if (big && !big.classList.contains('is-on')) {
+      big.click();
+      setTimeout(knSize, 400);
+    } else {
+      knSize();
+    }
+    document.getElementById('kn-close').onclick = knClose;
+  }
+
+  function knClose() {
+    if (!knBox) return;
+    knRestore();
+    knBox.parentNode.removeChild(knBox);
+    knBox = null;
+    document.body.classList.remove('kn-on');
+    knSize();
+  }
+
+  var knBtn = document.getElementById('kn-open');
+  if (knBtn) knBtn.onclick = knOpen;
 
   /* ---------- kaynnistys ---------- */
   loadMeta('paiva').then(function (meta) {
