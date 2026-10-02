@@ -467,7 +467,9 @@
     /* Koko naytön nakymassa kaytetaan suurta karttaa, kuten napin
        kuvauksessa luvataan. Vaihto rakentaa kartan uudelleen, joten
        koko paivitetaan vasta sen jalkeen. */
-    var big = root.querySelector('.nav2__map[data-map="5k"]');
+    /* Paneeli on jo siirretty kehykseen, joten nappi haetaan koko
+       dokumentista eika rootin sisalta. */
+    var big = document.querySelector('.nav2__map[data-map="5k"]');
     if (big && !big.classList.contains('is-on')) {
       big.click();
       setTimeout(knSize, 400);
