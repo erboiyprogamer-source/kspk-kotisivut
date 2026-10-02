@@ -64,6 +64,14 @@
     return c ? c.name.replace(/t$/, '') : 'Merkki';
   }
 
+  /* Karttatasojen esikatselukuvat ovat oikeita tiilia karttarepossa. */
+  var MAP_INFO = {
+    paiva: { name: 'Päiväkartta', thumb: 'paiva/tiles/zoom.0/0/0/tile.0.0.webp' },
+    yo:    { name: 'Yökartta',    thumb: 'yo/tiles/zoom.0/0/0/tile.0.0.webp' },
+    '5k':  { name: 'Suuri kartta', thumb: '5k/tiles/zoom.0/0/0/tile.0.2.webp' }
+  };
+  var MAP_ORDER = ['paiva', 'yo', '5k'];
+
   var SYMBOL_NAMES = {
     dot: 'Piste', square: 'Neliö', triangle: 'Kolmio', star: 'Tähti', diamond: 'Timantti',
     house: 'Talo', skull: 'Pääkallo', sword: 'Miekka', hammer: 'Vasara', smiley: 'Hymiö',
@@ -188,6 +196,7 @@
     if (menu) menu.querySelectorAll('[data-map]').forEach(function (x) {
       x.classList.toggle('is-on', x.dataset.map === curMap);
     });
+    updateBaseBtn();
     var minX = o.minRegionX * 512, minZ = o.minRegionZ * 512;
     var w = (o.maxRegionX + 1 - o.minRegionX) * 512;
     var h = (o.maxRegionZ + 1 - o.minRegionZ) * 512;
@@ -1205,11 +1214,36 @@
     if (!e.target.closest('.kn-layers')) $('kn-layers-menu').hidden = true;
   });
 
+  /* Tasot-nappi nayttaa seuraavan karttatason esikatselukuvan, kuten
+     karttapalveluissa: paivakartalla kuvana on yokartta. */
+  (function initThumbs() {
+    document.querySelectorAll('#kn-layers-menu img[data-thumb]').forEach(function (img) {
+      img.src = MAPS + MAP_INFO[img.dataset.thumb].thumb;
+    });
+  })();
+  function updateBaseBtn() {
+    var i = MAP_ORDER.indexOf(curMap);
+    var next = MAP_ORDER[(i + 1) % MAP_ORDER.length];
+    var img = $('kn-base-img'), lab = $('kn-base-label');
+    if (!img || !lab) return;
+    img.src = MAPS + MAP_INFO[next].thumb;
+    lab.textContent = MAP_INFO[next].name;
+    $('kn-layers-btn').dataset.next = next;
+  }
+
   /* Tasot-valikko */
   $('kn-layers-btn').onclick = function (e) {
     e.stopPropagation();
     var m = $('kn-layers-menu');
     m.hidden = !m.hidden;
+  };
+  /* Pitkä painallus ei ole tarpeen: valikosta valitaan taso, mutta
+     kaksoisklikkaus vaihtaa suoraan kuvassa nakyvaan tasoon. */
+  $('kn-layers-btn').ondblclick = function (e) {
+    e.stopPropagation();
+    $('kn-layers-menu').hidden = true;
+    var b = $('kn-layers-menu').querySelector('[data-map="' + this.dataset.next + '"]');
+    if (b) b.click();
   };
   $('kn-layers-menu').querySelectorAll('[data-map]').forEach(function (b) {
     b.onclick = function () {
@@ -1389,14 +1423,19 @@
      keskitetaan uudelleen vapautuneeseen tilaan --- */
   function placeCollapseBtn() {
     var btn = $('kn-collapse');
+    var layers = $('kn-layers');
     var collapsed = app.classList.contains('is-collapsed');
-    if (collapsed) { btn.style.left = '12px'; btn.innerHTML = '&#8250;'; btn.title = 'Näytä paneeli'; return; }
     var left = document.querySelector('.kn-left');
-    var w = left ? left.getBoundingClientRect().width : 440;
-    btn.style.left = Math.round(w) + 20 + 'px';
-    btn.innerHTML = '&#8249;';
-    btn.title = 'Piilota paneeli';
+    var w = (!collapsed && left && getComputedStyle(left).display !== 'none')
+      ? Math.round(left.getBoundingClientRect().width) : 0;
+    /* Nuoli ja Tasot-nappi siirtyvat paneelin mukana, jottei mikaan jaa
+       sen alle. Piilotettuna paneelista jaa nakyviin vain kapea kahva. */
+    btn.style.left = (w ? w + 20 : 12) + 'px';
+    btn.innerHTML = collapsed ? '&#8250;' : '&#8249;';
+    btn.title = collapsed ? 'Näytä paneeli' : 'Piilota paneeli';
+    if (layers) layers.style.left = (w ? w + 24 + 26 : 12) + 'px';
   }
+
   function toggleCollapse() {
     app.classList.toggle('is-collapsed');
     placeCollapseBtn();

@@ -105,11 +105,14 @@
 
         <!-- alaosa -->
         <div class="kn-layers" id="kn-layers">
-          <button type="button" class="kn-layers__btn" id="kn-layers-btn">&#128506; Tasot</button>
+          <button type="button" class="kn-base" id="kn-layers-btn" title="Vaihda karttatasoa">
+            <img id="kn-base-img" alt="">
+            <span id="kn-base-label">Tasot</span>
+          </button>
           <div class="kn-layers__menu" id="kn-layers-menu" hidden>
-            <button type="button" data-map="5k" class="is-on">Suuri kartta</button>
-            <button type="button" data-map="paiva">Päiväkartta</button>
-            <button type="button" data-map="yo">Yökartta</button>
+            <button type="button" data-map="paiva"><img data-thumb="paiva" alt=""><span>Päiväkartta</span></button>
+            <button type="button" data-map="yo"><img data-thumb="yo" alt=""><span>Yökartta</span></button>
+            <button type="button" data-map="5k" class="is-on"><img data-thumb="5k" alt=""><span>Suuri kartta</span></button>
           </div>
         </div>
 
