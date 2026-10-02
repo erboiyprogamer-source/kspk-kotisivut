@@ -22,27 +22,7 @@
 <a class="skip" href="#main">Siirry sisältöön</a>
 <main id="main">
 
-<section class="page-head">
-  <div class="wrap">
-    <span class="eyebrow" data-reveal>Navigointi</span>
-    <h1 data-reveal>Kasa<span class="grad-text">Navi</span></h1>
-    <p class="lead" data-reveal>Hae kohteita kartalta, suunnittele reitti välipysähdyksineen ja katso arvioitu matka-aika jokaisella kulkutavalla.</p>
-
-    <div class="kn-cta" data-reveal>
-      <button type="button" class="btn btn--solid" id="kn-full-open">&#129517; Avaa KasaNavi</button>
-      <p class="kn-cta__note">
-        KasaNavi avautuu suoraan koko näytön navigointinäkymään: kartta täyttää ruudun ja haku-,
-        reitti- sekä karttatyökalut kelluvat sen päällä samaan tapaan kuin tutuissa karttapalveluissa.
-        <strong>Beta</strong> — reitti piirretään toistaiseksi suorana viivana pysähdysten välille.
-        Esc palaa tälle sivulle, ja tästä napista pääset takaisin koko näyttöön.
-      </p>
-    </div>
-  </div>
-</section>
-
-<section style="padding-top:0">
-  <div class="wrap">
-
+<section class="kn-section">
     <!-- Koko sovellus on yhdessa laatikossa: kokonaytto on pelkka
          luokanvaihto, joten mitaan ei siirrella DOMissa. -->
     <div class="kn-app" id="kn-app">
@@ -100,9 +80,6 @@
         <!-- paneelin piilotus / avaus -->
         <button type="button" class="kn-collapse" id="kn-collapse" title="Piilota paneeli">&#8249;</button>
 
-        <!-- oikea ylakulma -->
-        <button type="button" class="kn-fab kn-fab--full" id="kn-full" title="Koko näyttö">&#9974;</button>
-
         <!-- alaosa -->
         <div class="kn-layers" id="kn-layers">
           <button type="button" class="kn-base" id="kn-layers-btn" title="Vaihda karttatasoa">
@@ -110,9 +87,20 @@
             <span id="kn-base-label">Tasot</span>
           </button>
           <div class="kn-layers__menu" id="kn-layers-menu" hidden>
-            <button type="button" data-map="paiva"><img data-thumb="paiva" alt=""><span>Päiväkartta</span></button>
-            <button type="button" data-map="yo"><img data-thumb="yo" alt=""><span>Yökartta</span></button>
-            <button type="button" data-map="5k" class="is-on"><img data-thumb="5k" alt=""><span>Suuri kartta</span></button>
+            <div class="kn-layers__h">Karttataso</div>
+            <div class="kn-layers__row">
+              <button type="button" data-map="paiva"><img data-thumb="paiva" alt=""><span>Päiväkartta</span></button>
+              <button type="button" data-map="yo"><img data-thumb="yo" alt=""><span>Yökartta</span></button>
+              <button type="button" data-map="5k" class="is-on"><img data-thumb="5k" alt=""><span>Suuri kartta</span></button>
+            </div>
+
+            <div class="kn-layers__h">Kartan tiedot</div>
+            <div class="kn-layers__opts">
+              <label><input type="checkbox" id="kn-opt-pins" checked> Karttamerkit</label>
+              <label><input type="checkbox" id="kn-opt-names"> Merkkien nimet</label>
+              <label><input type="checkbox" id="kn-opt-nav" checked> Navigointipisteet</label>
+              <label><input type="checkbox" id="kn-opt-grid"> Koordinaattiruudukko</label>
+            </div>
           </div>
         </div>
 
@@ -130,8 +118,6 @@
       </div>
     </div>
 
-    <p class="kn-note">Matka lasketaan linnuntietä pysähdysten välillä vaakatasossa. Maastoa, vesistöjä tai korkeuseroja ei oteta huomioon, joten kävely- ja hevosajat ovat alarajoja — elytra ja vene vastaavat todellisuutta tarkimmin.</p>
-  </div>
 </section>
 </main>
 <script src="https://erboiyprogamer-source.github.io/kspk-kartat/paiva/lib/ol.js"></script>

@@ -182,6 +182,8 @@
   var stops = [null, null];        // {x, z, label}
   var hideCats = {};               // kategoriasiruilla piilotetut
   var showNav = true;
+  var optPins = true, optNames = false, optGrid = false;
+  var gridLayer = null;
   var selected = null;             // paikkakortissa nakyva merkki
   var hoveredId = null;            // merkki jonka paalla hiiri on
   var navigating = false;          // navigointi aloitettu
@@ -197,6 +199,7 @@
       x.classList.toggle('is-on', x.dataset.map === curMap);
     });
     updateBaseBtn();
+    setTimeout(buildGrid, 60);
     var minX = o.minRegionX * 512, minZ = o.minRegionZ * 512;
     var w = (o.maxRegionX + 1 - o.minRegionX) * 512;
     var h = (o.maxRegionZ + 1 - o.minRegionZ) * 512;
@@ -403,7 +406,7 @@
         fill: new ol.style.Fill({ color: p.color || '#3ef08a' }),
         stroke: new ol.style.Stroke({ color: hov ? '#fff' : 'rgba(0,0,0,.8)', width: hov ? 1.8 : 1 })
       }),
-      text: hov ? smallLabel(p.title, -(r + 9)) : null
+      text: (hov || optNames) ? smallLabel(p.title, -(r + 9)) : null
     });
   }
 
@@ -483,6 +486,7 @@
     }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
   }
   function pinVisible(p) {
+    if (!optPins) return false;
     if (p.is_nav && p.is_target === false) return showNav;
     return !hideCats[catOf(p)];
   }
@@ -762,7 +766,12 @@
       };
     });
     var nb = box.querySelector('[data-nav]');
-    if (nb) nb.onclick = function () { showNav = !showNav; nb.classList.toggle('is-on', showNav); drawPins(); };
+    if (nb) nb.onclick = function () {
+      showNav = !showNav;
+      nb.classList.toggle('is-on', showNav);
+      var cb = $('kn-opt-nav'); if (cb) cb.checked = showNav;
+      drawPins();
+    };
   }
 
   /* ---------- reittipaneeli ---------- */
@@ -1231,6 +1240,34 @@
     $('kn-layers-btn').dataset.next = next;
   }
 
+  /* Koordinaattiruudukko: 128 lohkon valein, piirretaan vektoritasona. */
+  function buildGrid() {
+    if (!map) return;
+    if (gridLayer) { map.removeLayer(gridLayer); gridLayer = null; }
+    if (!optGrid) return;
+    var src = new ol.source.Vector();
+    var step = 128, lim = 4000;
+    for (var v = -lim; v <= lim; v += step) {
+      src.addFeature(new ol.Feature({ geometry: new ol.geom.LineString([toView(v, -lim), toView(v, lim)]) }));
+      src.addFeature(new ol.Feature({ geometry: new ol.geom.LineString([toView(-lim, v), toView(lim, v)]) }));
+    }
+    gridLayer = new ol.layer.Vector({
+      source: src, zIndex: 1,
+      style: new ol.style.Style({ stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,.18)', width: 1 }) })
+    });
+    map.addLayer(gridLayer);
+  }
+
+  function bindOpt(id, set) {
+    var el = $(id);
+    if (!el) return;
+    el.onchange = function () { set(el.checked); };
+  }
+  bindOpt('kn-opt-pins',  function (v) { optPins = v; drawPins(); });
+  bindOpt('kn-opt-names', function (v) { optNames = v; if (pinLayer) pinLayer.changed(); });
+  bindOpt('kn-opt-nav',   function (v) { showNav = v; drawPins(); renderChips(); });
+  bindOpt('kn-opt-grid',  function (v) { optGrid = v; buildGrid(); });
+
   /* Tasot-valikko */
   $('kn-layers-btn').onclick = function (e) {
     e.stopPropagation();
@@ -1467,37 +1504,14 @@
     requestAnimationFrame(function () { map.updateSize(); });
     setTimeout(function () { map.updateSize(); }, 320);
   }
-  function fullOn() {
-    if (app.classList.contains('is-full')) return;
-    app.classList.add('is-full');
-    document.body.classList.add('kn-lock');
-    $('kn-full').innerHTML = '&#10005;';
-    $('kn-full').title = 'Sulje koko näyttö (Esc)';
-    var r = legs();
-    if (r && applyAutoMap(r.pts, true)) setTimeout(sizeSoon, 450);
-    else sizeSoon();
+  /* KasaNavi on aina koko naytön nakyma — erillista pienempaa ikkunaa
+     ei enaa ole, joten tilaa ei tarvitse vaihdella. */
+  function sizeSoon() {
+    if (!map) return;
+    map.updateSize();
+    requestAnimationFrame(function () { map.updateSize(); });
+    setTimeout(function () { map.updateSize(); }, 320);
   }
-  function fullOff() {
-    if (!app.classList.contains('is-full')) return;
-    app.classList.remove('is-full');
-    document.body.classList.remove('kn-lock');
-    $('kn-full').innerHTML = '&#9974;';
-    $('kn-full').title = 'Koko näyttö';
-    sizeSoon();
-  }
-  $('kn-full').onclick = function () { app.classList.contains('is-full') ? fullOff() : fullOn(); };
-  var openBtn = $('kn-full-open');
-  if (openBtn) openBtn.onclick = function () { fullOn(); app.scrollIntoView({ block: 'start' }); };
-
-  /* Vahvistus: navigoinnin aikana Esc ei lopeta heti vaan kysyy. Enter
-     tai "Jatka" sulkee kysymyksen, toinen Esc tai "Lopeta" paattaa. */
-  function askStop() {
-    $('kn-confirm').hidden = false;
-    $('kn-keep').focus();
-  }
-  function closeAsk() { $('kn-confirm').hidden = true; }
-  $('kn-keep').onclick = closeAsk;
-  $('kn-end').onclick = function () { closeAsk(); stopNav(); };
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !$('kn-confirm').hidden) { e.preventDefault(); closeAsk(); return; }
@@ -1520,7 +1534,6 @@
       return;
     }
     if (dirMode) { closeDir(); return; }
-    fullOff();
   });
   window.addEventListener('resize', sizeSoon);
 
@@ -1529,10 +1542,6 @@
   renderRouteInfo(null);
   placeCollapseBtn();
   setInterval(placeCollapseBtn, 1200);   // paneelin leveys elaa sisallon mukana
-
-  /* KasaNavi avautuu suoraan koko naytön nakymaan — Esc tai oikean
-     ylakulman nappi palauttaa tavalliselle sivulle. */
-  fullOn();
 
   loadMeta('5k').then(function (meta) {
     buildMap(meta);

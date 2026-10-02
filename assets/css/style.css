@@ -1015,21 +1015,17 @@ pre,code{overflow-wrap:anywhere;word-break:break-word}
 /* =====================================================================
    KasaNavi (reitti.html) — karttapalvelumainen navigointinäkymä
    ===================================================================== */
-.kn-cta{display:grid;gap:10px;justify-items:start;margin-top:22px;max-width:660px}
-.kn-cta__note{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
-.kn-cta__note strong{color:var(--gold);font-weight:600}
-.kn-note{margin:12px 2px 0;color:var(--dim);font-size:13px}
 
 /* --- sovelluslaatikko --- */
+/* KasaNavi tayttaa aina koko ruudun — erillista pienempaa ikkunaa ei ole. */
+.kn-section{padding:0;margin:0}
 .kn-app{
-  position:relative;width:100%;height:clamp(420px,66vh,720px);
-  border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#070d0a}
-.kn-app.is-full{
-  position:fixed;inset:0;z-index:9999;height:100vh;height:100dvh;border:0;border-radius:0}
-body.kn-lock{overflow:hidden}
+  position:fixed;inset:0;z-index:9000;width:100%;height:100vh;height:100dvh;
+  overflow:hidden;background:#070d0a}
+body{overflow:hidden}
 /* Kokonaytossa sivuston oma navi, footer ja tukinappi piiloon, jotta ne
    eivat jaa hakupalkin paalle. */
-body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .to-top{display:none!important}
+.nav,.footer,.support-fab,.to-top,.skip{display:none!important}
 .kn-map{position:absolute;inset:0}
 .kn-err{display:grid;place-items:center;height:100%;color:var(--muted);padding:24px;text-align:center}
 
@@ -1038,7 +1034,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 
 /* --- vasen sarake: haku ja reitti --- */
 .kn-left{
-  position:absolute;top:12px;left:12px;width:min(440px,calc(100% - 80px));
+  position:absolute;top:12px;left:12px;width:min(440px,calc(100% - 24px));
   display:flex;flex-direction:column;gap:9px;max-height:calc(100% - 24px)}
 .kn-search{
   display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:999px;
@@ -1064,7 +1060,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 /* --- kategoriasirut: oma rivinsa kartan ylareunassa, hakupalkin
        oikealla puolella (vrt. karttapalveluiden kategoriapainikkeet) --- */
 .kn-chips{
-  position:absolute;top:12px;left:476px;right:70px;display:flex;gap:9px;
+  position:absolute;top:12px;left:476px;right:16px;display:flex;gap:9px;
   overflow-x:auto;padding:2px;scrollbar-width:none;
   -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);
           mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
@@ -1209,11 +1205,6 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-act--primary .kn-act__t{color:var(--green)}
 
 /* --- kelluvat napit --- */
-.kn-fab{
-  position:absolute;width:46px;height:46px;border-radius:12px;cursor:pointer;font-size:17px;
-  background:var(--panel-solid);border:1px solid var(--line);color:var(--text);box-shadow:var(--shadow)}
-.kn-fab:hover{border-color:var(--line-strong)}
-.kn-fab--full{top:12px;right:12px}
 .kn-zoom{position:absolute;right:12px;bottom:12px;display:grid;
   border-radius:11px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow)}
 .kn-zoom button{
@@ -1355,8 +1346,14 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
   position:absolute;left:0;right:0;bottom:0;padding:4px 2px 5px;
   font:600 10.5px var(--font-body);color:#fff;background:rgba(6,17,11,.72)}
 .kn-layers__menu{
-  position:absolute;left:0;bottom:calc(100% + 8px);display:flex;gap:8px;padding:8px;
+  position:absolute;left:0;bottom:calc(100% + 8px);display:grid;gap:7px;padding:12px;min-width:300px;
   background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.kn-layers__h{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.kn-layers__row{display:flex;gap:8px}
+.kn-layers__opts{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.kn-layers__opts label{display:flex;align-items:center;gap:9px;font-size:13.5px;
+  color:var(--text);cursor:pointer}
+.kn-layers__opts input{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
 .kn-layers__menu button{
   width:84px;padding:0;border:0;background:none;color:var(--muted);cursor:pointer;
   font:inherit;font-size:11.5px;display:grid;gap:5px;justify-items:center}
@@ -1375,7 +1372,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 }
 @media (max-width:860px){
   .kn-nav{max-height:58vh}
-  .kn-left{width:calc(100% - 80px)}
+  .kn-left{width:calc(100% - 24px)}
   /* kapealla ruudulla paneeli jattaa kartalle enemman tilaa, jotta koko
      reitti mahtuu nakyviin */
   .kn-dir{max-height:38vh}
