@@ -1299,6 +1299,9 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
   border-top:1px solid var(--line);padding-top:10px}
 .kn-link--danger{color:#ff8f8f}
 .kn-app.is-nav .kn-zoomnote{display:none}
+/* navigoinnin aikana kategoriasirut pois: nakyma pidetaan rauhallisena */
+.kn-app.is-nav .kn-chips{display:none}
+.kn-app.is-nav .kn-left > .kn-nav{margin-top:0}
 
 /* vahvistus navigoinnin lopetukselle */
 .kn-confirm{
@@ -1344,7 +1347,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
   /* kapealla ruudulla sirut siirtyvat hakupalkin alle */
   .kn-chips{left:12px;right:12px;top:76px}
   /* sirut vievat tilaa hakupalkin alta, joten seuraava paneeli alkaa alempaa */
-  .kn-left > .kn-sug,.kn-left > .kn-place,.kn-left > .kn-dir{margin-top:52px}
+  .kn-left > .kn-sug,.kn-left > .kn-place,.kn-left > .kn-dir,.kn-left > .kn-nav{margin-top:52px}
 }
 @media (max-width:860px){
   .kn-nav{max-height:58vh}
