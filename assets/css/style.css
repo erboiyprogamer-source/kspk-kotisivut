@@ -1017,15 +1017,19 @@ pre,code{overflow-wrap:anywhere;word-break:break-word}
    ===================================================================== */
 
 /* --- sovelluslaatikko --- */
-/* KasaNavi tayttaa aina koko ruudun — erillista pienempaa ikkunaa ei ole. */
-.kn-section{padding:0;margin:0}
-.kn-app{
+/* KasaNavi tayttaa aina koko ruudun — erillista pienempaa ikkunaa ei ole.
+   KAIKKI tasta eteenpain on rajattu .kn-page-luokkaan, koska tama on
+   sivuston jaettu tyylitiedosto: ilman rajausta saannot osuisivat
+   jokaiseen sivuun. */
+.kn-page .kn-section{padding:0;margin:0}
+.kn-page .kn-app{
   position:fixed;inset:0;z-index:9000;width:100%;height:100vh;height:100dvh;
   overflow:hidden;background:#070d0a}
-body{overflow:hidden}
+body.kn-page{overflow:hidden}
 /* Kokonaytossa sivuston oma navi, footer ja tukinappi piiloon, jotta ne
    eivat jaa hakupalkin paalle. */
-.nav,.footer,.support-fab,.to-top,.skip{display:none!important}
+body.kn-page .nav,body.kn-page .footer,body.kn-page .support-fab,
+body.kn-page .to-top,body.kn-page .skip{display:none!important}
 .kn-map{position:absolute;inset:0}
 .kn-err{display:grid;place-items:center;height:100%;color:var(--muted);padding:24px;text-align:center}
 
