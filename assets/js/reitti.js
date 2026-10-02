@@ -36,8 +36,9 @@
     { id: 'walk',   ico: '&#128694;', name: 'Kävely',   v: 4.317, note: 'Perusnopeus maalla.' },
     { id: 'sprint', ico: '&#127939;', name: 'Juoksu',   v: 5.612, note: 'Vaatii ruokaa; juoksuhyppely yltää noin 7,1 lohkoon sekunnissa.' },
     { id: 'horse',  ico: '&#128014;', name: 'Hevonen',  v: 9.0,   note: 'Hevoset vaihtelevat noin 4,8–14,5 lohkoa/s; tässä keskitasoinen.' },
-    { id: 'boat',   ico: '&#128676;', name: 'Vene',     v: 8.0,   note: 'Vettä pitkin. Sinisellä jäällä kulkeva venerata yltää noin 70 lohkoon/s.' },
-    { id: 'swim',   ico: '&#127946;', name: 'Uinti',    v: 2.2,   note: 'Delfiinin suosio tai Depth Strider nopeuttaa selvästi.' },
+    /* Vene ja uinti jatetty pois: suora viiva kulkee usein maan yli,
+       jolloin niiden aika olisi harhaanjohtava. Ne palaavat kun reitit
+       piirretaan oikeita kulkuvayliä pitkin. */
     { id: 'elytra', ico: '&#128640;', name: 'Elytra',   v: 30,    note: 'Raketeilla, suoraan maaston yli — tämä arvio on tarkin.' }
   ];
 
@@ -173,6 +174,8 @@
   var hideCats = {};               // kategoriasiruilla piilotetut
   var showNav = true;
   var selected = null;             // paikkakortissa nakyva merkki
+  var hoveredId = null;            // merkki jonka paalla hiiri on
+  var navigating = false;          // navigointi aloitettu
   var placeToken = 0;              // estaa vanhentunutta kuvahakua kirjoittamasta uuteen korttiin
 
   /* ---------- kartta ---------- */
@@ -248,14 +251,23 @@
     map.on('pointermove', function (e) {
       var b = toBlock(e.coordinate);
       $('kn-coord').textContent = 'X ' + b[0] + ', Z ' + b[1];
-      var hit = map.hasFeatureAtPixel(e.pixel, { hitTolerance: 6 });
-      map.getTargetElement().style.cursor = picking ? 'crosshair' : (hit ? 'pointer' : '');
+      /* Merkki toimii nappina: kursori vaihtuu, merkki kasvaa ja nimi
+         ilmestyy heti kun hiiri on sen paalla. */
+      var f = map.forEachFeatureAtPixel(e.pixel, function (ft) { return ft.get('pin') ? ft : null; }, { hitTolerance: 8 });
+      var id = f ? f.get('pin').id : null;
+      if (id !== hoveredId) { hoveredId = id; pinLayer.changed(); }
+      map.getTargetElement().style.cursor = (picking !== null) ? 'crosshair' : (f ? 'pointer' : '');
     });
 
     map.on('singleclick', function (e) {
       var b = toBlock(e.coordinate);
       if (picking !== null) {
-        setStop(picking, { x: b[0], z: b[1], label: b[0] + ' ' + b[1] });
+        /* Napsautus tarttuu merkkiin, jos sellainen on osuman sisalla —
+           nain valmiin kohteen poiminta kartalta on helppoa eika
+           koordinaattiin tarvitse osua pikselilleen. */
+        var snap = map.forEachFeatureAtPixel(e.pixel, function (ft) { return ft.get('pin') || null; }, { hitTolerance: 14 });
+        if (snap && snap.title) setStop(picking, { x: snap.x, z: snap.z, label: snap.title });
+        else setStop(picking, { x: b[0], z: b[1], label: b[0] + ' ' + b[1] });
         setPicking(null);
         return;
       }
@@ -269,21 +281,24 @@
   function pinStyle(f) {
     var p = f.get('pin'), nav = p && p.is_nav && p.is_target === false;
     var sel = selected && p && selected.id === p.id;
+    var hov = p && hoveredId !== null && p.id === hoveredId;
     var r = nav ? 3.6 : 5;
     if (sel) r += 2.5;
+    if (hov) r += 2;                      // merkki tuntuu napilta hiiren alla
     return new ol.style.Style({
       image: new ol.style.Circle({
         radius: r,
         fill: new ol.style.Fill({ color: p.color || '#3ef08a' }),
-        stroke: new ol.style.Stroke({ color: sel ? '#fff' : '#000', width: sel ? 2.5 : 1.6 })
+        stroke: new ol.style.Stroke({ color: (sel || hov) ? '#fff' : '#000', width: (sel || hov) ? 2.5 : 1.6 })
       }),
-      text: sel ? new ol.style.Text({
-        text: p.title || '', offsetY: -17, font: '600 13px Outfit, sans-serif',
+      text: (sel || hov) ? new ol.style.Text({
+        text: p.title || '', offsetY: -(r + 11), font: '600 13px Outfit, sans-serif',
         fill: new ol.style.Fill({ color: '#e9f7ef' }),
-        stroke: new ol.style.Stroke({ color: '#000', width: 3.5 })
+        stroke: new ol.style.Stroke({ color: '#000', width: 4 })
       }) : null
     });
   }
+
   function stopStyle(i, total, label) {
     var isFirst = i === 0, isLast = i === total - 1;
     var col = isFirst ? '#3ef08a' : (isLast ? '#ffc94d' : '#5ad1ff');
@@ -726,6 +741,7 @@
       }));
     }
     renderRouteInfo(r);
+    renderNavbar();
     if (fit && r) {
       /* Vaihto rakentaa kartan uudelleen ja piirtaa reitin sitten uudelleen,
          joten tassa ei enaa sovitettaisi oikeaan nakymaan. Vaihto tehdaan
@@ -741,7 +757,7 @@
     /* Marginaali on 40 % reitin pituudesta, mutta vahintaan 150 lohkoa,
        jottei lyhyt reitti zoomaudu kiinni paatepisteisiin. */
     var span = Math.max(ol.extent.getWidth(e), ol.extent.getHeight(e));
-    var pad = Math.max(span * 0.4, 150 / BPD);
+    var pad = Math.max(span * 0.18, 70 / BPD);
 
     /* Reunukset mitataan paneelin todellisesta koosta, jottei reitti jaa
        sen alle. Jos paneeli ei mahdu kartan viereen, se varaa tilaa
@@ -763,7 +779,41 @@
        paatya askeleen liian lahelle ja paatepiste jaada paneelin alle
        tai ruudun ulkopuolelle. Tarkistetaan lopputulos pikseleina ja
        loitonnetaan tarvittaessa askel kerrallaan. */
-    setTimeout(function () { ensureVisible(r, padding, 3); }, 480);
+    setTimeout(function () { ensureVisible(r, padding, 3); zoomInIfRoom(r, padding, 2); }, 480);
+  }
+
+  /* Zoom-tasoja on vain muutama, joten sovitus jaa helposti askeleen
+     liian kauas. Kokeillaan lahentaa niin kauan kuin kaikki pisteet
+     pysyvat vapaalla alueella. */
+  function zoomInIfRoom(r, padding, tries) {
+    if (!map || !tries || !view) return;
+    var z = view.getZoom();
+    if (z >= view.getMaxZoom()) return;
+    view.setZoom(z + 1);
+    centerOnRoute(r, padding);
+    setTimeout(function () {
+      if (!fitsInside(r, padding)) { view.setZoom(z); centerOnRoute(r, padding); return; }
+      zoomInIfRoom(r, padding, tries - 1);
+    }, 60);
+  }
+  function fitsInside(r, padding) {
+    var size = map.getSize();
+    if (!size) return false;
+    return r.pts.every(function (p) {
+      var px = map.getPixelFromCoordinate(toView(p.x, p.z));
+      if (!px) return false;
+      return px[0] > padding[3] && px[0] < size[0] - padding[1] &&
+             px[1] > padding[0] && px[1] < size[1] - padding[2];
+    });
+  }
+  function centerOnRoute(r, padding) {
+    var e2 = ol.extent.boundingExtent(r.pts.map(function (p) { return toView(p.x, p.z); }));
+    var c = ol.extent.getCenter(e2);
+    var res = view.getResolution();
+    view.setCenter([
+      c[0] - ((padding[3] - padding[1]) / 2) * res,
+      c[1] + ((padding[0] - padding[2]) / 2) * res
+    ]);
   }
 
   function ensureVisible(r, padding, tries) {
@@ -808,7 +858,7 @@
       '</button>';
     }).join('');
     modesBox.querySelectorAll('.kn-mode').forEach(function (b) {
-      b.onclick = function () { localStorage.setItem(LS_MODE, b.dataset.m); renderRouteInfo(legs()); };
+      b.onclick = function () { localStorage.setItem(LS_MODE, b.dataset.m); renderRouteInfo(legs()); renderNavbar(); };
     });
 
     if (!r) {
@@ -839,7 +889,12 @@
         '<div class="kn-route__sub">&#128293; Netherin kautta 1:8 · vaatii portaalin molemmissa päissä</div>' +
       '</div>' +
       '<ol class="kn-legs">' + legHtml + '</ol>' +
-      '<p class="kn-modenote">' + esc(sel.note) + '</p>';
+      '<p class="kn-modenote">' + esc(sel.note) + '</p>' +
+      (stops.every(function (st) { return !!st; })
+        ? '<button type="button" class="kn-start" id="kn-start">&#9654; Aloita navigointi</button>' : '');
+
+    var startBtn = $('kn-start');
+    if (startBtn) startBtn.onclick = startNav;
   }
 
   /* ---------- jaettava linkki ---------- */
@@ -951,6 +1006,51 @@
   $('kn-zin').onclick  = function () { view.animate({ zoom: view.getZoom() + 1, duration: 220 }); };
   $('kn-zout').onclick = function () { view.animate({ zoom: view.getZoom() - 1, duration: 220 }); };
 
+  /* --- navigointitila ---------------------------------------------
+     Reitin voi aloittaa vasta kun kaikki pysahdykset on valittu. Sen
+     jalkeen alareunaan tulee karttapalveluiden tapainen palkki, jossa
+     on kulkutapa, kokonaisaika, matka ja arvioitu perillaoloaika — ja
+     vasta silloin paneelin voi piilottaa sivuun. */
+  function fmtClock(d) {
+    return ('0' + d.getHours()).slice(-2) + '.' + ('0' + d.getMinutes()).slice(-2);
+  }
+  function renderNavbar() {
+    var bar = $('kn-navbar');
+    var r = legs();
+    if (!navigating || !r) { bar.hidden = true; return; }
+    var m = curMode();
+    var sec = r.total / m.v;
+    var eta = new Date(Date.now() + sec * 1000);
+    var last = r.pts[r.pts.length - 1];
+    bar.innerHTML =
+      '<span class="kn-navbar__ico">' + m.ico + '</span>' +
+      '<span class="kn-navbar__main">' +
+        '<strong>' + dur(sec) + '</strong>' +
+        '<span>' + nf(r.total) + ' m · perillä noin ' + fmtClock(eta) + '</span>' +
+      '</span>' +
+      '<span class="kn-navbar__to">' + esc(last.label) + '</span>' +
+      '<button type="button" class="kn-navbar__stop" id="kn-stopnav">Lopeta</button>';
+    bar.hidden = false;
+    $('kn-stopnav').onclick = stopNav;
+  }
+  function startNav() {
+    if (!legs() || !stops.every(function (st) { return !!st; })) return;
+    navigating = true;
+    app.classList.add('is-nav');
+    renderNavbar();
+    placeCollapseBtn();
+    drawRoute(true);
+  }
+  function stopNav() {
+    navigating = false;
+    app.classList.remove('is-nav');
+    app.classList.remove('is-collapsed');
+    $('kn-navbar').hidden = true;
+    placeCollapseBtn();
+    sizeSoon();
+    setTimeout(function () { if (legs()) drawRoute(true); }, 120);
+  }
+
   /* --- paneelin piilotus: kartta jaa kokonaan nakyviin ja reitti
      keskitetaan uudelleen vapautuneeseen tilaan --- */
   function placeCollapseBtn() {
@@ -1006,6 +1106,15 @@
     if (e.key !== 'Escape') return;
     if (picking !== null) { setPicking(null); return; }
     if (!$('kn-place').hidden) { closePlace(); return; }
+    if (navigating) { stopNav(); return; }
+    /* Valitut kohteet tyhjentyvat ja navigointi loppuu ennen kuin Esc
+       sulkee koko naytön nakyman. */
+    if (stops.some(function (st) { return !!st; })) {
+      stops = [null, null];
+      renderStops(); drawRoute(false);
+      return;
+    }
+    if (dirMode) { closeDir(); return; }
     fullOff();
   });
   window.addEventListener('resize', sizeSoon);
