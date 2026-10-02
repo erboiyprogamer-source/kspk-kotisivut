@@ -46,6 +46,14 @@
           <!-- navigointinakyma: korvaa reittipaneelin kun navigointi kay -->
           <div class="kn-nav" id="kn-nav" hidden></div>
 
+          <!-- Paneelin reunakahva: ruksi sulkee takaisin KasaNavin
+               perusnakymaan, nuoli piilottaa paneelin sivuun. Kahva
+               seuraa paneelin korkeutta, koska se on sen sisalla. -->
+          <div class="kn-rail" id="kn-rail" hidden>
+            <button type="button" class="kn-rail__b" id="kn-close" title="Sulje (takaisin KasaNaviin)">&#10005;</button>
+            <button type="button" class="kn-rail__b" id="kn-collapse" title="Piilota paneeli">&#8249;</button>
+          </div>
+
           <div class="kn-dir" id="kn-dir" hidden>
             <div class="kn-dir__head">
               <div class="kn-modes" id="kn-modes"></div>
@@ -76,9 +84,6 @@
             <button type="button" class="kn-btn" id="kn-end">Lopeta <span>Esc</span></button>
           </div>
         </div>
-
-        <!-- paneelin piilotus / avaus -->
-        <button type="button" class="kn-collapse" id="kn-collapse" title="Piilota paneeli">&#8249;</button>
 
         <!-- alaosa -->
         <div class="kn-layers" id="kn-layers">

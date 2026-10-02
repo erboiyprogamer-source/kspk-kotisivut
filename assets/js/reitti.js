@@ -1462,27 +1462,36 @@
   }
 
   function placeCollapseBtn() {
+    var rail = $('kn-rail');
     var btn = $('kn-collapse');
     var layers = $('kn-layers');
     var collapsed = app.classList.contains('is-collapsed');
     var open = panelOpen();
-    var left = document.querySelector('.kn-left');
-    var w = open && left ? Math.round(left.getBoundingClientRect().width) : 0;
 
-    /* Nuoli nakyy vain kun paneelia on jotain piilotettavaa — tai kun se
-       on jo piilotettu, jotta sen saa takaisin. */
-    btn.hidden = !open && !collapsed;
-    btn.style.left = (w ? w + 20 : 12) + 'px';
-    btn.innerHTML = collapsed ? '&#8250;' : '&#8249;';
-    btn.title = collapsed ? 'Näytä paneeli' : 'Piilota paneeli';
-
-    /* Kapealla ruudulla paneeli vie lahes koko leveyden, jolloin
-       Tasot-nappi jaa reunaan — muuten se siirtyy paneelin viereen. */
-    if (layers) {
-      var mapW = map ? map.getTargetElement().getBoundingClientRect().width : 0;
-      var side = w && (mapW - w) > 260;
-      layers.style.left = (side ? w + 50 : 12) + 'px';
+    /* Reunakahva nakyy vain kun paneelissa on jotain — tai kun paneeli on
+       piilotettu, jotta sen saa takaisin. Kahva on paneelin sisalla,
+       joten se keskittyy itsestaan paneelin korkeuteen. */
+    if (rail) rail.hidden = !open && !collapsed;
+    if (btn) {
+      btn.innerHTML = collapsed ? '&#8250;' : '&#8249;';
+      btn.title = collapsed ? 'Näytä paneeli' : 'Piilota paneeli';
     }
+    var cl = $('kn-close');
+    if (cl) cl.hidden = collapsed;    // suljettavaa ei ole kun paneeli on piilossa
+
+    /* Tasot-nappi pysyy nurkassa, ja siirtyy sivuun vasta jos paneeli
+       oikeasti yltaa sen paalle. */
+    if (!layers) return;
+    layers.style.left = '12px';
+    if (!open) return;
+    var left = document.querySelector('.kn-left');
+    if (!left) return;
+    var lr = layers.getBoundingClientRect();
+    var pr = left.getBoundingClientRect();
+    var overlaps = pr.bottom > lr.top && pr.right > lr.left && pr.left < lr.right;
+    if (!overlaps) return;
+    var mapW = map ? map.getTargetElement().getBoundingClientRect().width : 0;
+    if ((mapW - pr.width) > 260) layers.style.left = Math.round(pr.width) + 50 + 'px';
   }
 
   function toggleCollapse() {
@@ -1494,6 +1503,20 @@
     setTimeout(function () { if (legs()) drawRoute(true); }, 120);
   }
   $('kn-collapse').onclick = toggleCollapse;
+  /* Ruksi vie takaisin KasaNavin perusnakymaan: sulkee navigoinnin,
+     reittiohjeet, kohteen tiedot ja ehdotukset. */
+  $('kn-close').onclick = function () {
+    app.classList.remove('is-collapsed');
+    if (navigating) stopNav();
+    closeDir();
+    closePlace();
+    $('kn-sug').hidden = true;
+    var q = $('kn-q');
+    if (q) { q.value = ''; $('kn-qx').hidden = true; }
+    placeCollapseBtn();
+    sizeSoon();
+    setTimeout(function () { if (legs()) drawRoute(true); }, 120);
+  };
   window.addEventListener('resize', placeCollapseBtn);
 
   /* kokonaytto */
