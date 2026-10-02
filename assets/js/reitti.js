@@ -311,7 +311,7 @@
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
   var PIN_RED = '#ff3b30';
-  var PIN_SCALE = 0.7;          // merkit pienempina kartalla
+  var PIN_SCALE = 0.55;         // merkit pienina kartalla
   var pinCache = {};
   function pinIcon(color) {
     if (pinCache[color]) return pinCache[color];
@@ -349,9 +349,9 @@
 
   function bigLabel(text, dy) {
     return new ol.style.Text({
-      text: text || '', offsetY: dy, font: '700 16px Outfit, sans-serif',
+      text: text || '', offsetY: dy, font: '600 12.5px Outfit, sans-serif',
       fill: new ol.style.Fill({ color: '#ffffff' }),
-      stroke: new ol.style.Stroke({ color: '#06110b', width: 5 })
+      stroke: new ol.style.Stroke({ color: '#06110b', width: 4 })
     });
   }
 
@@ -368,7 +368,7 @@
           src: pinIcon(PIN_RED),
           anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: PIN_SCALE
         }),
-        text: bigLabel(p.title, -40)
+        text: bigLabel(p.title, -32)
       });
     }
 
@@ -389,8 +389,8 @@
        paikkamerkki — valipysahdykset siniset pisarat. */
     if (i === 0) {
       return new ol.style.Style({
-        image: new ol.style.Icon({ src: goalIconUrl, anchor: [0.5, 0.5], scale: 0.72 }),
-        text: bigLabel(label, -24)
+        image: new ol.style.Icon({ src: goalIconUrl, anchor: [0.5, 0.5], scale: 0.55 }),
+        text: bigLabel(label, -17)
       });
     }
     var isLast = i === total - 1;
@@ -399,7 +399,7 @@
         src: pinIcon(isLast ? PIN_RED : '#5ad1ff'),
         anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: PIN_SCALE
       }),
-      text: bigLabel(label, -40)
+      text: bigLabel(label, -32)
     });
   }
 
@@ -459,7 +459,12 @@
     if (!pinLayer) return;
     var src = pinLayer.getSource(); src.clear();
     var ok = pinsZoomOk();
+    /* Reitin paiden ja valipysahdysten kohdalla ei piirreta tavallista
+       varipalloa, jottei se pilkistaisi kuvakkeen alta. */
+    var taken = {};
+    stops.forEach(function (st) { if (st) taken[st.x + ',' + st.z] = true; });
     pins.forEach(function (p) {
+      if (taken[p.x + ',' + p.z]) return;
       if (!pinVisible(p)) return;
       var isSel = selected && selected.id === p.id;
       if (!ok && !isSel) return;
