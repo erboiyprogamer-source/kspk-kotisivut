@@ -83,7 +83,11 @@ var UnminedSharedPins = {
   allowBrowserZoom: !!(window.KSPK_MAP && window.KSPK_MAP.allowBrowserZoom),
 
   // --- Ulkoasu ------------------------------------------------------
-  colors: ['#3ef08a','#ffd166','#ff6b6b','#5aa9ff','#c792ea','#ff9f43','#ffffff','#7bed9f']
+  /* Varipaletti: tarkeimmat savyt + harmaat. Jarjestys on myos
+     lomakkeen nappien jarjestys. Nimet ovat pins-list.js:n
+     COLOR_NAMES-taulussa suodatinchippeja varten. */
+  colors: ['#3ef08a','#7bed9f','#c0f549','#ffd166','#ff9f43','#ff6b6b','#e84393',
+           '#c792ea','#5aa9ff','#1e6fd9','#00d2d3','#9c6644','#ffffff','#9e9e9e','#5a6b7a']
 };
 
 /* uNmINeDin oma kiintea merkkilista (ei kaytossa) */
@@ -209,12 +213,43 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         hideColors: Array.isArray(v.hideColors) ? v.hideColors : [],
         hideSymbols: Array.isArray(v.hideSymbols) ? v.hideSymbols : [],
         hideAuthors: Array.isArray(v.hideAuthors) ? v.hideAuthors : [],
+        /* "nayta vain" -rajaus tehdaan merkkilistassa (pins-list.js),
+           mutta se luetaan myos tassa, jotta kartta ja lista nayttavat
+           tasmalleen samat merkit. */
+        onlyColors: Array.isArray(v.onlyColors) ? v.onlyColors : [],
+        onlySymbols: Array.isArray(v.onlySymbols) ? v.onlySymbols : [],
+        onlyAuthors: Array.isArray(v.onlyAuthors) ? v.onlyAuthors : [],
+        modeColors: v.modeColors === 'only' ? 'only' : 'hide',
+        modeSymbols: v.modeSymbols === 'only' ? 'only' : 'hide',
+        modeAuthors: v.modeAuthors === 'only' ? 'only' : 'hide',
         scale: (typeof v.scale === 'number' && v.scale > 0) ? v.scale : 1
       };
-    } catch (e) { return { hideColors: [], hideSymbols: [], hideAuthors: [], scale: 1 }; }
+    } catch (e) {
+      return {
+        hideColors: [], hideSymbols: [], hideAuthors: [],
+        onlyColors: [], onlySymbols: [], onlyAuthors: [],
+        modeColors: 'hide', modeSymbols: 'hide', modeAuthors: 'hide', scale: 1
+      };
+    }
   }
+  /* Yhdistetaan aiempaan tilaan, jotta kartan oma paneeli ei pyyhi
+     merkkilistan puolella asetettuja "nayta vain" -rajauksia. */
   function setView(v) {
-    try { localStorage.setItem(LS_VIEW, JSON.stringify(v)); } catch (e) {}
+    try {
+      var cur = {};
+      try { cur = JSON.parse(localStorage.getItem(LS_VIEW) || '{}') || {}; } catch (e) { cur = {}; }
+      for (var k in v) { if (Object.prototype.hasOwnProperty.call(v, k)) cur[k] = v[k]; }
+      localStorage.setItem(LS_VIEW, JSON.stringify(cur));
+    } catch (e) {}
+  }
+
+  /* Paastaako oma nakyma taman arvon lapi: 'hide'-tilassa valitut
+     piilotetaan, 'only'-tilassa naytetaan vain valitut. */
+  function viewAllows(v, group, value) {
+    var only = v['mode' + group] === 'only';
+    var sel = v[(only ? 'only' : 'hide') + group] || [];
+    if (only) return !sel.length || sel.indexOf(value) > -1;
+    return sel.indexOf(value) < 0;
   }
 
   /* Palvelinfunktioiden virheet suomeksi */
@@ -418,6 +453,23 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         p_title: pin.title, p_message: pin.message || '',
         p_color: pin.color, p_x: pin.x, p_z: pin.z,
         p_symbol: pin.symbol || 'dot', p_size: pin.size || 1, p_show_text: !!pin.show_text
+      }).then(function (d) {
+        var saved = self.one(d);
+        /* Luokka (kohde / navigointipiste) tallennetaan omalla
+           funktiollaan, jotta pin_add sailyy entisellaan. Oletus on
+           kohde, joten kutsu tehdaan vain jos valinta poikkeaa siita. */
+        if (!saved || (pin.is_target !== false && !pin.is_nav)) return saved;
+        return self.setKind(saved.id, pin.is_target !== false, !!pin.is_nav, c)
+          .then(function (r) { return r || saved; })
+          .catch(function () { return saved; });
+      });
+    },
+    setKind: function (id, isTarget, isNav, c) {
+      if (!SHARED) return Promise.resolve(null);
+      var self = this;
+      return this.rpc('pin_set_kind', {
+        p_pass: c.pass, p_author: c.author, p_id: id,
+        p_is_target: !!isTarget, p_is_nav: !!isNav
       }).then(function (d) { return self.one(d); });
     },
     update: function (id, patch, c) {
@@ -426,12 +478,17 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         this.local(a);
         return Promise.resolve();
       }
+      var self = this;
       var v = function (k) { return patch[k] === undefined ? null : patch[k]; };
       return this.rpc('pin_edit', {
         p_pass: c.pass, p_author: c.author, p_id: id,
         p_title: v('title'), p_message: v('message'), p_color: v('color'),
         p_x: v('x'), p_z: v('z'), p_hidden: v('hidden'),
         p_symbol: v('symbol'), p_size: v('size'), p_show_text: v('show_text')
+      }).then(function (r) {
+        if (patch.is_target === undefined && patch.is_nav === undefined) return r;
+        return self.setKind(id, patch.is_target !== false, !!patch.is_nav, c)
+          .then(function (k) { return k || r; });
       });
     },
     /* Poistaa merkin JA kaikki sen kuvat (myos Storagesta) Edge Functionin
@@ -785,6 +842,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
       '<label class="kspk-check"><input type="checkbox" id="kp-text"> Nayta otsikko kartalla</label>' +
 
+      '<label>Luokka</label>' +
+      '<label class="kspk-check"><input type="checkbox" id="kp-kt"> Kohde (nakyy merkkilistassa)</label>' +
+      '<label class="kspk-check"><input type="checkbox" id="kp-kn"> Navigointipiste (reittien piirtamiseen)</label>' +
+      '<div class="kspk-hint">Navigointipisteita voi lisata vapaasti monta. Jos merkki on pelkka navigointipiste, se nakyy merkkilistassa omana listanaan eika kohteiden joukossa.</div>' +
+
       '<label>Kuvat (<span id="kp-img-count">0</span>/' + MAX_IMAGES + ', valinnainen)</label>' +
       '<div class="kspk-imggrid" id="kp-imggrid"></div>' +
       '<div id="kp-img-addwrap"><input id="kp-img" type="file" accept="image/*"></div>' +
@@ -853,6 +915,13 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     });
 
     $('#kp-text').checked = edit ? !!p.show_text : false;
+
+    $('#kp-kt').checked = edit ? (p.is_target !== false) : true;
+    $('#kp-kn').checked = edit ? !!p.is_nav : false;
+    /* Merkin on kuuluttava ainakin toiseen listaan, muuten se katoaisi
+       molemmista — viimeisen ruksin poisto rastittaa toisen. */
+    $('#kp-kt').onchange = function () { if (!this.checked && !$('#kp-kn').checked) $('#kp-kn').checked = true; };
+    $('#kp-kn').onchange = function () { if (!this.checked && !$('#kp-kt').checked) $('#kp-kt').checked = true; };
 
     /* ---------- kohta 9 (v2): monta kuvaa per merkki (max 5) ---------- */
     var pendingImage = null;                 // vain lisays-tilassa (merkilla ei viela id:ta)
@@ -995,7 +1064,8 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       close();
       done({
         x: x, z: z, title: t, message: $('#kp-m').value.trim(), author: a, color: color,
-        symbol: symbol, size: parseFloat($('#kp-size').value) || 1, show_text: $('#kp-text').checked
+        symbol: symbol, size: parseFloat($('#kp-size').value) || 1, show_text: $('#kp-text').checked,
+        is_target: $('#kp-kt').checked, is_nav: $('#kp-kn').checked
       }, { pass: pw, author: a }, pendingImage);
     };
   }
@@ -1072,9 +1142,9 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       var vw = getView();
       rows.forEach(function (p) {
         if (p.hidden && !isDev()) return;
-        if (vw.hideColors.indexOf(p.color) > -1) return;
-        if (vw.hideSymbols.indexOf(p.symbol || 'dot') > -1) return;
-        if (vw.hideAuthors.indexOf(String(p.author || '').toLowerCase()) > -1) return;
+        if (!viewAllows(vw, 'Colors', p.color || '#3ef08a')) return;
+        if (!viewAllows(vw, 'Symbols', p.symbol || 'dot')) return;
+        if (!viewAllows(vw, 'Authors', String(p.author || '').toLowerCase())) return;
         var f = new olns.Feature({ geometry: new olns.geom.Point(toView(p.x, p.z)) });
         f.set('pin', p);
         f.setStyle(pinStyle(p, olns, vw.scale));
@@ -1438,7 +1508,9 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
     viewBtn.title = 'Oma nakyma (vain tama selain)';
     function paintViewBtn() {
       var v = getView();
-      var active = v.hideColors.length || v.hideSymbols.length || v.hideAuthors.length || Math.abs(v.scale - 1) > 0.001;
+      var active = v.hideColors.length || v.hideSymbols.length || v.hideAuthors.length ||
+        v.onlyColors.length || v.onlySymbols.length || v.onlyAuthors.length ||
+        Math.abs(v.scale - 1) > 0.001;
       viewBtn.classList.toggle('on', !!active);
     }
     viewBtn.onclick = function () { openViewPanel(); };

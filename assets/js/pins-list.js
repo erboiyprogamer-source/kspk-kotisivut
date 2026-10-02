@@ -26,6 +26,16 @@
      muotoa eivat vastaa mitaan yksinkertaista glyfia, joten niille on pieni
      inline-SVG (piirretaan sellaisenaan HTML:na, ks. chip()-kutsut alla). */
   var SYMBOL_GLYPH = { dot: '●', square: '■', triangle: '▲', star: '★', diamond: '◆' };
+
+  /* Varipaletin nimet suodatinchippeja varten (sama lista kuin
+     merkkien lisayslomakkeessa map-markers.js:ssa). */
+  var COLOR_NAMES = {
+    '#3ef08a': 'vihrea', '#7bed9f': 'vaalea vihrea', '#c0f549': 'limetti',
+    '#ffd166': 'keltainen', '#ff9f43': 'oranssi', '#ff6b6b': 'punainen',
+    '#e84393': 'pinkki', '#c792ea': 'violetti', '#5aa9ff': 'sininen',
+    '#1e6fd9': 'tumma sininen', '#00d2d3': 'turkoosi', '#9c6644': 'ruskea',
+    '#ffffff': 'valkoinen', '#9e9e9e': 'harmaa', '#5a6b7a': 'tumma harmaa'
+  };
   var SYMBOL_SVG = {
     house: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><g transform="translate(0.000 0.250)"><path d="M12 2.2 1.5 11h3.2v10.3h6V15h2.6v6.3h6V11h3.2z"/></g></svg>',
     skull: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><g transform="translate(0.000 0.750)"><path fill-rule="evenodd" d="M12 1.6c-5 0-8.6 3.7-8.6 8.3 0 3 1.5 5.2 3.4 6.7v3.1c0 .7.5 1.2 1.2 1.2h1v-2.2h1.6v2.2h2.8v-2.2h1.6v2.2h1c.7 0 1.2-.5 1.2-1.2v-3.1c1.9-1.5 3.4-3.7 3.4-6.7 0-4.6-3.6-8.3-8.6-8.3zm-3.6 9.6a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zm7.2 0a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zM12 13.4l1.6 2.6h-3.2z"/></g></svg>',
@@ -52,9 +62,22 @@
         hideColors: Array.isArray(v.hideColors) ? v.hideColors : [],
         hideSymbols: Array.isArray(v.hideSymbols) ? v.hideSymbols : [],
         hideAuthors: Array.isArray(v.hideAuthors) ? v.hideAuthors : [],
+        /* "nayta vain" -rajaus: tyhja lista = ei rajausta */
+        onlyColors: Array.isArray(v.onlyColors) ? v.onlyColors : [],
+        onlySymbols: Array.isArray(v.onlySymbols) ? v.onlySymbols : [],
+        onlyAuthors: Array.isArray(v.onlyAuthors) ? v.onlyAuthors : [],
+        modeColors: v.modeColors === 'only' ? 'only' : 'hide',
+        modeSymbols: v.modeSymbols === 'only' ? 'only' : 'hide',
+        modeAuthors: v.modeAuthors === 'only' ? 'only' : 'hide',
         scale: (typeof v.scale === 'number' && v.scale > 0) ? v.scale : 1
       };
-    } catch (e) { return { hideColors: [], hideSymbols: [], hideAuthors: [], scale: 1 }; }
+    } catch (e) {
+      return {
+        hideColors: [], hideSymbols: [], hideAuthors: [],
+        onlyColors: [], onlySymbols: [], onlyAuthors: [],
+        modeColors: 'hide', modeSymbols: 'hide', modeAuthors: 'hide', scale: 1
+      };
+    }
   }
   function setView(v) {
     try { localStorage.setItem(LS_VIEW, JSON.stringify(v)); } catch (e) {}
@@ -235,7 +258,41 @@
       + '.pl-toggle__btn.is-open .pl-toggle__ico{transform:rotate(180deg)}'
       + '.pl-body{display:none}'
       + '.pl-body.is-open{display:block;animation:plFadeIn .38s ease}'
-      + '@keyframes plFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}';
+      + '@keyframes plFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}'
+      /* --- haku + suodatinnappi --- */
+      + '.pl-tools{display:flex;gap:10px;align-items:center;margin:0 0 14px}'
+      + '.pl-q{flex:1;min-width:0;padding:11px 14px;border-radius:999px;'
+      + 'background:rgba(8,14,11,.7);border:1px solid var(--line,rgba(255,255,255,.12));'
+      + 'color:var(--text,#eaf3ee);font:inherit;font-size:.9rem}'
+      + '.pl-q:focus{outline:none;border-color:var(--green,#3ef08a)}'
+      + '.pl-b--filter{padding:10px 18px;border-radius:999px}'
+      + '.pl-b--filter.on{background:rgba(62,240,138,.16);border-color:rgba(62,240,138,.5);color:#3ef08a}'
+      + '.pl-fmode{display:inline-flex;gap:3px;padding:3px;border-radius:999px;'
+      + 'background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);width:max-content}'
+      + '.pl-fmode button{border:0;background:none;color:var(--muted,#9db3a6);font:inherit;font-size:.74rem;'
+      + 'padding:4px 11px;border-radius:999px;cursor:pointer}'
+      + '.pl-fmode button.is-on{background:var(--green,#3ef08a);color:#04150c;font-weight:600}'
+      + '.pl-chip.pick{border-color:rgba(62,240,138,.65);background:rgba(62,240,138,.18);color:#bff7d6}'
+      /* --- kortin tiivis muoto ja laajennus --- */
+      + '.pl-card{transition:border-color .2s ease,transform .2s ease,box-shadow .25s ease}'
+      + '.pl-card:hover{border-color:rgba(62,240,138,.45);transform:translateY(-2px);'
+      + 'box-shadow:0 18px 40px -26px rgba(0,0,0,.95)}'
+      + '.pl-t{cursor:pointer}'
+      + '.pl-tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      + '.pl-sub{display:flex;flex-wrap:wrap;gap:10px;font-size:.8rem;color:var(--muted,#9db3a6);align-items:center}'
+      + '.pl-imgn{color:#ffd166;font-weight:600}'
+      + '.pl-more{display:grid;gap:9px;grid-template-rows:0fr;opacity:0;'
+      + 'transition:grid-template-rows .3s ease,opacity .25s ease,margin-top .3s ease;margin-top:0}'
+      + '.pl-more > *{overflow:hidden;min-height:0}'
+      + '.pl-card:hover .pl-more,.pl-card:focus-within .pl-more,.pl-card.is-open .pl-more'
+      + '{grid-template-rows:1fr;opacity:1;margin-top:3px}'
+      + '@media (prefers-reduced-motion:reduce){.pl-more{transition:none}}'
+      /* --- navigointipisteiden oma lista --- */
+      + '.pl-navsec{margin-top:30px;padding-top:22px;border-top:1px dashed var(--line,rgba(255,255,255,.14))}'
+      + '.pl-navh{margin:0 0 4px;font-size:1.05rem}'
+      + '.pl-navnote{margin:0 0 14px;font-size:.84rem;color:var(--muted,#9db3a6)}'
+      + '.pl-card.is-nav{border-style:dashed}'
+      + '.pl-tag--nav{background:rgba(90,169,255,.16);color:#9ccbff;border-color:rgba(90,169,255,.4)}';
     document.head.appendChild(s);
   })();
 
@@ -260,20 +317,47 @@
       '<span class="pl-toggle__ico">&#9660;</span>' +
     '</button></div>' +
     '<div class="pl-body" id="pl-body">' +
-      '<div class="pl-filters" id="pl-filters">' +
-        '<div class="pl-fgroup"><span>PIILOTA PELAAJA</span><div class="pl-chips" id="pl-f-authors"></div></div>' +
-        '<div class="pl-fgroup"><span>PIILOTA VARI</span><div class="pl-chips" id="pl-f-colors"></div></div>' +
-        '<div class="pl-fgroup"><span>PIILOTA SYMBOLI</span><div class="pl-chips" id="pl-f-symbols"></div></div>' +
+      '<div class="pl-tools">' +
+        '<input id="pl-q" class="pl-q" type="search" autocomplete="off" placeholder="Hae merkkia — nimi, viesti, pelaaja tai koordinaatti">' +
+        '<button class="pl-b pl-b--filter" id="pl-fbtn" type="button" aria-expanded="false">Suodatin</button>' +
+      '</div>' +
+      '<div class="pl-filters" id="pl-filters" hidden>' +
+        fgroup('Authors', 'PELAAJA', 'pl-f-authors') +
+        fgroup('Colors',  'VARI',    'pl-f-colors') +
+        fgroup('Symbols', 'SYMBOLI', 'pl-f-symbols') +
         '<button class="pl-b pl-fclear" id="pl-f-reset">Nollaa oma nakyma</button>' +
       '</div>' +
       '<div class="pl-grid" id="pl-grid"></div>' +
+      '<div class="pl-navsec" id="pl-navsec" hidden>' +
+        '<h3 class="pl-navh">&#129517; Navigointipisteet <span class="muted" id="pl-navn"></span></h3>' +
+        '<p class="pl-navnote">Reittien piirtamista varten lisatyt pisteet. Ne eivat ole kohteita, joten ne ovat omana listanaan.</p>' +
+        '<div class="pl-grid pl-grid--nav" id="pl-navgrid"></div>' +
+      '</div>' +
     '</div>';
+
+  /* Suodatinryhma: sama ryhma toimii joko piilotus- tai "nayta vain"
+     -tilassa. Tila on ryhmakohtainen, jotta esim. varilla voi rajata
+     naytettavat merkit samalla kun pelaajia piilotetaan. */
+  function fgroup(group, label, chipsId) {
+    return '<div class="pl-fgroup"><span>' + label + '</span>' +
+      '<div class="pl-fmode" data-g="' + group + '">' +
+        '<button type="button" data-m="hide">Piilota</button>' +
+        '<button type="button" data-m="only">Nayta vain</button>' +
+      '</div>' +
+      '<div class="pl-chips" id="' + chipsId + '"></div></div>';
+  }
 
   var $name = document.getElementById('pl-name');
   var $pass = document.getElementById('pl-pass');
   var $grid = document.getElementById('pl-grid');
+  var $navGrid = document.getElementById('pl-navgrid');
+  var $navSec  = document.getElementById('pl-navsec');
+  var $navN    = document.getElementById('pl-navn');
   var $n    = document.getElementById('pl-n');
   var $dev  = document.getElementById('pl-dev');
+  var $q    = document.getElementById('pl-q');
+  var $fBtn = document.getElementById('pl-fbtn');
+  var $filters  = document.getElementById('pl-filters');
   var $fAuthors = document.getElementById('pl-f-authors');
   var $fColors  = document.getElementById('pl-f-colors');
   var $fSymbols = document.getElementById('pl-f-symbols');
@@ -282,6 +366,8 @@
   var $toggleN  = document.getElementById('pl-toggle-n');
   var $toggleLabel = document.getElementById('pl-toggle-label');
   var $body    = document.getElementById('pl-body');
+
+  var query = '';
 
   /* Kohta 22: lista piilossa oletuksena — ensimmainen avaus lataa/piirtaa
      kortit (ja niiden thumbnailit) vasta silloin, ei sivun ensilatauksessa. */
@@ -296,6 +382,14 @@
       render();
       if (!imagesLoadedOnce) attachImages().then(render);
     }
+  };
+
+  $q.oninput = function () { query = $q.value.trim().toLowerCase(); render(); };
+  $fBtn.onclick = function () {
+    var open = $filters.hasAttribute('hidden');
+    if (open) $filters.removeAttribute('hidden'); else $filters.setAttribute('hidden', '');
+    $fBtn.classList.toggle('on', open);
+    $fBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
   };
 
   $name.value = get(LS_NAME);
@@ -322,16 +416,24 @@
   };
   document.getElementById('pl-reload').onclick = load;
 
-  /* ---------- kohta 8: oma nakyma -suodattimet (vain tama selain) ---------- */
-  function chip(container, key, value, label, swatch, labelIsHtml) {
+  /* ---------- oma nakyma -suodattimet (vain tama selain) ----------
+     'hide'-tilassa valitut piilotetaan, 'only'-tilassa naytetaan VAIN
+     valitut. Sama tallennuspaikka kuin kartalla, joten rajaus nakyy myos
+     itse kartalla eika pelkastaan tassa listassa. */
+  function modeOf(group) { return getView()['mode' + group] === 'only' ? 'only' : 'hide'; }
+  function keyOf(group)  { return modeOf(group) + group; }
+
+  function chip(container, group, value, label, swatch, labelIsHtml) {
+    var key = keyOf(group), only = modeOf(group) === 'only';
     var v = getView();
-    var arr = v[key].slice();
-    var off = arr.indexOf(value) > -1;
+    var on = v[key].indexOf(value) > -1;   // 'hide': piilotettu, 'only': valittu nakyviin
     var b = document.createElement('span');
-    b.className = 'pl-chip' + (off ? ' off' : '');
+    b.className = 'pl-chip' + (on ? (only ? ' pick' : ' off') : '');
     b.setAttribute('role', 'button');
-    b.setAttribute('aria-pressed', off ? 'true' : 'false');
-    b.title = off ? 'Piilotettu — klikkaa nayttaaksesi' : 'Nakyvissa — klikkaa piilottaaksesi';
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.title = only
+      ? (on ? 'Naytetaan — klikkaa poistaaksesi valinnasta' : 'Klikkaa nayttaaksesi vain tama')
+      : (on ? 'Piilotettu — klikkaa nayttaaksesi' : 'Nakyvissa — klikkaa piilottaaksesi');
     b.innerHTML = (swatch ? '<span class="sw" style="background:' + esc(swatch) + '"></span>' : '') +
       (labelIsHtml ? label : esc(label));
     b.onclick = function () {
@@ -346,6 +448,7 @@
     };
     container.appendChild(b);
   }
+
   function renderFilters() {
     var authors = [], colors = [], symbols = [], seenA = {}, seenC = {}, seenS = {};
     rows.forEach(function (p) {
@@ -357,24 +460,172 @@
       if (!seenS[s]) { seenS[s] = true; symbols.push(s); }
     });
     $fAuthors.innerHTML = ''; $fColors.innerHTML = ''; $fSymbols.innerHTML = '';
-    authors.forEach(function (a) { chip($fAuthors, 'hideAuthors', a.toLowerCase(), a); });
-    colors.forEach(function (c) { chip($fColors, 'hideColors', c, c, c); });
+    authors.forEach(function (a) { chip($fAuthors, 'Authors', a.toLowerCase(), a); });
+    colors.forEach(function (c) { chip($fColors, 'Colors', c, COLOR_NAMES[c] || c, c); });
     symbols.forEach(function (s) {
-      if (SYMBOL_SVG[s]) chip($fSymbols, 'hideSymbols', s, SYMBOL_SVG[s] + ' ' + esc(s), null, true);
-      else chip($fSymbols, 'hideSymbols', s, SYMBOL_GLYPH[s] || s);
+      if (SYMBOL_SVG[s]) chip($fSymbols, 'Symbols', s, SYMBOL_SVG[s] + ' ' + esc(s), null, true);
+      else chip($fSymbols, 'Symbols', s, SYMBOL_GLYPH[s] || s);
     });
-    if (!authors.length && !colors.length && !symbols.length) {
-      document.getElementById('pl-filters').style.display = 'none';
-    } else {
-      document.getElementById('pl-filters').style.display = '';
-    }
+    [].forEach.call($filters.querySelectorAll('.pl-fmode'), function (box) {
+      var g = box.dataset.g, m = modeOf(g);
+      [].forEach.call(box.children, function (b) {
+        b.classList.toggle('is-on', b.dataset.m === m);
+        b.onclick = function () {
+          var cur = getView();
+          cur['mode' + g] = b.dataset.m;
+          setView(cur);
+          render();
+          tellMap({ kspk: 'pins-reload' });
+        };
+      });
+    });
   }
+
   $fReset.onclick = function () {
     var v = getView();
-    setView({ hideColors: [], hideSymbols: [], hideAuthors: [], scale: v.scale });
+    setView({
+      hideColors: [], hideSymbols: [], hideAuthors: [],
+      onlyColors: [], onlySymbols: [], onlyAuthors: [],
+      modeColors: 'hide', modeSymbols: 'hide', modeAuthors: 'hide',
+      scale: v.scale
+    });
     render();
     tellMap({ kspk: 'pins-reload' });
   };
+
+  /* ---------- suodatus ---------- */
+  function passView(p, v) {
+    var a = String(p.author || 'Nimeton').toLowerCase();
+    var c = p.color || '#3ef08a';
+    var s = p.symbol || 'dot';
+    function ok(group, val) {
+      var only = (v['mode' + group] === 'only');
+      var sel = v[(only ? 'only' : 'hide') + group] || [];
+      if (only) return !sel.length || sel.indexOf(val) > -1;
+      return sel.indexOf(val) < 0;
+    }
+    return ok('Authors', a) && ok('Colors', c) && ok('Symbols', s);
+  }
+  function passQuery(p) {
+    if (!query) return true;
+    return [p.title, p.message, p.author, p.x, p.z].join(' ').toLowerCase().indexOf(query) > -1;
+  }
+
+  /* ---------- kortti ----------
+     Kortti on oletuksena tiivis: nimi, vari, sijainti ja kuvien maara.
+     Hiiren alla (tai klikkauksesta kosketuslaitteella) se laajenee ja
+     nayttaa viestin, kuvien esikatselut ja toiminnot. */
+  var NUMW = ['', 'yksi', 'kaksi', 'kolme', 'nelja', 'viisi'];
+  function imgWord(n) { return (NUMW[n] || n) + ' kuva' + (n === 1 ? '' : 'a'); }
+
+  function makeCard(p) {
+    var can = mayEdit(p);
+    var imgs = p.images || [];
+    var c = document.createElement('div');
+    c.className = 'pl-card' + (p.hidden ? ' is-hidden' : '') + (p.is_nav && !p.is_target ? ' is-nav' : '');
+    c.innerHTML =
+      '<div class="pl-t"><span class="pl-dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' +
+        '<span class="pl-tt">' + esc(p.title) + '</span>' +
+        (p.hidden ? '<span class="pl-tag">Piilotettu</span>' : '') +
+        (p.is_nav && p.is_target ? '<span class="pl-tag pl-tag--nav">Myos navigointi</span>' : '') +
+      '</div>' +
+      '<div class="pl-sub">' +
+        '<span>&#128205; X ' + p.x + ', Z ' + p.z + '</span>' +
+        (imgs.length ? '<span class="pl-imgn">&#128247; ' + imgWord(imgs.length) + '</span>' : '') +
+      '</div>' +
+      '<div class="pl-more">' +
+        (imgs.length ? '<div class="pl-imggrid" data-imggrid></div>' : '') +
+        (p.message ? '<p class="pl-msg">' + esc(p.message) + '</p>' : '') +
+        '<div class="pl-meta"><span>&#128100; ' + esc(p.author || 'Nimeton') + '</span>' +
+          '<span>' + esc(COLOR_NAMES[p.color || '#3ef08a'] || (p.color || '')) + '</span>' +
+          '<span>' + esc(p.symbol || 'dot') + '</span>' +
+          (p.created_at ? '<span>' + esc(String(p.created_at).slice(0, 10)) + '</span>' : '') +
+        '</div>' +
+        '<div class="pl-acts">' +
+          '<button class="pl-b" data-a="go">Nayta kartalla</button>' +
+          (can ? '<button class="pl-b" data-a="hide">' + (p.hidden ? 'Nayta' : 'Piilota') + '</button>' : '') +
+          (can ? '<button class="pl-b" data-a="kind">' + (p.is_nav ? 'Poista navigoinnista' : 'Merkitse navigoinniksi') + '</button>' : '') +
+          (can ? '<button class="pl-b pl-b--danger" data-a="del">Poista</button>' : '') +
+        '</div>' +
+      '</div>';
+
+    /* Kosketuslaitteella ei ole hoveria, joten kortin saa auki myos
+       napauttamalla sen otsikkoriviä. */
+    c.querySelector('.pl-t').onclick = function () { c.classList.toggle('is-open'); };
+
+    var imggrid = c.querySelector('[data-imggrid]');
+    if (imggrid) {
+      imgs.forEach(function (im) {
+        var item = document.createElement('div');
+        item.className = 'pl-imgitem';
+        var canImg = mayEditImage(im);
+        item.innerHTML =
+          '<a href="' + esc(im.full_url) + '" target="_blank" rel="noopener">' +
+            '<img src="' + esc(im.thumb_url) + '" alt="Merkin kuva" loading="lazy"></a>' +
+          (canImg ? '<button class="pl-b pl-b--danger" type="button">Poista</button>' : '');
+        var b = item.querySelector('button');
+        if (b) b.onclick = function () {
+          if (!confirm('Poistetaanko tama kuva merkilta "' + p.title + '"? Itse merkki sailyy.')) return;
+          var cr = creds(p);
+          if (!cr) return;
+          b.disabled = true;
+          imageDelete(im.id, cr).then(function () {
+            p.images = (p.images || []).filter(function (o) { return o.id !== im.id; });
+            render(); tellMap({ kspk: 'pins-reload' });
+          }).catch(function (e) { alert(errText(e)); b.disabled = false; });
+        };
+        imggrid.appendChild(item);
+      });
+    }
+
+    c.querySelector('[data-a="go"]').onclick = function () {
+      tellMap({ kspk: 'pins-focus', id: p.id });
+      var mf = document.querySelector('.map-frame');
+      if (mf) mf.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+    var h = c.querySelector('[data-a="hide"]');
+    if (h) h.onclick = function () {
+      var nv = !p.hidden;
+      var cr = creds(p);
+      if (!cr) return;
+      rpc('pin_edit', {
+        p_pass: cr.pass, p_author: cr.author, p_id: p.id,
+        p_title: null, p_message: null, p_color: null,
+        p_x: null, p_z: null, p_hidden: nv
+      }).then(function () {
+        p.hidden = nv; render(); tellMap({ kspk: 'pins-reload' });
+      }).catch(function (e) { alert(errText(e)); });
+    };
+    var k = c.querySelector('[data-a="kind"]');
+    if (k) k.onclick = function () {
+      var cr = creds(p);
+      if (!cr) return;
+      var nav = !p.is_nav;
+      /* Merkin on kuuluttava ainakin toiseen listaan: jos navigointi
+         otetaan pois, se palaa kohteeksi. */
+      var tgt = nav ? (p.is_target !== false) : true;
+      k.disabled = true;
+      rpc('pin_set_kind', {
+        p_pass: cr.pass, p_author: cr.author, p_id: p.id,
+        p_is_target: tgt, p_is_nav: nav
+      }).then(function () {
+        p.is_nav = nav; p.is_target = tgt;
+        render(); tellMap({ kspk: 'pins-reload' });
+      }).catch(function (e) { alert(errText(e)); k.disabled = false; });
+    };
+    var d = c.querySelector('[data-a="del"]');
+    if (d) d.onclick = function () {
+      if (!confirm('Poistetaanko merkki "' + p.title + '"? Tata ei voi perua — myos sen kuvat poistuvat.')) return;
+      var cr = creds(p);
+      if (!cr) return;
+      pinDeleteFull(p.id, cr)
+        .then(function () {
+          rows = rows.filter(function (o) { return o.id !== p.id; });
+          render(); tellMap({ kspk: 'pins-reload' });
+        }).catch(function (e) { alert(errText(e)); });
+    };
+    return c;
+  }
 
   /* ---------- piirto ---------- */
   function render() {
@@ -384,11 +635,13 @@
       /* Piilotettu merkki jaa nakyviin (tummempana) VAIN devlle tai sen
          omalle tekijalle — muilta se puuttuu jo palvelimen RLS:sta. */
       if (p.hidden && !dev && !mayEdit(p)) return false;
-      if (v.hideColors.indexOf(p.color || '#3ef08a') > -1) return false;
-      if (v.hideSymbols.indexOf(p.symbol || 'dot') > -1) return false;
-      if (v.hideAuthors.indexOf(String(p.author || 'Nimeton').toLowerCase()) > -1) return false;
-      return true;
+      if (!passView(p, v)) return false;
+      return passQuery(p);
     });
+    /* Navigointipisteet ovat merkkeja joilla on vain navigointi-luokka. */
+    var navs    = visible.filter(function (p) { return p.is_nav && p.is_target === false; });
+    var targets = visible.filter(function (p) { return !(p.is_nav && p.is_target === false); });
+
     $n.textContent = '(' + visible.length + ')';
     if ($toggleN) $toggleN.textContent = '(' + visible.length + ')';
 
@@ -399,87 +652,25 @@
 
     renderFilters();
 
-    if (!visible.length) {
-      $grid.innerHTML = '<div class="pl-empty">Ei viela yhtaan merkkia. Avaa kartta, klikkaa oikealla tai napauta kolmesti — ja lisaa ensimmainen.</div>';
-      return;
+    $grid.innerHTML = '';
+    if (!targets.length) {
+      $grid.innerHTML = '<div class="pl-empty">' +
+        (query || rows.length
+          ? 'Ei osumia nailla hakuehdoilla.'
+          : 'Ei viela yhtaan merkkia. Avaa kartta, klikkaa oikealla tai napauta kolmesti — ja lisaa ensimmainen.') +
+        '</div>';
+    } else {
+      targets.forEach(function (p) { $grid.appendChild(makeCard(p)); });
     }
 
-    $grid.innerHTML = '';
-    visible.forEach(function (p) {
-      var can = mayEdit(p);
-      var imgs = p.images || [];
-      var c = document.createElement('div');
-      c.className = 'pl-card' + (p.hidden ? ' is-hidden' : '');
-      c.innerHTML =
-        '<div class="pl-t"><span class="pl-dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' +
-          esc(p.title) + (p.hidden ? ' <span class="pl-tag">Piilotettu</span>' : '') + '</div>' +
-        (imgs.length ? '<div class="pl-imggrid" data-imggrid></div>' : '') +
-        (p.message ? '<p class="pl-msg">' + esc(p.message) + '</p>' : '') +
-        '<div class="pl-meta"><span>&#128100; ' + esc(p.author || 'Nimeton') + '</span>' +
-          '<span>&#128205; X ' + p.x + ', Z ' + p.z + '</span></div>' +
-        '<div class="pl-acts">' +
-          '<button class="pl-b" data-a="go">Nayta kartalla</button>' +
-          (can ? '<button class="pl-b" data-a="hide">' + (p.hidden ? 'Nayta' : 'Piilota') + '</button>' : '') +
-          (can ? '<button class="pl-b pl-b--danger" data-a="del">Poista</button>' : '') +
-        '</div>';
-
-      var imggrid = c.querySelector('[data-imggrid]');
-      if (imggrid) {
-        imgs.forEach(function (im) {
-          var item = document.createElement('div');
-          item.className = 'pl-imgitem';
-          var canImg = mayEditImage(im);
-          item.innerHTML =
-            '<a href="' + esc(im.full_url) + '" target="_blank" rel="noopener">' +
-              '<img src="' + esc(im.thumb_url) + '" alt="Merkin kuva" loading="lazy"></a>' +
-            (canImg ? '<button class="pl-b pl-b--danger" type="button">Poista</button>' : '');
-          var b = item.querySelector('button');
-          if (b) b.onclick = function () {
-            if (!confirm('Poistetaanko tama kuva merkilta "' + p.title + '"? Itse merkki sailyy.')) return;
-            var cr = creds(p);
-            if (!cr) return;
-            b.disabled = true;
-            imageDelete(im.id, cr).then(function () {
-              p.images = (p.images || []).filter(function (o) { return o.id !== im.id; });
-              render(); tellMap({ kspk: 'pins-reload' });
-            }).catch(function (e) { alert(errText(e)); b.disabled = false; });
-          };
-          imggrid.appendChild(item);
-        });
-      }
-
-      c.querySelector('[data-a="go"]').onclick = function () {
-        tellMap({ kspk: 'pins-focus', id: p.id });
-        var mf = document.querySelector('.map-frame');
-        if (mf) mf.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      };
-      var h = c.querySelector('[data-a="hide"]');
-      if (h) h.onclick = function () {
-        var nv = !p.hidden;
-        var c = creds(p);
-        if (!c) return;
-        rpc('pin_edit', {
-          p_pass: c.pass, p_author: c.author, p_id: p.id,
-          p_title: null, p_message: null, p_color: null,
-          p_x: null, p_z: null, p_hidden: nv
-        }).then(function () {
-          p.hidden = nv; render(); tellMap({ kspk: 'pins-reload' });
-        }).catch(function (e) { alert(errText(e)); });
-      };
-      var d = c.querySelector('[data-a="del"]');
-      if (d) d.onclick = function () {
-        if (!confirm('Poistetaanko merkki "' + p.title + '"? Tata ei voi perua — myos sen kuvat poistuvat.')) return;
-        var c = creds(p);
-        if (!c) return;
-        pinDeleteFull(p.id, c)
-          .then(function () {
-            rows = rows.filter(function (o) { return o.id !== p.id; });
-            render(); tellMap({ kspk: 'pins-reload' });
-          }).catch(function (e) { alert(errText(e)); });
-      };
-
-      $grid.appendChild(c);
-    });
+    $navGrid.innerHTML = '';
+    if (navs.length) {
+      $navSec.removeAttribute('hidden');
+      $navN.textContent = '(' + navs.length + ')';
+      navs.forEach(function (p) { $navGrid.appendChild(makeCard(p)); });
+    } else {
+      $navSec.setAttribute('hidden', '');
+    }
   }
 
   function plainLoad() {

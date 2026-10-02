@@ -36,7 +36,7 @@
     { id: 'swim',   ico: '&#127946;', name: 'Uinti',             v: 2.2,   note: 'Delfiinin suosio tai Depth Strider nopeuttaa selvästi.' },
     { id: 'boat',   ico: '&#128676;', name: 'Vene vedellä',      v: 8.0,   note: 'Sinisellä jäällä kulkeva venerata yltää noin 70 lohkoon/s.' },
     { id: 'horse',  ico: '&#128014;', name: 'Hevonen',           v: 9.0,   note: 'Hevoset vaihtelevat ~4,8–14,5 lohkoa/s; tässä keskitasoinen.' },
-    { id: 'elytra', ico: '&#129464;', name: 'Elytra + raketit',  v: 30,    note: 'Lentää suoraan maaston yli, joten tämä arvio on tarkin.' }
+    { id: 'elytra', ico: '&#128640;', name: 'Elytra + raketit',  v: 30,    note: 'Lentää suoraan maaston yli, joten tämä arvio on tarkin.' }
   ];
   var LS_MODE = 'kspk.reitti.mode';
 
