@@ -502,6 +502,34 @@
       });
   }
 
+  function copyText(txt, btn, orig) {
+    var t = btn.querySelector('.kn-act__t') || btn;
+    var done = function () { t.textContent = 'Kopioitu'; setTimeout(function () { t.textContent = orig; }, 1600); };
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, done); else done();
+  }
+
+  /* Avaa reittiohjeet paikkasivulta: toinen paa taytetaan ja kursori
+     viedaan tyhjaan kenttaan, jonka ehdotuslista aukeaa heti. */
+  function routeTo(item, which) {
+    closePlace();
+    openDir();
+    if (which === 'start') stops[0] = item;
+    else stops[stops.length - 1] = item;
+    renderStops();
+    drawRoute(true);
+    var empty = stops.indexOf(null);
+    if (empty > -1) {
+      /* Viive: tama kutsutaan klikkauksesta, ja sama klikkaus kayy viela
+         dokumenttitason kuuntelijassa joka sulkee ehdotuslistat. */
+      setTimeout(function () {
+        var inp = document.querySelector('.kn-stop__in[data-i="' + empty + '"]');
+        if (!inp) return;
+        inp.focus();
+        inp.dispatchEvent(new Event('focus'));
+      }, 0);
+    }
+  }
+
   function closePlace() {
     selected = null; drawPins();
     $('kn-place').hidden = true;
