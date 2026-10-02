@@ -1236,6 +1236,13 @@
     e.stopPropagation();
     var m = $('kn-layers-menu');
     m.hidden = !m.hidden;
+    if (m.hidden) return;
+    /* Valikko pidetaan kartan sisalla myos kun nappi on lahella reunaa. */
+    m.style.transform = '';
+    var mr = m.getBoundingClientRect();
+    var er = app.getBoundingClientRect();
+    var over = mr.right - (er.right - 12);
+    if (over > 0) m.style.transform = 'translateX(' + (-Math.round(over)) + 'px)';
   };
   /* Pitkä painallus ei ole tarpeen: valikosta valitaan taso, mutta
      kaksoisklikkaus vaihtaa suoraan kuvassa nakyvaan tasoon. */
@@ -1433,7 +1440,13 @@
     btn.style.left = (w ? w + 20 : 12) + 'px';
     btn.innerHTML = collapsed ? '&#8250;' : '&#8249;';
     btn.title = collapsed ? 'Näytä paneeli' : 'Piilota paneeli';
-    if (layers) layers.style.left = (w ? w + 24 + 26 : 12) + 'px';
+    /* Kapealla ruudulla paneeli vie lahes koko leveyden, jolloin
+       Tasot-nappi jaa reunaan — muuten se siirtyy paneelin viereen. */
+    if (layers) {
+      var mapW = map ? map.getTargetElement().getBoundingClientRect().width : 0;
+      var side = w && (mapW - w) > 260;
+      layers.style.left = (side ? w + 50 : 12) + 'px';
+    }
   }
 
   function toggleCollapse() {
