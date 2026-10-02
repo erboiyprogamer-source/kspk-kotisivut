@@ -1268,6 +1268,9 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 }
 @media (max-width:860px){
   .kn-left{width:calc(100% - 80px)}
-  .kn-dir{max-height:46vh}
+  /* kapealla ruudulla paneeli jattaa kartalle enemman tilaa, jotta koko
+     reitti mahtuu nakyviin */
+  .kn-dir{max-height:38vh}
+  .kn-place{max-height:52vh}
     .kn-coord{display:none}
 }
