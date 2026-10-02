@@ -268,8 +268,11 @@
        kun liike on loppunut. */
     map.on('moveend', function () { drawPins(); checkCoverage(); });
     /* Kartan vaihto ei laukaise moveend-tapahtumaa, joten kattavuus
-       tarkistetaan myos heti rakentamisen jalkeen. */
+       tarkistetaan myos heti rakentamisen jalkeen. Samalla varmistetaan
+       kartan koko: jos asettelu ei ollut viela valmis karttaa luotaessa,
+       OpenLayers ei piirra mitaan ennen updateSize-kutsua. */
     setTimeout(checkCoverage, 150);
+    sizeSoon();
 
     /* Suurella kartalla on vain yksi zoom-taso, joten lahentaminen ei
        tee mitaan. Jos kayttaja rullaa sita kohti, siirrytaan tarkkaan
@@ -1285,6 +1288,24 @@
     var over = mr.right - (er.right - 12);
     if (over > 0) m.style.transform = 'translateX(' + (-Math.round(over)) + 'px)';
   };
+
+  /* Karttatason valinta valikosta. Kayttajan oma valinta lopettaa
+     automaattisen kartanvaihdon, jottei nakyma hyppaa takaisin. */
+  $('kn-layers-menu').querySelectorAll('[data-map]').forEach(function (b) {
+    b.onclick = function () {
+      $('kn-layers-menu').hidden = true;
+      if (b.dataset.map === curMap) return;
+      autoMapOn = false;
+      loadMeta(b.dataset.map).then(function (meta) {
+        buildMap(meta);
+        drawPins();
+        drawRoute(false);
+      }).catch(function (err) {
+        console.error('Karttatason vaihto epäonnistui:', err);
+      });
+    };
+  });
+
   /* zoom */
   $('kn-zin').onclick  = function () { view.animate({ zoom: view.getZoom() + 1, duration: 220 }); };
   $('kn-zout').onclick = function () { view.animate({ zoom: view.getZoom() - 1, duration: 220 }); };
