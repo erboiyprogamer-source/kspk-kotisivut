@@ -1027,6 +1027,9 @@ pre,code{overflow-wrap:anywhere;word-break:break-word}
 .kn-app.is-full{
   position:fixed;inset:0;z-index:9999;height:100vh;height:100dvh;border:0;border-radius:0}
 body.kn-lock{overflow:hidden}
+/* Kokonaytossa sivuston oma navi, footer ja tukinappi piiloon, jotta ne
+   eivat jaa hakupalkin paalle. */
+body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .to-top{display:none!important}
 .kn-map{position:absolute;inset:0}
 .kn-err{display:grid;place-items:center;height:100%;color:var(--muted);padding:24px;text-align:center}
 
