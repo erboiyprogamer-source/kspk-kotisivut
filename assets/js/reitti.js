@@ -1,5 +1,5 @@
 /* =====================================================================
-   K-S-P-K — reitti.js — reittihaku ("navigointipalvelu")
+   K-S-P-K — reitti.js — KasaNavi (navigointipalvelu)
    ---------------------------------------------------------------------
    Rakentaa OMAN OpenLayers-karttansa suoraan uNmINeD-tiilista (karttarepo
    kspk-kartat) — EI iframea eika uNmINeDin omaa index.html:aa, jotta
@@ -7,14 +7,16 @@
    resoluutiot on toteutettu samalla kaavalla kuin uNmINeDin omassa
    unmined.js:ssa, muuten tiilet eivat osuisi oikeille paikoille.
 
-   Vaihe 1: linnuntie (suora viiva) + matka-aika kulkutavoittain.
-   Myohempi vaihe (jos tehdaan): piirretty tieverkko + A*-reititys.
+   Kayttoliittyman rakenne on tuttu karttapalveluista: hakupalkki ja
+   reittinappi vasemmassa ylakulmassa, kategoriasirut sen alla,
+   reittipaneeli kulkutapavalilehdilla, paikkakortti, Tasot-valitsin ja
+   zoom-napit. Kokonaytto on pelkka luokanvaihto samalle laatikolle.
    ===================================================================== */
 (function () {
   'use strict';
 
-  var root = document.getElementById('nav2');
-  if (!root || typeof ol === 'undefined') return;
+  var app = document.getElementById('kn-app');
+  if (!app || typeof ol === 'undefined') return;
 
   var MAPS = 'https://erboiyprogamer-source.github.io/kspk-kartat/';
   var SUPA = {
@@ -31,14 +33,23 @@
   /* ---------- kulkutavat ----------
      Nopeudet lohkoa/sekunti. Minecraftissa 1 lohko = 1 metri. */
   var MODES = [
-    { id: 'walk',   ico: '&#128694;', name: 'Kävely',            v: 4.317, note: 'Perusnopeus maalla.' },
-    { id: 'sprint', ico: '&#127939;', name: 'Juoksu',            v: 5.612, note: 'Vaatii ruokaa; juoksuhyppely yltää ~7,1 lohkoon/s.' },
-    { id: 'swim',   ico: '&#127946;', name: 'Uinti',             v: 2.2,   note: 'Delfiinin suosio tai Depth Strider nopeuttaa selvästi.' },
-    { id: 'boat',   ico: '&#128676;', name: 'Vene vedellä',      v: 8.0,   note: 'Sinisellä jäällä kulkeva venerata yltää noin 70 lohkoon/s.' },
-    { id: 'horse',  ico: '&#128014;', name: 'Hevonen',           v: 9.0,   note: 'Hevoset vaihtelevat ~4,8–14,5 lohkoa/s; tässä keskitasoinen.' },
-    { id: 'elytra', ico: '&#128640;', name: 'Elytra + raketit',  v: 30,    note: 'Lentää suoraan maaston yli, joten tämä arvio on tarkin.' }
+    { id: 'walk',   ico: '&#128694;', name: 'Kävely',   v: 4.317, note: 'Perusnopeus maalla.' },
+    { id: 'sprint', ico: '&#127939;', name: 'Juoksu',   v: 5.612, note: 'Vaatii ruokaa; juoksuhyppely yltää noin 7,1 lohkoon sekunnissa.' },
+    { id: 'horse',  ico: '&#128014;', name: 'Hevonen',  v: 9.0,   note: 'Hevoset vaihtelevat noin 4,8–14,5 lohkoa/s; tässä keskitasoinen.' },
+    { id: 'boat',   ico: '&#128676;', name: 'Vene',     v: 8.0,   note: 'Vettä pitkin. Sinisellä jäällä kulkeva venerata yltää noin 70 lohkoon/s.' },
+    { id: 'swim',   ico: '&#127946;', name: 'Uinti',    v: 2.2,   note: 'Delfiinin suosio tai Depth Strider nopeuttaa selvästi.' },
+    { id: 'elytra', ico: '&#128640;', name: 'Elytra',   v: 30,    note: 'Raketeilla, suoraan maaston yli — tämä arvio on tarkin.' }
   ];
-  var LS_MODE = 'kspk.reitti.mode';
+
+  var SYMBOL_NAMES = {
+    dot: 'Piste', square: 'Neliö', triangle: 'Kolmio', star: 'Tähti', diamond: 'Timantti',
+    house: 'Talo', skull: 'Pääkallo', sword: 'Miekka', hammer: 'Vasara', smiley: 'Hymiö',
+    pickaxe: 'Hakku', tree: 'Puu', axe: 'Kirves', shield: 'Kilpi', heart: 'Sydän',
+    anchor: 'Ankkuri', chest: 'Arkku', swords: 'Miekka'
+  };
+
+  var LS_MODE   = 'kspk.navi.mode';
+  var LS_RECENT = 'kspk.navi.recent';
 
   /* ---------- pienet apurit ---------- */
   function $(id) { return document.getElementById(id); }
@@ -47,17 +58,21 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  function nf(n, d) {
-    return Number(n).toLocaleString('fi-FI', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 });
-  }
+  function nf(n) { return Number(Math.round(n)).toLocaleString('fi-FI'); }
   function dur(sec) {
     if (!isFinite(sec)) return '–';
     sec = Math.round(sec);
     if (sec < 60) return sec + ' s';
-    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
     if (h) return h + ' h ' + m + ' min';
-    return m + ' min ' + (s ? s + ' s' : '').trim();
+    return Math.floor(sec / 60) + ' min';
   }
+  function dist(a, b) {
+    var dx = b.x - a.x, dz = b.z - a.z;
+    return Math.sqrt(dx * dx + dz * dz);
+  }
+  function lsGet(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 
   /* ---------- koordinaattimuunnos (uNmINeDin kaava) ----------
      OpenLayersin Y kasvaa ylospain, Minecraftin Z alaspain. */
@@ -66,9 +81,8 @@
 
   /* ---------- uNmINeDin RegionMap: onko tiilta olemassa ----------
      Ilman tata selain pyytaisi satoja olemattomia tiilia (404). */
-  function RegionMap(regions, worldMinX, worldMinZ, worldWidth, worldHeight) {
-    this.r = regions; this.minX = worldMinX; this.minZ = worldMinZ;
-    this.w = worldWidth; this.h = worldHeight;
+  function RegionMap(regions, minX, minZ, w, h) {
+    this.r = regions; this.minX = minX; this.minZ = minZ; this.w = w; this.h = h;
   }
   RegionMap.prototype.hasTile = function (tileX, tileZ, zoom) {
     var f = Math.pow(2, zoom);
@@ -81,8 +95,7 @@
     var size = Math.ceil(bs / 512);
     for (var x = rx; x < rx + size; x++) {
       for (var z = rz; z < rz + size; z++) {
-        var gx = Math.floor(x / 32), gz = Math.floor(z / 32);
-        var g = null;
+        var gx = Math.floor(x / 32), gz = Math.floor(z / 32), g = null;
         for (var i = 0; i < this.r.length; i++) { if (this.r[i].x === gx && this.r[i].z === gz) { g = this.r[i]; break; } }
         if (!g) continue;
         var inx = (z - gz * 32) * 32 + (x - gx * 32);
@@ -110,34 +123,40 @@
     return loadScript(base + 'unmined.map.properties.js' + bust)
       .then(function () { return loadScript(base + 'unmined.map.regions.js' + bust); })
       .then(function () {
+        var o = UnminedMapProperties;
         return {
-          base: base,
-          props: JSON.parse(JSON.stringify({
-            minZoom: UnminedMapProperties.minZoom, maxZoom: UnminedMapProperties.maxZoom,
-            imageFormat: UnminedMapProperties.imageFormat,
-            minRegionX: UnminedMapProperties.minRegionX, minRegionZ: UnminedMapProperties.minRegionZ,
-            maxRegionX: UnminedMapProperties.maxRegionX, maxRegionZ: UnminedMapProperties.maxRegionZ,
-            centerX: UnminedMapProperties.centerX, centerZ: UnminedMapProperties.centerZ
-          })),
+          name: name, base: base,
+          props: {
+            minZoom: o.minZoom, maxZoom: o.maxZoom, imageFormat: o.imageFormat,
+            minRegionX: o.minRegionX, minRegionZ: o.minRegionZ,
+            maxRegionX: o.maxRegionX, maxRegionZ: o.maxRegionZ,
+            centerX: o.centerX, centerZ: o.centerZ
+          },
           regions: UnminedRegions.map(function (e) { return { x: e.x, z: e.z, m: e.m }; })
         };
       });
   }
 
-  /* ---------- kartta ---------- */
-  var map = null, tileLayer = null, routeLayer = null, pinLayer = null, view = null, pendingView = null;
-  var pins = [], picking = null;
-  var pt = { a: null, b: null };   // {x, z, label}
+  /* ---------- tila ---------- */
+  var map = null, view = null, tileLayer = null, pinLayer = null, routeLayer = null;
+  var pendingView = null, curMap = 'paiva';
+  var pins = [], picking = null, dirMode = false;
+  var stops = [null, null];        // {x, z, label}
+  var hideSymbols = {};            // kategoriasiruilla piilotetut
+  var showNav = true;
+  var selected = null;             // paikkakortissa nakyva merkki
 
+  /* ---------- kartta ---------- */
   function buildMap(meta) {
     var o = meta.props;
+    curMap = meta.name;
     var minX = o.minRegionX * 512, minZ = o.minRegionZ * 512;
     var w = (o.maxRegionX + 1 - o.minRegionX) * 512;
     var h = (o.maxRegionZ + 1 - o.minRegionZ) * 512;
     var rm = new RegionMap(meta.regions, minX, minZ, w, h);
     var dpi = window.devicePixelRatio || 1;
 
-    var viewProj = new ol.proj.Projection({
+    var proj = new ol.proj.Projection({
       code: 'KSPK-VIEW', units: 'degrees',
       extent: [-270, -270, 270, 270], worldExtent: [-270, -270, 270, 270], global: true
     });
@@ -145,16 +164,13 @@
     var tl = toView(minX, minZ), br = toView(minX + w, minZ + h);
     var extent = [Math.min(tl[0], br[0]), Math.min(tl[1], br[1]), Math.max(tl[0], br[0]), Math.max(tl[1], br[1])];
 
-    var levels = o.maxZoom - o.minZoom;
-    var res = [];
+    var levels = o.maxZoom - o.minZoom, res = [];
     for (var z = 0; z <= levels; z++) res[z] = (Math.pow(2, levels - z - o.maxZoom) / BPD) * dpi;
 
-    var grid = new ol.tilegrid.TileGrid({
-      extent: extent, origin: [0, 0], resolutions: res, tileSize: TILE / dpi
-    });
+    var grid = new ol.tilegrid.TileGrid({ extent: extent, origin: [0, 0], resolutions: res, tileSize: TILE / dpi });
 
     var src = new ol.source.XYZ({
-      projection: viewProj, tileGrid: grid, tilePixelRatio: dpi, tileSize: TILE / dpi,
+      projection: proj, tileGrid: grid, tilePixelRatio: dpi, tileSize: TILE / dpi,
       tileUrlFunction: function (c) {
         var tx = c[1], ty = c[2], wz = -(levels - c[0]) + o.maxZoom;
         if (!rm.hasTile(tx, ty, wz)) return undefined;
@@ -163,13 +179,14 @@
       }
     });
 
-    /* Kartan vaihdossa koko kartta rakennetaan uudelleen: paiva- ja
-       yokartalla voi olla eri aluerajat ja eri zoom-tasot, joten pelkka
-       tiililahteen vaihto jattaisi nakyman vaarille rajoille. */
+    /* Kartan vaihdossa koko kartta rakennetaan uudelleen: kartoilla voi
+       olla eri aluerajat ja eri zoom-tasot, joten pelkka tiililahteen
+       vaihto jattaisi nakyman vaarille rajoille. */
     if (map) {
-      var keep = view.getCenter(), keepZ = view.getZoom();
-      map.setTarget(null); map.dispose && map.dispose(); map = null;
-      pendingView = { center: keep, zoom: keepZ };
+      pendingView = { center: view.getCenter(), zoom: view.getZoom() };
+      map.setTarget(null);
+      if (map.dispose) map.dispose();
+      map = null;
     }
 
     tileLayer = new ol.layer.Tile({ source: src });
@@ -177,14 +194,14 @@
     routeLayer = new ol.layer.Vector({ source: new ol.source.Vector(), style: routeStyle });
 
     view = new ol.View({
-      center: toView(o.centerX, o.centerZ), extent: extent, projection: viewProj,
+      center: toView(o.centerX, o.centerZ), extent: extent, projection: proj,
       resolutions: res, maxZoom: levels, zoom: Math.max(0, levels - o.maxZoom),
       constrainResolution: true, showFullExtent: true, constrainOnlyCenter: true, enableRotation: false
     });
 
     map = new ol.Map({
       target: 'n2-map',
-      controls: ol.control.defaults.defaults({ attribution: false, rotate: false }),
+      controls: [],                 // omat napit kayttoliittymassa
       layers: [tileLayer, routeLayer, pinLayer],
       view: view
     });
@@ -192,314 +209,560 @@
     if (pendingView) {
       try { view.setCenter(pendingView.center); view.setZoom(pendingView.zoom); } catch (e) {}
       pendingView = null;
-      drawPins(); update(false);
+      drawPins(); drawRoute(false);
     }
 
     map.on('pointermove', function (e) {
       var b = toBlock(e.coordinate);
-      $('n2-coord').textContent = 'X ' + b[0] + ', Z ' + b[1];
+      $('kn-coord').textContent = 'X ' + b[0] + ', Z ' + b[1];
+      var hit = map.hasFeatureAtPixel(e.pixel, { hitTolerance: 6 });
+      map.getTargetElement().style.cursor = picking ? 'crosshair' : (hit ? 'pointer' : '');
     });
+
     map.on('singleclick', function (e) {
       var b = toBlock(e.coordinate);
-      if (picking) { setPoint(picking, { x: b[0], z: b[1], label: b[0] + ' ' + b[1] }); setPicking(null); return; }
-      var hit = map.forEachFeatureAtPixel(e.pixel, function (f) { return f.get('pin') ? f.get('pin') : null; }, { hitTolerance: 6 });
-      if (hit) {
-        var slot = pt.a ? (pt.b ? 'a' : 'b') : 'a';
-        setPoint(slot, { x: hit.x, z: hit.z, label: hit.title });
+      if (picking !== null) {
+        setStop(picking, { x: b[0], z: b[1], label: b[0] + ' ' + b[1] });
+        setPicking(null);
+        return;
       }
+      var hit = map.forEachFeatureAtPixel(e.pixel, function (f) { return f.get('pin') || null; }, { hitTolerance: 6 });
+      if (hit) { openPlace(hit); }
+      else { closePlace(); }
     });
   }
 
   /* ---------- tyylit ---------- */
   function pinStyle(f) {
-    var p = f.get('pin'), r = f.get('end') ? 8 : 4.5;
+    var p = f.get('pin'), nav = p && p.is_nav && p.is_target === false;
+    var sel = selected && p && selected.id === p.id;
+    var r = nav ? 3.6 : 5;
+    if (sel) r += 2.5;
     return new ol.style.Style({
       image: new ol.style.Circle({
         radius: r,
-        fill: new ol.style.Fill({ color: f.get('end') ? (f.get('end') === 'a' ? '#3ef08a' : '#ffc94d') : (p.color || '#3ef08a') }),
-        stroke: new ol.style.Stroke({ color: '#000', width: f.get('end') ? 2.5 : 1.5 })
+        fill: new ol.style.Fill({ color: p.color || '#3ef08a' }),
+        stroke: new ol.style.Stroke({ color: sel ? '#fff' : '#000', width: sel ? 2.5 : 1.6 })
       }),
-      text: f.get('end') ? new ol.style.Text({
-        text: f.get('label') || '', offsetY: -16, font: '600 13px Outfit, sans-serif',
+      text: sel ? new ol.style.Text({
+        text: p.title || '', offsetY: -17, font: '600 13px Outfit, sans-serif',
         fill: new ol.style.Fill({ color: '#e9f7ef' }),
         stroke: new ol.style.Stroke({ color: '#000', width: 3.5 })
       }) : null
     });
   }
+  function stopStyle(i, total, label) {
+    var isFirst = i === 0, isLast = i === total - 1;
+    var col = isFirst ? '#3ef08a' : (isLast ? '#ffc94d' : '#5ad1ff');
+    return new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: 8, fill: new ol.style.Fill({ color: col }),
+        stroke: new ol.style.Stroke({ color: '#06110b', width: 3 })
+      }),
+      text: new ol.style.Text({
+        text: label || '', offsetY: -19, font: '600 13px Outfit, sans-serif',
+        fill: new ol.style.Fill({ color: '#e9f7ef' }),
+        stroke: new ol.style.Stroke({ color: '#000', width: 3.5 })
+      })
+    });
+  }
   function routeStyle(f) {
-    if (f.getGeometry().getType() === 'Point') return pinStyle(f);
+    if (f.getGeometry().getType() === 'Point') return f.get('style');
     return [
-      new ol.style.Style({ stroke: new ol.style.Stroke({ color: 'rgba(0,0,0,.65)', width: 7 }) }),
-      new ol.style.Style({ stroke: new ol.style.Stroke({ color: '#3ef08a', width: 3, lineDash: [10, 8] }) })
+      new ol.style.Style({ stroke: new ol.style.Stroke({ color: 'rgba(0,0,0,.7)', width: 8 }) }),
+      new ol.style.Style({ stroke: new ol.style.Stroke({ color: '#3ef08a', width: 4 }) })
     ];
   }
 
   /* ---------- merkit Supabasesta ---------- */
   function loadPins() {
-    return fetch(SUPA.url + '/rest/v1/pins?select=id,title,x,z,author,color,symbol&order=created_at.desc', {
+    return fetch(SUPA.url + '/rest/v1/pins?select=id,title,message,x,z,author,color,symbol,is_nav,is_target&order=created_at.desc', {
       headers: { apikey: SUPA.key, Authorization: 'Bearer ' + SUPA.key }
     }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
   }
+  function pinVisible(p) {
+    if (hideSymbols[p.symbol || 'dot']) return false;
+    if (!showNav && p.is_nav && p.is_target === false) return false;
+    return true;
+  }
   function drawPins() {
+    if (!pinLayer) return;
     var s = pinLayer.getSource(); s.clear();
-    pins.forEach(function (p) {
+    pins.filter(pinVisible).forEach(function (p) {
       var f = new ol.Feature({ geometry: new ol.geom.Point(toView(p.x, p.z)) });
       f.set('pin', p); s.addFeature(f);
     });
   }
 
-  /* ---------- pisteen asetus ja haku ---------- */
+  /* ---------- haku ---------- */
   function parseCoords(str) {
     var n = String(str).match(/-?\d+(?:[.,]\d+)?/g);
     if (!n || n.length < 2) return null;
     var v = n.map(function (x) { return Math.round(parseFloat(x.replace(',', '.'))); });
-    // kolme lukua = F3-rivi (X Y Z) -> korkeus jatetaan pois
+    /* kolme lukua = F3-rivi (X Y Z), korkeus jatetaan pois */
     return v.length >= 3 ? { x: v[0], z: v[2] } : { x: v[0], z: v[1] };
   }
-  function setPoint(slot, p) {
-    pt[slot] = p;
-    $('n2-' + slot).value = p ? p.label : '';
-    update();
-  }
-  function setPicking(slot) {
-    picking = slot;
-    $('n2-hint').hidden = !slot;
-    document.querySelectorAll('.nav2__pick').forEach(function (b) {
-      b.classList.toggle('is-on', !!slot && b.dataset.pick === slot);
-    });
-    if (map) map.getTargetElement().style.cursor = slot ? 'crosshair' : '';
-  }
-
-  function suggest(slot) {
-    var q = $('n2-' + slot).value.trim().toLowerCase();
-    var box = $('n2-sug-' + slot);
-    if (!q) { box.hidden = true; return; }
+  function search(q) {
+    q = String(q || '').trim().toLowerCase();
     var out = [];
     var c = parseCoords(q);
-    if (c) out.push({ x: c.x, z: c.z, label: c.x + ' ' + c.z, sub: 'Koordinaatit' });
-    pins.filter(function (p) {
-      return String(p.title || '').toLowerCase().indexOf(q) > -1 ||
-             String(p.author || '').toLowerCase().indexOf(q) > -1;
-    }).slice(0, 8).forEach(function (p) {
-      out.push({ x: p.x, z: p.z, label: p.title, sub: (p.author || 'Nimetön') + ' · X ' + p.x + ', Z ' + p.z, color: p.color });
-    });
-    if (!out.length) { box.innerHTML = '<div class="nav2__sug-empty">Ei osumia</div>'; box.hidden = false; return; }
-    box.innerHTML = out.map(function (o, i) {
-      return '<button type="button" class="nav2__sug-i" data-i="' + i + '">' +
-        '<span class="nav2__sug-dot" style="background:' + esc(o.color || '#5ad1ff') + '"></span>' +
-        '<span><strong>' + esc(o.label) + '</strong><em>' + esc(o.sub) + '</em></span></button>';
+    if (c) out.push({ x: c.x, z: c.z, label: c.x + ' ' + c.z, sub: 'Koordinaatit', coord: true });
+    if (q) {
+      pins.filter(function (p) {
+        return String(p.title || '').toLowerCase().indexOf(q) > -1 ||
+               String(p.author || '').toLowerCase().indexOf(q) > -1 ||
+               String(p.message || '').toLowerCase().indexOf(q) > -1;
+      }).slice(0, 8).forEach(function (p) { out.push(pinToItem(p)); });
+    }
+    return out;
+  }
+  function pinToItem(p) {
+    return {
+      x: p.x, z: p.z, label: p.title, pin: p, color: p.color,
+      sub: (SYMBOL_NAMES[p.symbol] || 'Merkki') + ' · ' + (p.author || 'Nimetön') + ' · X ' + p.x + ', Z ' + p.z
+    };
+  }
+  function recents() { return lsGet(LS_RECENT, []); }
+  function pushRecent(item) {
+    var r = recents().filter(function (o) { return !(o.x === item.x && o.z === item.z); });
+    r.unshift({ x: item.x, z: item.z, label: item.label, sub: item.sub, color: item.color });
+    lsSet(LS_RECENT, r.slice(0, 6));
+  }
+
+  function renderSug(items, emptyText) {
+    var box = $('kn-sug');
+    if (!items.length) {
+      if (!emptyText) { box.hidden = true; return; }
+      box.innerHTML = '<div class="kn-sug__empty">' + esc(emptyText) + '</div>';
+      box.hidden = false; return;
+    }
+    box.innerHTML = items.map(function (o, i) {
+      return '<button type="button" class="kn-sug__i" data-i="' + i + '">' +
+        '<span class="kn-sug__ico" style="color:' + esc(o.color || '#8fae9f') + '">' +
+          (o.coord ? '&#9678;' : (o.recent ? '&#128337;' : '&#128205;')) + '</span>' +
+        '<span class="kn-sug__txt"><strong>' + esc(o.label) + '</strong>' +
+        '<em>' + esc(o.sub || '') + '</em></span></button>';
     }).join('');
     box.hidden = false;
-    box.querySelectorAll('.nav2__sug-i').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var o = out[+b.dataset.i];
-        setPoint(slot, { x: o.x, z: o.z, label: o.label });
-        box.hidden = true;
+    box.querySelectorAll('.kn-sug__i').forEach(function (b) {
+      b.onclick = function () { pickItem(items[+b.dataset.i]); };
+    });
+  }
+
+  function pickItem(item) {
+    $('kn-sug').hidden = true;
+    pushRecent(item);
+    if (dirMode) {
+      var slot = stops.indexOf(null);
+      setStop(slot > -1 ? slot : stops.length - 1, item);
+      $('kn-q').value = '';
+      return;
+    }
+    $('kn-q').value = item.label;
+    $('kn-qx').hidden = false;
+    var p = item.pin || { id: 'coord:' + item.x + ',' + item.z, title: item.label, x: item.x, z: item.z, color: '#5ad1ff' };
+    openPlace(p);
+    view.animate({ center: toView(p.x, p.z), duration: 420, zoom: Math.min(view.getMaxZoom(), view.getZoom() + 1) });
+  }
+
+  /* ---------- paikkakortti ---------- */
+  function openPlace(p) {
+    selected = p;
+    drawPins();
+    var box = $('kn-place');
+    box.innerHTML =
+      '<button type="button" class="kn-place__x" id="kn-place-x" title="Sulje">&#10005;</button>' +
+      '<h3><span class="kn-place__dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' + esc(p.title) + '</h3>' +
+      '<p class="kn-place__meta">X ' + p.x + ', Z ' + p.z +
+        (p.author ? ' · ' + esc(p.author) : '') +
+        (p.symbol ? ' · ' + esc(SYMBOL_NAMES[p.symbol] || p.symbol) : '') +
+        (p.is_nav && p.is_target === false ? ' · navigointipiste' : '') + '</p>' +
+      (p.message ? '<p class="kn-place__msg">' + esc(p.message) + '</p>' : '') +
+      '<div class="kn-place__acts">' +
+        '<button type="button" class="kn-btn kn-btn--primary" data-a="to">&#10174; Reitti tänne</button>' +
+        '<button type="button" class="kn-btn" data-a="from">Aseta lähdöksi</button>' +
+        '<button type="button" class="kn-btn" data-a="copy">Kopioi X Z</button>' +
+      '</div>';
+    box.hidden = false;
+    var item = { x: p.x, z: p.z, label: p.title };
+    $('kn-place-x').onclick = closePlace;
+    box.querySelector('[data-a="to"]').onclick = function () {
+      openDir(); setStop(stops.length - 1, item); closePlace();
+    };
+    box.querySelector('[data-a="from"]').onclick = function () {
+      openDir(); setStop(0, item); closePlace();
+    };
+    box.querySelector('[data-a="copy"]').onclick = function () {
+      var t = p.x + ' ' + p.z, b = this;
+      var done = function () { b.textContent = 'Kopioitu'; setTimeout(function () { b.textContent = 'Kopioi X Z'; }, 1500); };
+      if (navigator.clipboard) navigator.clipboard.writeText(t).then(done, done); else done();
+    };
+  }
+  function closePlace() {
+    selected = null; drawPins();
+    $('kn-place').hidden = true;
+  }
+
+  /* ---------- kategoriasirut ---------- */
+  function renderChips() {
+    var counts = {}, navCount = 0;
+    pins.forEach(function (p) {
+      if (p.is_nav && p.is_target === false) { navCount++; return; }
+      var s = p.symbol || 'dot';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    var list = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+    var html = list.map(function (s) {
+      return '<button type="button" class="kn-chip' + (hideSymbols[s] ? '' : ' is-on') + '" data-sym="' + esc(s) + '">' +
+        esc(SYMBOL_NAMES[s] || s) + ' <span>' + counts[s] + '</span></button>';
+    }).join('');
+    if (navCount) {
+      html += '<button type="button" class="kn-chip kn-chip--nav' + (showNav ? ' is-on' : '') + '" data-nav="1">' +
+        '&#129517; Navigointi <span>' + navCount + '</span></button>';
+    }
+    var box = $('kn-chips');
+    box.innerHTML = html;
+    box.querySelectorAll('[data-sym]').forEach(function (b) {
+      b.onclick = function () {
+        var s = b.dataset.sym;
+        hideSymbols[s] = !hideSymbols[s];
+        b.classList.toggle('is-on', !hideSymbols[s]);
+        drawPins();
+      };
+    });
+    var nb = box.querySelector('[data-nav]');
+    if (nb) nb.onclick = function () { showNav = !showNav; nb.classList.toggle('is-on', showNav); drawPins(); };
+  }
+
+  /* ---------- reittipaneeli ---------- */
+  function openDir() {
+    dirMode = true;
+    $('kn-dir').hidden = false;
+    $('kn-search').classList.add('is-dir');
+    $('kn-dirbtn').classList.add('is-on');
+    $('kn-sug').hidden = true;
+    renderStops();
+  }
+  function closeDir() {
+    dirMode = false;
+    $('kn-dir').hidden = true;
+    $('kn-search').classList.remove('is-dir');
+    $('kn-dirbtn').classList.remove('is-on');
+    setPicking(null);
+  }
+
+  function setStop(i, item) {
+    if (i < 0 || i >= stops.length) return;
+    stops[i] = item ? { x: item.x, z: item.z, label: item.label } : null;
+    renderStops();
+    drawRoute(true);
+    writeHash();
+  }
+  function setPicking(i) {
+    picking = i;
+    $('kn-hint').hidden = (i === null);
+    document.querySelectorAll('.kn-stop__pick').forEach(function (b) {
+      b.classList.toggle('is-on', picking !== null && +b.dataset.i === picking);
+    });
+    if (map) map.getTargetElement().style.cursor = (i !== null) ? 'crosshair' : '';
+  }
+
+  function stopLabel(i) {
+    if (i === 0) return 'Mistä?';
+    if (i === stops.length - 1) return 'Minne?';
+    return 'Välipysähdys';
+  }
+  function renderStops() {
+    var box = $('kn-stops');
+    box.innerHTML = stops.map(function (s, i) {
+      var cls = i === 0 ? 'a' : (i === stops.length - 1 ? 'b' : 'w');
+      return '<div class="kn-stop">' +
+        '<span class="kn-stop__dot kn-stop__dot--' + cls + '"></span>' +
+        '<input type="text" class="kn-stop__in" data-i="' + i + '" autocomplete="off" placeholder="' +
+          esc(stopLabel(i)) + '" value="' + esc(s ? s.label : '') + '">' +
+        '<button type="button" class="kn-stop__pick" data-i="' + i + '" title="Valitse kartalta">&#8853;</button>' +
+        (stops.length > 2 ? '<button type="button" class="kn-stop__del" data-i="' + i + '" title="Poista">&#10005;</button>' : '') +
+      '</div>';
+    }).join('');
+
+    box.querySelectorAll('.kn-stop__in').forEach(function (inp) {
+      var i = +inp.dataset.i;
+      inp.addEventListener('input', function () {
+        var items = search(inp.value);
+        renderStopSug(inp, items, i);
       });
+      inp.addEventListener('focus', function () {
+        var items = inp.value.trim() ? search(inp.value) : recents().map(function (r) { r.recent = true; return r; });
+        renderStopSug(inp, items, i);
+      });
+      inp.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        var items = search(inp.value);
+        if (items.length) { pushRecent(items[0]); setStop(i, items[0]); }
+      });
+    });
+    box.querySelectorAll('.kn-stop__pick').forEach(function (b) {
+      b.onclick = function () { setPicking(picking === +b.dataset.i ? null : +b.dataset.i); };
+    });
+    box.querySelectorAll('.kn-stop__del').forEach(function (b) {
+      b.onclick = function () {
+        stops.splice(+b.dataset.i, 1);
+        renderStops(); drawRoute(true); writeHash();
+      };
+    });
+    $('kn-add').disabled = stops.length >= 6;
+  }
+
+  /* Ehdotuslista avautuu suoraan sen kentan alle jota kirjoitetaan. */
+  function renderStopSug(inp, items, i) {
+    document.querySelectorAll('.kn-stopsug').forEach(function (e) { e.remove(); });
+    if (!items.length) return;
+    var box = document.createElement('div');
+    box.className = 'kn-sug kn-stopsug';
+    box.innerHTML = items.map(function (o, k) {
+      return '<button type="button" class="kn-sug__i" data-k="' + k + '">' +
+        '<span class="kn-sug__ico" style="color:' + esc(o.color || '#8fae9f') + '">' +
+          (o.coord ? '&#9678;' : (o.recent ? '&#128337;' : '&#128205;')) + '</span>' +
+        '<span class="kn-sug__txt"><strong>' + esc(o.label) + '</strong><em>' + esc(o.sub || '') + '</em></span></button>';
+    }).join('');
+    inp.parentNode.appendChild(box);
+    box.querySelectorAll('.kn-sug__i').forEach(function (b) {
+      b.onclick = function () {
+        var o = items[+b.dataset.k];
+        pushRecent(o); setStop(i, o); box.remove();
+      };
     });
   }
 
   /* ---------- reitin laskenta ja piirto ---------- */
-  function update(fit) {
-    if (fit === undefined) fit = true;
-    var s = routeLayer.getSource(); s.clear();
-    ['a', 'b'].forEach(function (k) {
-      if (!pt[k]) return;
-      var f = new ol.Feature({ geometry: new ol.geom.Point(toView(pt[k].x, pt[k].z)) });
-      f.set('end', k); f.set('label', pt[k].label); f.set('pin', {}); s.addFeature(f);
-    });
-
-    var out = $('n2-out');
-    if (!pt.a || !pt.b) { out.hidden = true; writeHash(); return; }
-
-    s.addFeature(new ol.Feature({
-      geometry: new ol.geom.LineString([toView(pt.a.x, pt.a.z), toView(pt.b.x, pt.b.z)])
-    }));
-
-    var dx = pt.b.x - pt.a.x, dz = pt.b.z - pt.a.z;
-    var d = Math.sqrt(dx * dx + dz * dz);
-    var sel = localStorage.getItem(LS_MODE) || 'walk';
-
-    out.innerHTML =
-      '<div class="nav2__sum">' +
-        '<div><span>Matka linnuntietä</span><strong>' + nf(d) + ' m</strong>' +
-          '<em>' + nf(Math.abs(dx)) + ' m itä–länsi, ' + nf(Math.abs(dz)) + ' m pohjois–etelä</em></div>' +
-        '<div><span>Netherin kautta</span><strong>' + nf(d / 8) + ' m</strong>' +
-          '<em>1:8 — vaatii portaalin molemmissa päissä</em></div>' +
-      '</div>' +
-      '<div class="nav2__modes">' + MODES.map(function (m) {
-        return '<button type="button" class="nav2__mode' + (m.id === sel ? ' is-on' : '') + '" data-mode="' + m.id + '">' +
-          '<span class="nav2__mode-ico">' + m.ico + '</span>' +
-          '<span class="nav2__mode-n">' + esc(m.name) + '</span>' +
-          '<span class="nav2__mode-t">' + dur(d / m.v) + '</span>' +
-          '<span class="nav2__mode-v">' + String(m.v).replace('.', ',') + ' m/s</span>' +
-          '<span class="nav2__mode-s">Netherin kautta ' + dur(d / 8 / m.v) + '</span>' +
-        '</button>';
-      }).join('') + '</div>' +
-      '<p class="nav2__modenote">' + esc((MODES.filter(function (m) { return m.id === sel; })[0] || MODES[0]).note) + '</p>';
-    out.hidden = false;
-
-    out.querySelectorAll('.nav2__mode').forEach(function (b) {
-      b.addEventListener('click', function () { localStorage.setItem(LS_MODE, b.dataset.mode); update(false); });
-    });
-
-    writeHash();
-    if (fit) fitRoute();
+  function legs() {
+    var pts = stops.filter(function (s) { return !!s; });
+    if (pts.length < 2) return null;
+    var out = [], total = 0;
+    for (var i = 1; i < pts.length; i++) {
+      var d = dist(pts[i - 1], pts[i]);
+      out.push({ from: pts[i - 1], to: pts[i], d: d });
+      total += d;
+    }
+    return { pts: pts, legs: out, total: total };
   }
 
-  function fitRoute() {
-    if (!pt.a || !pt.b) return;
-    var e = ol.extent.boundingExtent([toView(pt.a.x, pt.a.z), toView(pt.b.x, pt.b.z)]);
-    view.fit(ol.extent.buffer(e, Math.max(ol.extent.getWidth(e), ol.extent.getHeight(e)) * 0.35 || 1 / BPD * 200),
-      { size: map.getSize(), duration: 400, maxZoom: view.getMaxZoom() });
+  function drawRoute(fit) {
+    if (!routeLayer) return;
+    var s = routeLayer.getSource(); s.clear();
+    var r = legs();
+    var pts = stops.filter(function (x) { return !!x; });
+
+    pts.forEach(function (p, i) {
+      var f = new ol.Feature({ geometry: new ol.geom.Point(toView(p.x, p.z)) });
+      f.set('style', stopStyle(i, pts.length, p.label));
+      s.addFeature(f);
+    });
+
+    if (r) {
+      s.addFeature(new ol.Feature({
+        geometry: new ol.geom.LineString(r.pts.map(function (p) { return toView(p.x, p.z); }))
+      }));
+    }
+    renderRouteInfo(r);
+    if (fit && r) fitRoute(r);
+  }
+
+  function fitRoute(r) {
+    var e = ol.extent.boundingExtent(r.pts.map(function (p) { return toView(p.x, p.z); }));
+    var pad = Math.max(ol.extent.getWidth(e), ol.extent.getHeight(e)) * 0.4 || 200 / BPD;
+    view.fit(ol.extent.buffer(e, pad), {
+      size: map.getSize(), duration: 420, maxZoom: view.getMaxZoom(),
+      padding: [70, 40, 40, dirMode && window.innerWidth > 860 ? 430 : 40]
+    });
+  }
+
+  function curMode() {
+    var id = localStorage.getItem(LS_MODE) || 'walk';
+    return MODES.filter(function (m) { return m.id === id; })[0] || MODES[0];
+  }
+
+  function renderRouteInfo(r) {
+    var modesBox = $('kn-modes'), routesBox = $('kn-routes');
+    var sel = curMode();
+
+    modesBox.innerHTML = MODES.map(function (m) {
+      return '<button type="button" class="kn-mode' + (m.id === sel.id ? ' is-on' : '') + '" data-m="' + m.id + '" title="' + esc(m.name) + '">' +
+        '<span class="kn-mode__ico">' + m.ico + '</span>' +
+        '<span class="kn-mode__t">' + (r ? dur(r.total / m.v) : '–') + '</span>' +
+      '</button>';
+    }).join('');
+    modesBox.querySelectorAll('.kn-mode').forEach(function (b) {
+      b.onclick = function () { localStorage.setItem(LS_MODE, b.dataset.m); renderRouteInfo(legs()); };
+    });
+
+    if (!r) {
+      routesBox.innerHTML = '<div class="kn-routes__empty">Valitse lähtöpaikka ja määränpää — hae nimellä, syötä X Z tai poimi piste kartalta.</div>';
+      return;
+    }
+
+    var legHtml = r.legs.map(function (l, i) {
+      return '<li><span class="kn-leg__n">' + (i + 1) + '</span>' +
+        '<span class="kn-leg__t">' + esc(l.from.label) + ' &rarr; ' + esc(l.to.label) + '</span>' +
+        '<span class="kn-leg__d">' + nf(l.d) + ' m · ' + dur(l.d / sel.v) + '</span></li>';
+    }).join('');
+
+    routesBox.innerHTML =
+      '<div class="kn-route is-best">' +
+        '<div class="kn-route__head">' +
+          '<span class="kn-route__time">' + dur(r.total / sel.v) + '</span>' +
+          '<span class="kn-route__km">' + nf(r.total) + ' m</span>' +
+        '</div>' +
+        '<div class="kn-route__sub">' + sel.ico + ' ' + esc(sel.name) + ' · linnuntietä' +
+          (r.legs.length > 1 ? ' · ' + r.legs.length + ' osuutta' : '') + '</div>' +
+      '</div>' +
+      '<div class="kn-route">' +
+        '<div class="kn-route__head">' +
+          '<span class="kn-route__time">' + dur(r.total / 8 / sel.v) + '</span>' +
+          '<span class="kn-route__km">' + nf(r.total / 8) + ' m</span>' +
+        '</div>' +
+        '<div class="kn-route__sub">&#128293; Netherin kautta 1:8 · vaatii portaalin molemmissa päissä</div>' +
+      '</div>' +
+      '<ol class="kn-legs">' + legHtml + '</ol>' +
+      '<p class="kn-modenote">' + esc(sel.note) + '</p>';
   }
 
   /* ---------- jaettava linkki ---------- */
   function writeHash() {
-    var h = '';
-    if (pt.a && pt.b) h = '#r=' + pt.a.x + ',' + pt.a.z + ';' + pt.b.x + ',' + pt.b.z;
+    var pts = stops.filter(function (s) { return !!s; });
+    var h = pts.length >= 2 ? '#r=' + pts.map(function (p) { return p.x + ',' + p.z; }).join(';') : '';
     if (location.hash !== h) history.replaceState(null, '', location.pathname + location.search + h);
   }
   function readHash() {
-    var m = /^#r=(-?\d+),(-?\d+);(-?\d+),(-?\d+)$/.exec(location.hash || '');
+    var m = /^#r=(.+)$/.exec(location.hash || '');
     if (!m) return;
-    setPoint('a', { x: +m[1], z: +m[2], label: m[1] + ' ' + m[2] });
-    setPoint('b', { x: +m[3], z: +m[4], label: m[3] + ' ' + m[4] });
+    var pts = m[1].split(';').map(function (s) {
+      var a = s.split(',');
+      if (a.length !== 2) return null;
+      var x = parseInt(a[0], 10), z = parseInt(a[1], 10);
+      if (isNaN(x) || isNaN(z)) return null;
+      var near = pins.filter(function (p) { return p.x === x && p.z === z; })[0];
+      return { x: x, z: z, label: near ? near.title : (x + ' ' + z) };
+    }).filter(Boolean);
+    if (pts.length < 2) return;
+    stops = pts.slice(0, 6);
+    openDir();
+    drawRoute(true);
   }
 
   /* ---------- kayttoliittyman kytkennat ---------- */
-  ['a', 'b'].forEach(function (slot) {
-    var i = $('n2-' + slot);
-    i.addEventListener('input', function () { suggest(slot); });
-    i.addEventListener('focus', function () { suggest(slot); });
-    i.addEventListener('keydown', function (e) {
-      if (e.key !== 'Enter') return;
-      var c = parseCoords(i.value);
-      var hit = pins.filter(function (p) { return String(p.title || '').toLowerCase() === i.value.trim().toLowerCase(); })[0];
-      if (hit) setPoint(slot, { x: hit.x, z: hit.z, label: hit.title });
-      else if (c) setPoint(slot, { x: c.x, z: c.z, label: c.x + ' ' + c.z });
-      $('n2-sug-' + slot).hidden = true;
-    });
+  var q = $('kn-q');
+  q.addEventListener('input', function () {
+    $('kn-qx').hidden = !q.value;
+    renderSug(search(q.value), q.value ? 'Ei osumia' : '');
   });
+  q.addEventListener('focus', function () {
+    if (q.value.trim()) { renderSug(search(q.value)); return; }
+    var r = recents().map(function (o) { o.recent = true; return o; });
+    renderSug(r);
+  });
+  q.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var items = search(q.value);
+    if (items.length) pickItem(items[0]);
+  });
+  $('kn-qx').onclick = function () {
+    q.value = ''; this.hidden = true; $('kn-sug').hidden = true; closePlace(); q.focus();
+  };
+  $('kn-dirbtn').onclick = function () { dirMode ? closeDir() : openDir(); };
+  $('kn-add').onclick = function () {
+    if (stops.length >= 6) return;
+    stops.splice(stops.length - 1, 0, null);
+    renderStops();
+  };
+  $('kn-swap').onclick = function () {
+    stops.reverse();
+    renderStops(); drawRoute(true); writeHash();
+  };
+  $('kn-clear').onclick = function () {
+    stops = [null, null]; renderStops(); drawRoute(false); writeHash();
+  };
+  $('kn-copy').onclick = function () {
+    var b = this; writeHash();
+    var done = function () { b.textContent = 'Kopioitu!'; setTimeout(function () { b.textContent = 'Kopioi linkki'; }, 1600); };
+    if (navigator.clipboard) navigator.clipboard.writeText(location.href).then(done, done); else done();
+  };
+
   document.addEventListener('click', function (e) {
-    if (!e.target.closest('.nav2__field')) document.querySelectorAll('.nav2__sug').forEach(function (b) { b.hidden = true; });
+    if (!e.target.closest('.kn-search') && !e.target.closest('#kn-sug')) $('kn-sug').hidden = true;
+    if (!e.target.closest('.kn-stop')) document.querySelectorAll('.kn-stopsug').forEach(function (x) { x.remove(); });
+    if (!e.target.closest('.kn-layers')) $('kn-layers-menu').hidden = true;
   });
-  document.querySelectorAll('.nav2__pick').forEach(function (b) {
-    b.addEventListener('click', function () { setPicking(picking === b.dataset.pick ? null : b.dataset.pick); });
-  });
-  $('n2-swap').addEventListener('click', function () {
-    var t = pt.a; pt.a = pt.b; pt.b = t;
-    $('n2-a').value = pt.a ? pt.a.label : ''; $('n2-b').value = pt.b ? pt.b.label : '';
-    update();
-  });
-  $('n2-clear').addEventListener('click', function () {
-    pt.a = pt.b = null; $('n2-a').value = ''; $('n2-b').value = ''; setPicking(null); update();
-  });
-  $('n2-share').addEventListener('click', function () {
-    var btn = this;
-    writeHash();
-    var url = location.href;
-    var done = function () { btn.textContent = 'Kopioitu!'; setTimeout(function () { btn.textContent = 'Kopioi linkki'; }, 1600); };
-    if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, done); else done();
-  });
-  document.querySelectorAll('.nav2__map').forEach(function (b) {
-    b.addEventListener('click', function () {
-      document.querySelectorAll('.nav2__map').forEach(function (x) { x.classList.remove('is-on'); });
+
+  /* Tasot-valikko */
+  $('kn-layers-btn').onclick = function (e) {
+    e.stopPropagation();
+    var m = $('kn-layers-menu');
+    m.hidden = !m.hidden;
+  };
+  $('kn-layers-menu').querySelectorAll('[data-map]').forEach(function (b) {
+    b.onclick = function () {
+      $('kn-layers-menu').querySelectorAll('[data-map]').forEach(function (x) { x.classList.remove('is-on'); });
       b.classList.add('is-on');
+      $('kn-layers-menu').hidden = true;
       loadMeta(b.dataset.map).then(buildMap).catch(function () {});
-    });
-  });
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    if (picking) { setPicking(null); return; }
-    knClose();
+    };
   });
 
-  /* ---------- KasaNavi: koko naytön navigointinakyma ----------
-     Ei omaa karttaa eika omaa logiikkaa: samat DOM-elementit (paneeli,
-     karttalaatikko ja tulokset) siirretaan koko naytön kehykseen ja
-     takaisin, jolloin haku, reitti ja kuuntelijat sailyvat sellaisenaan.
-     Paikat merkitaan kommenttisolmuilla, jotta ne palautuvat tasmalleen
-     omille paikoilleen sivulla. */
-  var knBox = null, knMarks = [];
+  /* zoom */
+  $('kn-zin').onclick  = function () { view.animate({ zoom: view.getZoom() + 1, duration: 220 }); };
+  $('kn-zout').onclick = function () { view.animate({ zoom: view.getZoom() - 1, duration: 220 }); };
 
-  function knMove(node, into) {
-    var ph = document.createComment('kspk-kn');
-    node.parentNode.insertBefore(ph, node);
-    knMarks.push({ node: node, ph: ph });
-    into.appendChild(node);
-  }
-  function knRestore() {
-    knMarks.forEach(function (m) {
-      if (m.ph.parentNode) m.ph.parentNode.insertBefore(m.node, m.ph);
-      if (m.ph.parentNode) m.ph.parentNode.removeChild(m.ph);
-    });
-    knMarks = [];
-  }
-  function knSize() {
+  /* kokonaytto */
+  function sizeSoon() {
     if (!map) return;
     map.updateSize();
     requestAnimationFrame(function () { map.updateSize(); });
-    setTimeout(function () { map.updateSize(); if (pt.a && pt.b) fitRoute(); }, 320);
+    setTimeout(function () { map.updateSize(); }, 320);
   }
-
-  function knOpen() {
-    if (knBox) return;
-    knBox = document.createElement('div');
-    knBox.className = 'kn';
-    knBox.innerHTML =
-      '<div class="kn__map" id="kn-mapslot"></div>' +
-      '<div class="kn__ui">' +
-        '<div class="kn__bar">' +
-          '<span class="kn__brand">&#129517; KasaNavi</span>' +
-          '<span class="kn__beta">beta</span>' +
-          '<button type="button" class="kn__close" id="kn-close" title="Sulje (Esc)">&#10005;</button>' +
-        '</div>' +
-        '<div class="kn__panel" id="kn-panelslot"></div>' +
-        '<div class="kn__outwrap" id="kn-outslot"></div>' +
-      '</div>';
-    document.body.appendChild(knBox);
-    knMove(document.querySelector('.nav2__mapwrap'), knBox.querySelector('#kn-mapslot'));
-    knMove(document.querySelector('.nav2__panel'),   knBox.querySelector('#kn-panelslot'));
-    knMove($('n2-out'),                          knBox.querySelector('#kn-outslot'));
-    document.body.classList.add('kn-on');
-
-    /* Koko naytön nakymassa kaytetaan suurta karttaa, kuten napin
-       kuvauksessa luvataan. Vaihto rakentaa kartan uudelleen, joten
-       koko paivitetaan vasta sen jalkeen. */
-    /* Paneeli on jo siirretty kehykseen, joten nappi haetaan koko
-       dokumentista eika rootin sisalta. */
-    var big = document.querySelector('.nav2__map[data-map="5k"]');
-    if (big && !big.classList.contains('is-on')) {
-      big.click();
-      setTimeout(knSize, 400);
-    } else {
-      knSize();
-    }
-    document.getElementById('kn-close').onclick = knClose;
+  function fullOn() {
+    if (app.classList.contains('is-full')) return;
+    app.classList.add('is-full');
+    document.body.classList.add('kn-lock');
+    $('kn-full').innerHTML = '&#10005;';
+    $('kn-full').title = 'Sulje koko näyttö (Esc)';
+    var big = $('kn-layers-menu').querySelector('[data-map="5k"]');
+    if (big && !big.classList.contains('is-on')) { big.click(); setTimeout(sizeSoon, 420); }
+    else sizeSoon();
   }
-
-  function knClose() {
-    if (!knBox) return;
-    knRestore();
-    knBox.parentNode.removeChild(knBox);
-    knBox = null;
-    document.body.classList.remove('kn-on');
-    knSize();
+  function fullOff() {
+    if (!app.classList.contains('is-full')) return;
+    app.classList.remove('is-full');
+    document.body.classList.remove('kn-lock');
+    $('kn-full').innerHTML = '&#9974;';
+    $('kn-full').title = 'Koko näyttö';
+    sizeSoon();
   }
+  $('kn-full').onclick = function () { app.classList.contains('is-full') ? fullOff() : fullOn(); };
+  var openBtn = $('kn-full-open');
+  if (openBtn) openBtn.onclick = function () { fullOn(); app.scrollIntoView({ block: 'start' }); };
 
-  var knBtn = document.getElementById('kn-open');
-  if (knBtn) knBtn.onclick = knOpen;
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (picking !== null) { setPicking(null); return; }
+    if (!$('kn-place').hidden) { closePlace(); return; }
+    fullOff();
+  });
+  window.addEventListener('resize', sizeSoon);
 
   /* ---------- kaynnistys ---------- */
+  renderStops();
+  renderRouteInfo(null);
+
   loadMeta('paiva').then(function (meta) {
     buildMap(meta);
     return loadPins();
   }).then(function (rows) {
     pins = (rows || []).filter(function (p) { return typeof p.x === 'number' && typeof p.z === 'number'; });
+    renderChips();
     drawPins();
     readHash();
   }).catch(function (err) {
-    $('n2-map').innerHTML = '<div class="nav2__err">Karttaa ei saatu ladattua. ' + esc(err && err.message || '') + '</div>';
+    $('n2-map').innerHTML = '<div class="kn-err">Karttaa ei saatu ladattua. ' + esc((err && err.message) || '') + '</div>';
   });
 })();

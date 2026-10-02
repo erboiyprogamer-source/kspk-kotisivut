@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Reittihaku | K-S-P-K</title>
-<meta name="description" content="K-S-P-K:n oma navigointipalvelu: hae kaksi kohdetta kartalta, piirrä reitti ja katso matka sekä arvioitu aika eri kulkutavoilla.">
-<meta property="og:title" content="Reittihaku | K-S-P-K">
-<meta property="og:description" content="Hae kohteet, piirrä reitti ja katso matka-aika kävellen, hevosella, veneellä tai elytralla.">
+<title>KasaNavi | K-S-P-K</title>
+<meta name="description" content="KasaNavi — K-S-P-K:n oma navigointipalvelu: hae kohteita kartalta, suunnittele reitti välipysähdyksineen ja katso matka-aika eri kulkutavoilla.">
+<meta property="og:title" content="KasaNavi | K-S-P-K">
+<meta property="og:description" content="Hae kohteet, suunnittele reitti ja katso matka-aika kävellen, hevosella, veneellä tai elytralla.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#060a08">
 <meta name="color-scheme" content="dark">
@@ -25,16 +25,16 @@
 <section class="page-head">
   <div class="wrap">
     <span class="eyebrow" data-reveal>Navigointi</span>
-    <h1 data-reveal>Reitti<span class="grad-text">haku</span></h1>
-    <p class="lead" data-reveal>Valitse lähtöpaikka ja määränpää — kartan merkeistä, koordinaateilla tai klikkaamalla karttaa. Saat matkan linnuntietä ja arvioidun ajan jokaisella kulkutavalla.</p>
+    <h1 data-reveal>Kasa<span class="grad-text">Navi</span></h1>
+    <p class="lead" data-reveal>Hae kohteita kartalta, suunnittele reitti välipysähdyksineen ja katso arvioitu matka-aika jokaisella kulkutavalla.</p>
 
     <div class="kn-cta" data-reveal>
-      <button type="button" class="btn btn--solid" id="kn-open">&#129517; Avaa KasaNavi</button>
+      <button type="button" class="btn btn--solid" id="kn-full-open">&#129517; Avaa KasaNavi</button>
       <p class="kn-cta__note">
-        Avaa koko näytön navigointinäkymän: suuri kartta täyttää ruudun ja haku- sekä
-        reittipaneeli kelluu sen päällä, kuten tutuilla karttapalveluilla.
-        <strong>Beta</strong> — toiminnot ja ulkoasu elävät vielä, ja reitti piirretään
-        toistaiseksi suorana viivana. Poistu Esc-näppäimellä.
+        Avaa koko näytön navigointinäkymän: suuri kartta täyttää ruudun ja haku-, reitti- sekä
+        karttatyökalut kelluvat sen päällä samaan tapaan kuin tutuissa karttapalveluissa.
+        <strong>Beta</strong> — reitti piirretään toistaiseksi suorana viivana pysähdysten välille.
+        Poistu Esc-näppäimellä.
       </p>
     </div>
   </div>
@@ -42,45 +42,68 @@
 
 <section style="padding-top:0">
   <div class="wrap">
-    <div class="nav2" id="nav2">
 
-      <div class="nav2__panel">
-        <div class="nav2__field" data-point="a">
-          <span class="nav2__dot nav2__dot--a"></span>
-          <input type="text" id="n2-a" autocomplete="off" placeholder="Mistä? Merkin nimi tai X Z">
-          <button type="button" class="nav2__pick" data-pick="a" title="Valitse klikkaamalla karttaa">⊕</button>
-          <div class="nav2__sug" id="n2-sug-a" hidden></div>
+    <!-- Koko sovellus on yhdessa laatikossa: kokonaytto on pelkka
+         luokanvaihto, joten mitaan ei siirrella DOMissa. -->
+    <div class="kn-app" id="kn-app">
+      <div class="kn-map" id="n2-map"></div>
+
+      <div class="kn-ui">
+
+        <!-- vasen ylakulma: haku / reitti -->
+        <div class="kn-left">
+          <div class="kn-search" id="kn-search">
+            <span class="kn-search__ico">&#128269;</span>
+            <input id="kn-q" type="text" autocomplete="off" placeholder="Hae KasaNavista">
+            <button type="button" class="kn-search__clear" id="kn-qx" title="Tyhjennä" hidden>&#10005;</button>
+            <button type="button" class="kn-dirbtn" id="kn-dirbtn" title="Reittiohjeet">&#10174;</button>
+          </div>
+
+          <div class="kn-chips" id="kn-chips"></div>
+
+          <div class="kn-sug" id="kn-sug" hidden></div>
+
+          <div class="kn-dir" id="kn-dir" hidden>
+            <div class="kn-modes" id="kn-modes"></div>
+            <div class="kn-stops" id="kn-stops"></div>
+            <div class="kn-dir__row">
+              <button type="button" class="kn-add" id="kn-add">&#43; Lisää määränpää</button>
+              <button type="button" class="kn-swap" id="kn-swap" title="Vaihda päät">&#8645;</button>
+            </div>
+            <div class="kn-routes" id="kn-routes"></div>
+            <div class="kn-dir__foot">
+              <button type="button" class="kn-link" id="kn-copy">Kopioi linkki</button>
+              <button type="button" class="kn-link" id="kn-clear">Tyhjennä reitti</button>
+            </div>
+          </div>
         </div>
 
-        <button type="button" class="nav2__swap" id="n2-swap" title="Vaihda päät">⇅</button>
+        <!-- paikkakortti -->
+        <div class="kn-place" id="kn-place" hidden></div>
 
-        <div class="nav2__field" data-point="b">
-          <span class="nav2__dot nav2__dot--b"></span>
-          <input type="text" id="n2-b" autocomplete="off" placeholder="Minne? Merkin nimi tai X Z">
-          <button type="button" class="nav2__pick" data-pick="b" title="Valitse klikkaamalla karttaa">⊕</button>
-          <div class="nav2__sug" id="n2-sug-b" hidden></div>
+        <!-- oikea ylakulma -->
+        <button type="button" class="kn-fab kn-fab--full" id="kn-full" title="Koko näyttö">&#9974;</button>
+
+        <!-- alaosa -->
+        <div class="kn-layers" id="kn-layers">
+          <button type="button" class="kn-layers__btn" id="kn-layers-btn">&#128506; Tasot</button>
+          <div class="kn-layers__menu" id="kn-layers-menu" hidden>
+            <button type="button" data-map="paiva" class="is-on">Päiväkartta</button>
+            <button type="button" data-map="yo">Yökartta</button>
+            <button type="button" data-map="5k">Suuri kartta</button>
+          </div>
         </div>
 
-        <div class="nav2__row">
-          <button type="button" class="btn btn--ghost btn--sm" id="n2-clear">Tyhjennä</button>
-          <button type="button" class="btn btn--ghost btn--sm" id="n2-share">Kopioi linkki</button>
-          <span class="nav2__maps">
-            <button type="button" class="nav2__map is-on" data-map="paiva">Päivä</button>
-            <button type="button" class="nav2__map" data-map="yo">Yö</button>
-            <button type="button" class="nav2__map" data-map="5k">Suuri</button>
-          </span>
+        <div class="kn-coord" id="kn-coord">X –, Z –</div>
+        <div class="kn-zoom">
+          <button type="button" id="kn-zin" title="Lähennä">+</button>
+          <button type="button" id="kn-zout" title="Loitonna">&#8722;</button>
         </div>
+        <div class="kn-hint" id="kn-hint" hidden>Klikkaa kartalta piste</div>
       </div>
-
-      <div class="nav2__mapwrap">
-        <div id="n2-map" class="nav2__map-el"></div>
-        <div class="nav2__coord" id="n2-coord">X –, Z –</div>
-        <div class="nav2__hint" id="n2-hint" hidden>Klikkaa kartalta piste</div>
-      </div>
-
-      <div class="nav2__out" id="n2-out" hidden></div>
-      <p class="nav2__note">Matka lasketaan linnuntietä (suoraa viivaa) vaakatasossa. Maastoa, vesistöjä tai korkeuseroja ei oteta huomioon, joten kävely- ja hevosajat ovat alarajoja — elytra ja vene vastaavat todellisuutta tarkimmin.</p>
     </div>
+
+    <p class="kn-note">Matka lasketaan linnuntietä pysähdysten välillä vaakatasossa. Maastoa, vesistöjä tai korkeuseroja ei oteta huomioon, joten kävely- ja hevosajat ovat alarajoja — elytra ja vene vastaavat todellisuutta tarkimmin.</p>
   </div>
 </section>
 </main>

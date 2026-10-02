@@ -1012,133 +1012,204 @@ pre,code{overflow-wrap:anywhere;word-break:break-word}
 .status-updated{font-size:.8rem;color:var(--muted);margin-top:8px}
 .status-err{font-size:.85rem;color:#ff8f8f;margin-top:8px}
 
-/* ---------- Reittihaku (reitti.html) ---------- */
-.nav2{display:grid;gap:16px}
-.nav2__panel{
-  display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;
-  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-  padding:14px;backdrop-filter:blur(10px)
-}
-.nav2__field{position:relative;display:flex;align-items:center;gap:8px;
-  background:var(--bg-3);border:1px solid var(--line);border-radius:var(--radius-sm);padding:0 10px}
-.nav2__field input{
-  flex:1;min-width:0;background:none;border:0;color:var(--text);
-  font:500 15px/1 var(--font-body);padding:13px 0;outline:none}
-.nav2__field input::placeholder{color:var(--dim)}
-.nav2__field:focus-within{border-color:var(--line-strong);box-shadow:var(--glow)}
-.nav2__dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px rgba(0,0,0,.45)}
-.nav2__dot--a{background:var(--green)}
-.nav2__dot--b{background:var(--gold)}
-.nav2__pick{
-  flex:0 0 auto;width:34px;height:34px;border-radius:9px;border:1px solid var(--line);
-  background:transparent;color:var(--muted);font-size:17px;cursor:pointer;transition:.2s var(--ease)}
-.nav2__pick:hover{color:var(--text);border-color:var(--line-strong)}
-.nav2__pick.is-on{background:var(--green);color:#04150c;border-color:var(--green)}
-.nav2__swap{
-  width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--bg-3);
-  color:var(--muted);font-size:18px;cursor:pointer;transition:.25s var(--ease)}
-.nav2__swap:hover{color:var(--green);transform:rotate(180deg);border-color:var(--line-strong)}
-.nav2__row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.nav2__maps{margin-left:auto;display:inline-flex;gap:4px;background:var(--bg-3);
-  border:1px solid var(--line);border-radius:999px;padding:3px}
-.nav2__map{
-  border:0;background:none;color:var(--muted);font:600 13px var(--font-body);
-  padding:7px 15px;border-radius:999px;cursor:pointer;transition:.2s var(--ease)}
-.nav2__map.is-on{background:var(--green);color:#04150c}
-
-.nav2__sug{
-  position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;max-height:300px;overflow:auto;
-  background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
-  box-shadow:var(--shadow);padding:5px}
-.nav2__sug-i{
-  display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:0;background:none;
-  color:var(--text);padding:9px 10px;border-radius:8px;cursor:pointer;font:inherit}
-.nav2__sug-i:hover{background:rgba(62,240,138,.1)}
-.nav2__sug-i strong{display:block;font-size:14px;font-weight:600}
-.nav2__sug-i em{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:1px}
-.nav2__sug-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
-.nav2__sug-empty{padding:12px;color:var(--muted);font-size:14px;text-align:center}
-
-.nav2__mapwrap{position:relative;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-.nav2__map-el{width:100%;height:clamp(340px,58vh,620px);background:#070d0a}
-.nav2__map-el .ol-mouse-position{display:none}
-.nav2__coord,.nav2__hint{
-  position:absolute;z-index:5;background:rgba(6,10,8,.84);border:1px solid var(--line);
-  color:var(--text);font:600 12px/1 var(--font-body);padding:8px 11px;border-radius:9px;pointer-events:none}
-.nav2__coord{right:10px;bottom:10px}
-.nav2__hint{left:50%;top:12px;transform:translateX(-50%);border-color:var(--line-strong);color:var(--green)}
-.nav2__err{display:grid;place-items:center;height:100%;color:var(--muted);padding:24px;text-align:center}
-
-.nav2__sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px}
-.nav2__sum>div{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px 16px}
-.nav2__sum span{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.nav2__sum strong{display:block;font:700 26px/1.2 var(--font-body);color:var(--green);margin-top:4px}
-.nav2__sum em{display:block;font-style:normal;font-size:12.5px;color:var(--dim);margin-top:3px}
-
-.nav2__modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:10px}
-.nav2__mode{
-  display:grid;gap:2px;text-align:left;cursor:pointer;padding:13px 14px;
-  background:var(--bg-3);border:1px solid var(--line);border-radius:var(--radius-sm);
-  color:var(--text);font:inherit;transition:.2s var(--ease)}
-.nav2__mode:hover{border-color:var(--line-strong);transform:translateY(-2px)}
-.nav2__mode.is-on{border-color:var(--green);box-shadow:var(--glow)}
-.nav2__mode-ico{font-size:19px}
-.nav2__mode-n{font-size:13px;color:var(--muted)}
-.nav2__mode-t{font:700 20px/1.2 var(--font-body);color:var(--text)}
-.nav2__mode.is-on .nav2__mode-t{color:var(--green)}
-.nav2__mode-v,.nav2__mode-s{font-size:11.5px;color:var(--dim)}
-.nav2__modenote{margin:12px 2px 0;color:var(--muted);font-size:13.5px}
-.nav2__note{margin:0;color:var(--dim);font-size:13px}
-
-@media (max-width:760px){
-  .nav2__panel{grid-template-columns:1fr}
-  .nav2__swap{justify-self:center;transform:rotate(90deg)}
-  .nav2__swap:hover{transform:rotate(270deg)}
-  .nav2__maps{margin-left:0;width:100%;justify-content:center}
-}
-
-/* ---------- KasaNavi: koko näytön navigointinäkymä ---------- */
-.kn-cta{display:grid;gap:10px;justify-items:start;margin-top:22px;max-width:640px}
+/* =====================================================================
+   KasaNavi (reitti.html) — karttapalvelumainen navigointinäkymä
+   ===================================================================== */
+.kn-cta{display:grid;gap:10px;justify-items:start;margin-top:22px;max-width:660px}
 .kn-cta__note{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
 .kn-cta__note strong{color:var(--gold);font-weight:600}
+.kn-note{margin:12px 2px 0;color:var(--dim);font-size:13px}
 
-body.kn-on{overflow:hidden}
-.kn{position:fixed;inset:0;z-index:9999;background:#070d0a;animation:knIn .25s var(--ease-out)}
-@keyframes knIn{from{opacity:0}to{opacity:1}}
-.kn__map{position:absolute;inset:0}
-.kn__map .nav2__mapwrap{height:100%;border:0;border-radius:0}
-.kn__map .nav2__map-el{height:100%}
-.kn__map .nav2__coord{right:14px;bottom:14px}
+/* --- sovelluslaatikko --- */
+.kn-app{
+  position:relative;width:100%;height:clamp(420px,66vh,720px);
+  border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#070d0a}
+.kn-app.is-full{
+  position:fixed;inset:0;z-index:9999;height:100vh;height:100dvh;border:0;border-radius:0}
+body.kn-lock{overflow:hidden}
+.kn-map{position:absolute;inset:0}
+.kn-err{display:grid;place-items:center;height:100%;color:var(--muted);padding:24px;text-align:center}
 
-.kn__ui{
-  position:absolute;top:0;left:0;z-index:5;display:flex;flex-direction:column;gap:10px;
-  width:min(400px,100%);max-height:100%;padding:14px;pointer-events:none}
-.kn__ui > *{pointer-events:auto}
-.kn__bar{
-  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;
-  background:var(--panel-solid);border:1px solid var(--line);box-shadow:var(--shadow)}
-.kn__brand{font-weight:600;font-size:15px}
-.kn__beta{
-  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
-  background:rgba(255,201,77,.15);color:var(--gold);border:1px solid rgba(255,201,77,.4)}
-.kn__close{
-  margin-left:auto;width:32px;height:32px;border-radius:9px;cursor:pointer;
-  background:transparent;border:1px solid var(--line);color:var(--muted);font-size:14px}
-.kn__close:hover{color:var(--text);border-color:var(--line-strong)}
+.kn-ui{position:absolute;inset:0;pointer-events:none;z-index:4}
+.kn-ui > *{pointer-events:auto}
 
-.kn__panel .nav2__panel{grid-template-columns:1fr;box-shadow:var(--shadow);background:var(--panel-solid)}
-.kn__panel .nav2__swap{justify-self:center;transform:rotate(90deg)}
-.kn__panel .nav2__swap:hover{transform:rotate(270deg)}
-.kn__panel .nav2__maps{margin-left:0;width:100%;justify-content:center}
-.kn__outwrap{overflow:auto;max-height:52vh;border-radius:14px}
-.kn__outwrap .nav2__out{
-  padding:13px;border-radius:14px;background:var(--panel-solid);
-  border:1px solid var(--line);box-shadow:var(--shadow)}
-.kn__outwrap .nav2__modes{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-.kn__outwrap .nav2__sum{grid-template-columns:1fr}
-.kn__outwrap .nav2__sum strong{font-size:22px}
+/* --- vasen sarake: haku ja reitti --- */
+.kn-left{
+  position:absolute;top:12px;left:12px;width:min(390px,calc(100% - 24px));
+  display:flex;flex-direction:column;gap:9px;max-height:calc(100% - 24px)}
+.kn-search{
+  display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:999px;
+  background:var(--panel-solid);border:1px solid var(--line);box-shadow:var(--shadow);flex:0 0 auto}
+.kn-search__ico{font-size:14px;opacity:.8;flex:0 0 auto}
+.kn-search input{
+  flex:1;min-width:0;background:none;border:0;color:var(--text);
+  font:500 15px/1 var(--font-body);padding:11px 0;outline:none}
+.kn-search input::placeholder{color:var(--dim)}
+.kn-search:focus-within{border-color:var(--line-strong);box-shadow:var(--glow)}
+.kn-search__clear{
+  width:28px;height:28px;border-radius:50%;border:0;background:none;color:var(--muted);
+  cursor:pointer;font-size:12px;flex:0 0 auto}
+.kn-search__clear:hover{color:var(--text)}
+.kn-dirbtn{
+  width:40px;height:40px;border-radius:50%;flex:0 0 auto;cursor:pointer;font-size:17px;
+  background:linear-gradient(140deg,var(--green),var(--green-2));color:#04150c;border:0;
+  transition:transform .2s var(--ease),filter .2s var(--ease)}
+.kn-dirbtn:hover{transform:scale(1.06)}
+.kn-dirbtn.is-on{filter:brightness(1.15)}
+.kn-search.is-dir{opacity:.9}
 
-@media (max-width:760px){
-  .kn__ui{width:100%}
-  .kn__outwrap{max-height:38vh}
+/* --- kategoriasirut --- */
+.kn-chips{display:flex;gap:7px;overflow-x:auto;padding:1px;scrollbar-width:none;flex:0 0 auto}
+.kn-chips::-webkit-scrollbar{display:none}
+.kn-chip{
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;
+  padding:8px 14px;border-radius:999px;font:500 12.5px var(--font-body);
+  background:var(--panel-solid);border:1px solid var(--line);color:var(--muted);
+  box-shadow:0 10px 24px -20px rgba(0,0,0,.9);transition:.18s var(--ease)}
+.kn-chip span{font-size:11px;opacity:.65}
+.kn-chip.is-on{color:var(--text);border-color:var(--line-strong);background:rgba(62,240,138,.14)}
+.kn-chip--nav.is-on{background:rgba(90,169,255,.16);border-color:rgba(90,169,255,.45)}
+
+/* --- ehdotukset --- */
+.kn-sug{
+  background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow);padding:5px;overflow:auto;max-height:320px;flex:0 1 auto}
+.kn-sug__i{
+  display:flex;gap:11px;align-items:center;width:100%;text-align:left;border:0;background:none;
+  color:var(--text);padding:9px 11px;border-radius:10px;cursor:pointer;font:inherit}
+.kn-sug__i:hover{background:rgba(62,240,138,.1)}
+.kn-sug__ico{font-size:14px;flex:0 0 auto;width:18px;text-align:center}
+.kn-sug__txt{min-width:0}
+.kn-sug__txt strong{display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kn-sug__txt em{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:1px}
+.kn-sug__empty{padding:12px;color:var(--muted);font-size:13.5px;text-align:center}
+.kn-stopsug{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:30}
+
+/* --- reittipaneeli --- */
+.kn-dir{
+  background:var(--panel-solid);border:1px solid var(--line);border-radius:16px;
+  box-shadow:var(--shadow);padding:10px;display:flex;flex-direction:column;gap:9px;
+  overflow:auto;flex:1 1 auto;min-height:0}
+.kn-modes{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;
+  border-bottom:1px solid var(--line);padding-bottom:7px}
+.kn-mode{
+  display:grid;gap:3px;justify-items:center;padding:7px 2px;border-radius:10px;cursor:pointer;
+  background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font:inherit}
+.kn-mode:hover{background:rgba(255,255,255,.05)}
+.kn-mode.is-on{color:var(--green);border-bottom-color:var(--green);background:rgba(62,240,138,.08)}
+.kn-mode__ico{font-size:16px;line-height:1}
+.kn-mode__t{font-size:11px;font-weight:600}
+
+.kn-stops{display:grid;gap:7px}
+.kn-stop{position:relative;display:flex;align-items:center;gap:9px;
+  background:var(--bg-3);border:1px solid var(--line);border-radius:11px;padding:0 8px 0 12px}
+.kn-stop:focus-within{border-color:var(--line-strong)}
+.kn-stop__dot{width:10px;height:10px;flex:0 0 auto;border-radius:50%;box-shadow:0 0 0 3px rgba(0,0,0,.4)}
+.kn-stop__dot--a{background:var(--green)}
+.kn-stop__dot--b{background:var(--gold);border-radius:50% 50% 50% 0;transform:rotate(-45deg)}
+.kn-stop__dot--w{background:var(--sky)}
+.kn-stop__in{flex:1;min-width:0;background:none;border:0;color:var(--text);
+  font:500 14px/1 var(--font-body);padding:11px 0;outline:none}
+.kn-stop__in::placeholder{color:var(--dim)}
+.kn-stop__pick,.kn-stop__del{
+  width:30px;height:30px;flex:0 0 auto;border-radius:8px;border:1px solid transparent;
+  background:none;color:var(--muted);cursor:pointer;font-size:14px}
+.kn-stop__pick:hover,.kn-stop__del:hover{color:var(--text);border-color:var(--line)}
+.kn-stop__pick.is-on{background:var(--green);color:#04150c}
+
+.kn-dir__row{display:flex;align-items:center;gap:8px}
+.kn-add{
+  flex:1;text-align:left;background:none;border:1px dashed var(--line);color:var(--muted);
+  padding:9px 12px;border-radius:11px;cursor:pointer;font:inherit;font-size:13px}
+.kn-add:hover:not(:disabled){color:var(--text);border-color:var(--line-strong)}
+.kn-add:disabled{opacity:.4;cursor:default}
+.kn-swap{
+  width:36px;height:36px;flex:0 0 auto;border-radius:50%;border:1px solid var(--line);
+  background:var(--bg-3);color:var(--muted);cursor:pointer;font-size:15px;transition:.25s var(--ease)}
+.kn-swap:hover{color:var(--green);transform:rotate(180deg);border-color:var(--line-strong)}
+
+.kn-routes{display:grid;gap:8px}
+.kn-routes__empty{color:var(--muted);font-size:13px;padding:8px 2px;line-height:1.5}
+.kn-route{padding:11px 13px;border-radius:12px;background:var(--bg-3);border:1px solid var(--line)}
+.kn-route.is-best{border-color:var(--line-strong);background:rgba(62,240,138,.08)}
+.kn-route__head{display:flex;align-items:baseline;gap:9px}
+.kn-route__time{font:700 19px/1.2 var(--font-body);color:var(--text)}
+.kn-route.is-best .kn-route__time{color:var(--green)}
+.kn-route__km{font-size:13px;color:var(--muted)}
+.kn-route__sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+.kn-legs{list-style:none;margin:2px 0 0;padding:0;display:grid;gap:6px}
+.kn-legs li{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted)}
+.kn-leg__n{
+  width:19px;height:19px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;
+  background:rgba(90,169,255,.18);color:var(--sky);font-size:11px;font-weight:600}
+.kn-leg__t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.kn-leg__d{flex:0 0 auto}
+.kn-modenote{margin:2px 0 0;font-size:12.5px;color:var(--dim)}
+.kn-dir__foot{display:flex;gap:14px;border-top:1px solid var(--line);padding-top:8px}
+.kn-link{background:none;border:0;color:var(--green);cursor:pointer;font:inherit;font-size:13px;padding:0}
+.kn-link:hover{text-decoration:underline}
+
+/* --- paikkakortti --- */
+.kn-place{
+  position:absolute;left:12px;bottom:12px;width:min(360px,calc(100% - 24px));
+  background:var(--panel-solid);border:1px solid var(--line);border-radius:16px;
+  box-shadow:var(--shadow);padding:15px 16px;animation:knUp .25s var(--ease-out)}
+@keyframes knUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.kn-place h3{margin:0 26px 4px 0;font-size:1.05rem;display:flex;align-items:center;gap:9px}
+.kn-place__dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
+.kn-place__meta{margin:0;font-size:12.5px;color:var(--muted)}
+.kn-place__msg{margin:8px 0 0;font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+.kn-place__acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.kn-place__x{
+  position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;
+  border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;font-size:12px}
+.kn-place__x:hover{color:var(--text)}
+.kn-btn{
+  border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);
+  padding:8px 13px;border-radius:10px;cursor:pointer;font:inherit;font-size:.82rem}
+.kn-btn:hover{border-color:var(--line-strong)}
+.kn-btn--primary{background:var(--green);color:#04150c;border-color:var(--green);font-weight:600}
+
+/* --- kelluvat napit --- */
+.kn-fab{
+  position:absolute;width:40px;height:40px;border-radius:11px;cursor:pointer;font-size:15px;
+  background:var(--panel-solid);border:1px solid var(--line);color:var(--text);box-shadow:var(--shadow)}
+.kn-fab:hover{border-color:var(--line-strong)}
+.kn-fab--full{top:12px;right:12px}
+.kn-zoom{position:absolute;right:12px;bottom:12px;display:grid;
+  border-radius:11px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow)}
+.kn-zoom button{
+  width:40px;height:38px;border:0;background:var(--panel-solid);color:var(--text);
+  cursor:pointer;font-size:17px;line-height:1}
+.kn-zoom button:hover{background:rgba(62,240,138,.14)}
+.kn-zoom button + button{border-top:1px solid var(--line)}
+.kn-coord{
+  position:absolute;right:62px;bottom:12px;background:rgba(6,10,8,.84);border:1px solid var(--line);
+  color:var(--text);font:600 12px/1 var(--font-body);padding:9px 11px;border-radius:9px;pointer-events:none}
+.kn-hint{
+  position:absolute;left:50%;top:14px;transform:translateX(-50%);background:rgba(6,10,8,.9);
+  border:1px solid var(--line-strong);color:var(--green);font:600 12.5px/1 var(--font-body);
+  padding:10px 14px;border-radius:999px;pointer-events:none}
+
+.kn-layers{position:absolute;left:12px;bottom:12px}
+.kn-app:has(.kn-place:not([hidden])) .kn-layers{display:none}
+.kn-layers__btn{
+  display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;cursor:pointer;
+  background:var(--panel-solid);border:1px solid var(--line);color:var(--text);
+  font:500 12.5px var(--font-body);box-shadow:var(--shadow)}
+.kn-layers__btn:hover{border-color:var(--line-strong)}
+.kn-layers__menu{
+  position:absolute;left:0;bottom:calc(100% + 7px);display:grid;gap:2px;padding:5px;
+  background:var(--panel-solid);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.kn-layers__menu button{
+  text-align:left;white-space:nowrap;border:0;background:none;color:var(--muted);
+  padding:9px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px}
+.kn-layers__menu button:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.kn-layers__menu button.is-on{background:rgba(62,240,138,.14);color:var(--green);font-weight:600}
+
+@media (max-width:860px){
+  .kn-left{width:calc(100% - 24px)}
+  .kn-dir{max-height:46vh}
+  .kn-place{width:calc(100% - 24px)}
+  .kn-coord{display:none}
 }
