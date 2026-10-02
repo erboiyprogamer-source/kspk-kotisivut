@@ -255,6 +255,9 @@
     /* Zoomin muutos ratkaisee nakyvatko merkit, joten piirto uusitaan
        kun liike on loppunut. */
     map.on('moveend', function () { drawPins(); checkCoverage(); });
+    /* Kartan vaihto ei laukaise moveend-tapahtumaa, joten kattavuus
+       tarkistetaan myos heti rakentamisen jalkeen. */
+    setTimeout(checkCoverage, 150);
 
     /* Suurella kartalla on vain yksi zoom-taso, joten lahentaminen ei
        tee mitaan. Jos kayttaja rullaa sita kohti, siirrytaan tarkkaan
