@@ -779,25 +779,16 @@
        paatya askeleen liian lahelle ja paatepiste jaada paneelin alle
        tai ruudun ulkopuolelle. Tarkistetaan lopputulos pikseleina ja
        loitonnetaan tarvittaessa askel kerrallaan. */
-    setTimeout(function () { ensureVisible(r, padding, 3); zoomInIfRoom(r, padding, 2); }, 480);
+    setTimeout(function () { refineFit(r, padding, 0); }, 480);
   }
 
   /* Zoom-tasoja on vain muutama, joten sovitus jaa helposti askeleen
-     liian kauas. Kokeillaan lahentaa niin kauan kuin kaikki pisteet
-     pysyvat vapaalla alueella. */
-  function zoomInIfRoom(r, padding, tries) {
-    if (!map || !tries || !view) return;
-    var z = view.getZoom();
-    if (z >= view.getMaxZoom()) return;
-    view.setZoom(z + 1);
-    centerOnRoute(r, padding);
-    setTimeout(function () {
-      if (!fitsInside(r, padding)) { view.setZoom(z); centerOnRoute(r, padding); return; }
-      zoomInIfRoom(r, padding, tries - 1);
-    }, 60);
-  }
+     liian kauas tai liian lahelle. Hienosaadetaan kokonaisilla tasoilla:
+     ensin loitonnetaan kunnes kaikki pisteet mahtuvat vapaalle alueelle,
+     sitten kokeillaan askel lahemmas niin kauan kuin ne yha mahtuvat.
+     Vain kokonaiset tasot, koska tiilia on olemassa vain niille. */
   function fitsInside(r, padding) {
-    var size = map.getSize();
+    var size = map && map.getSize();
     if (!size) return false;
     return r.pts.every(function (p) {
       var px = map.getPixelFromCoordinate(toView(p.x, p.z));
@@ -815,31 +806,28 @@
       c[1] + ((padding[0] - padding[2]) / 2) * res
     ]);
   }
-
-  function ensureVisible(r, padding, tries) {
-    if (!map || !tries) return;
-    var size = map.getSize();
-    if (!size) return;
-    var okAll = r.pts.every(function (p) {
-      var px = map.getPixelFromCoordinate(toView(p.x, p.z));
-      if (!px) return false;
-      return px[0] > padding[3] && px[0] < size[0] - padding[1] &&
-             px[1] > padding[0] && px[1] < size[1] - padding[2];
-    });
-    if (okAll) return;
-    var z = view.getZoom();
-    if (z <= view.getMinZoom()) return;
-    view.setZoom(z - 1);
-    /* Keskitetaan reitti vapaan alueen keskelle: siirretaan keskipistetta
-       paneelin varaaman tilan verran. */
-    var e2 = ol.extent.boundingExtent(r.pts.map(function (p) { return toView(p.x, p.z); }));
-    var c = ol.extent.getCenter(e2);
-    var res = view.getResolution();
-    view.setCenter([
-      c[0] - ((padding[3] - padding[1]) / 2) * res,
-      c[1] + ((padding[0] - padding[2]) / 2) * res
-    ]);
-    setTimeout(function () { ensureVisible(r, padding, tries - 1); }, 60);
+  function refineFit(r, padding, guard) {
+    if (!map || !view || guard > 6) return;
+    var z = Math.round(view.getZoom());
+    if (view.getZoom() !== z) view.setZoom(z);
+    centerOnRoute(r, padding);
+    setTimeout(function () {
+      if (!fitsInside(r, padding)) {
+        if (z > view.getMinZoom()) {
+          view.setZoom(z - 1);
+          centerOnRoute(r, padding);
+          setTimeout(function () { refineFit(r, padding, guard + 1); }, 60);
+        }
+        return;
+      }
+      if (z >= view.getMaxZoom()) return;
+      view.setZoom(z + 1);
+      centerOnRoute(r, padding);
+      setTimeout(function () {
+        if (fitsInside(r, padding)) refineFit(r, padding, guard + 1);
+        else { view.setZoom(z); centerOnRoute(r, padding); }
+      }, 60);
+    }, 60);
   }
 
   function curMode() {
