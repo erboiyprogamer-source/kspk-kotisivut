@@ -303,6 +303,7 @@
       + '.pl-navh{margin:0 0 4px;font-size:1.05rem}'
       + '.pl-navnote{margin:0 0 14px;font-size:.84rem;color:var(--muted,#9db3a6)}'
       + '.pl-card.is-nav{border-style:dashed}'
+      + '.pl-card--flash{border-color:var(--green,#3ef08a);box-shadow:0 0 0 3px rgba(62,240,138,.25)}'
       + '.pl-tag--nav{background:rgba(90,169,255,.16);color:#9ccbff;border-color:rgba(90,169,255,.4)}';
     document.head.appendChild(s);
   })();
@@ -757,6 +758,35 @@
     setTimeout(runQueue, 600);
   }
 
+  /* KasaNavin "Avaa karttasivulla" ohjaa tanne osoitteella
+     kartta.html#pin=<id>: avataan lista, korostetaan merkki ja
+     kerrotaan kartalle etta se saa keskittaa siihen. Kartta on
+     iframessa ja latautuu omaan tahtiinsa, joten viesti toistetaan
+     muutaman kerran. */
+  function focusFromHash() {
+    var m = /^#pin=(.+)$/.exec(location.hash || '');
+    if (!m) return;
+    var id = decodeURIComponent(m[1]);
+    if (!listOpened) $toggle.click();
+    [0, 1200, 2600, 4500].forEach(function (ms) {
+      setTimeout(function () { tellMap({ kspk: 'pins-focus', id: id }); }, ms);
+    });
+    setTimeout(function () {
+      var card = null;
+      rows.forEach(function (p, i) { if (String(p.id) === String(id)) card = i; });
+      var el = $grid.children[card];
+      if (el) {
+        el.classList.add('is-open', 'pl-card--flash');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        hydrate(el);
+        setTimeout(function () { el.classList.remove('pl-card--flash'); }, 2600);
+      } else {
+        var mf = document.querySelector('.map-frame');
+        if (mf) mf.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 900);
+  }
+
   function plainLoad() {
     return rest(CFG.table + '?select=*&order=created_at.desc')
       .then(function (r) { return r.ok ? r.json() : []; });
@@ -792,6 +822,7 @@
     }).catch(function () {});
   }
 
+  var hashHandled = false;
   function load() {
     /* Piilotetut merkit eivat tule API:sta lapi — dev hakee ne
        pins_all-funktiolla, joka tarkistaa koodin palvelimella. */
@@ -864,6 +895,10 @@
     } catch (e) { /* realtime ei kaynnistynyt — pollaus riittaa varajarjestelmaksi */ }
   })();
 
-  load();
+  load().then(function () {
+    if (hashHandled) return;
+    hashHandled = true;
+    focusFromHash();
+  });
   setInterval(load, 45000);
 })();

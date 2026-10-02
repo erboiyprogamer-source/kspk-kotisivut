@@ -173,6 +173,7 @@
   var hideCats = {};               // kategoriasiruilla piilotetut
   var showNav = true;
   var selected = null;             // paikkakortissa nakyva merkki
+  var placeToken = 0;              // estaa vanhentunutta kuvahakua kirjoittamasta uuteen korttiin
 
   /* ---------- kartta ---------- */
   function buildMap(meta) {
@@ -239,6 +240,10 @@
       pendingView = null;
       drawPins(); drawRoute(false);
     }
+
+    /* Zoomin muutos ratkaisee nakyvatko merkit, joten piirto uusitaan
+       kun liike on loppunut. */
+    map.on('moveend', function () { drawPins(); });
 
     map.on('pointermove', function (e) {
       var b = toBlock(e.coordinate);
@@ -312,13 +317,29 @@
     if (p.is_nav && p.is_target === false) return showNav;
     return !hideCats[catOf(p)];
   }
+  /* Merkit piirtyvat vasta riittavan lahella — samaan tapaan kuin
+     karttapalveluissa, joissa liikkeet ja kohteet ilmestyvat vasta kun
+     karttaa on zoomattu tarpeeksi. Raja on kolmanneksi lahin taso.
+     Valittu merkki ja reitin pysahdykset nakyvat aina. */
+  function pinsZoomOk() {
+    if (!view) return false;
+    var mz = view.getMaxZoom();
+    if (mz <= 0) return false;                 // suuri kartta: vain yksi taso
+    return view.getZoom() >= Math.max(0, mz - 2);
+  }
   function drawPins() {
     if (!pinLayer) return;
-    var s = pinLayer.getSource(); s.clear();
-    pins.filter(pinVisible).forEach(function (p) {
+    var src = pinLayer.getSource(); src.clear();
+    var ok = pinsZoomOk();
+    pins.forEach(function (p) {
+      if (!pinVisible(p)) return;
+      var isSel = selected && selected.id === p.id;
+      if (!ok && !isSel) return;
       var f = new ol.Feature({ geometry: new ol.geom.Point(toView(p.x, p.z)) });
-      f.set('pin', p); s.addFeature(f);
+      f.set('pin', p); src.addFeature(f);
     });
+    var note = $('kn-zoomnote');
+    if (note) note.hidden = ok || !pins.length;
   }
 
   /* ---------- haku ---------- */
@@ -397,26 +418,43 @@
     selected = p;
     drawPins();
     var box = $('kn-place');
+    var real = p.id && String(p.id).indexOf('coord') !== 0;
+
     box.innerHTML =
       '<button type="button" class="kn-place__x" id="kn-place-x" title="Sulje">&#10005;</button>' +
-      '<h3><span class="kn-place__dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' + esc(p.title) + '</h3>' +
-      '<p class="kn-place__meta">' +
-        esc(catName(p)) + ' · ' +
-        'X ' + p.x + ', Z ' + p.z +
-        (p.author ? ' · ' + esc(p.author) : '') +
-        (p.is_nav && p.is_target === false ? ' · navigointipiste' : '') + '</p>' +
-      (p.message ? '<p class="kn-place__msg">' + esc(p.message) + '</p>' : '') +
-      '<div class="kn-acts">' +
-        '<button type="button" class="kn-act kn-act--primary" data-a="to">' +
-          '<span class="kn-act__ico">&#10174;</span><span class="kn-act__t">Reittiohjeet</span></button>' +
-        '<button type="button" class="kn-act" data-a="from">' +
-          '<span class="kn-act__ico">&#9679;</span><span class="kn-act__t">Lähtöpiste</span></button>' +
-        '<button type="button" class="kn-act" data-a="copy">' +
-          '<span class="kn-act__ico">&#128203;</span><span class="kn-act__t">Kopioi X Z</span></button>' +
-        '<button type="button" class="kn-act" data-a="share">' +
-          '<span class="kn-act__ico">&#128279;</span><span class="kn-act__t">Jaa</span></button>' +
+      (real ? '<div class="kn-hero" id="kn-hero" hidden></div>' : '') +
+      '<div class="kn-place__body">' +
+        '<h3><span class="kn-place__dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' + esc(p.title) + '</h3>' +
+        '<p class="kn-place__meta">' + esc(catName(p)) +
+          (p.is_nav && p.is_target === false ? ' · navigointipiste' : '') +
+          ' · X ' + p.x + ', Z ' + p.z + '</p>' +
+
+        '<div class="kn-acts">' +
+          '<button type="button" class="kn-act kn-act--primary" data-a="to">' +
+            '<span class="kn-act__ico">&#10174;</span><span class="kn-act__t">Reittiohjeet</span></button>' +
+          '<button type="button" class="kn-act" data-a="from">' +
+            '<span class="kn-act__ico">&#9679;</span><span class="kn-act__t">Lähtöpiste</span></button>' +
+          '<button type="button" class="kn-act" data-a="copy">' +
+            '<span class="kn-act__ico">&#128203;</span><span class="kn-act__t">Kopioi X Z</span></button>' +
+          '<button type="button" class="kn-act" data-a="share">' +
+            '<span class="kn-act__ico">&#128279;</span><span class="kn-act__t">Jaa</span></button>' +
+        '</div>' +
+
+        (p.message ? '<p class="kn-place__msg">' + esc(p.message) + '</p>' : '') +
+
+        '<div class="kn-rows">' +
+          '<div><span class="kn-rows__i">&#128205;</span><span>X ' + p.x + ', Z ' + p.z + '</span></div>' +
+          '<div><span class="kn-rows__i">&#127991;</span><span>' + esc(catName(p)) + '</span></div>' +
+          (p.symbol ? '<div><span class="kn-rows__i">&#9734;</span><span>' + esc(SYMBOL_NAMES[p.symbol] || p.symbol) + '</span></div>' : '') +
+          '<div><span class="kn-rows__i">&#128100;</span><span>' + esc(p.author || 'Nimetön') + '</span></div>' +
+        '</div>' +
+
+        (real ? '<div class="kn-imgs" id="kn-imgs"></div>' : '') +
+        (real ? '<button type="button" class="kn-btn kn-btn--wide" id="kn-openmap">&#128506; Avaa karttasivulla</button>' : '') +
       '</div>';
+
     box.hidden = false;
+    box.scrollTop = 0;
     var item = { x: p.x, z: p.z, label: p.title };
     $('kn-place-x').onclick = closePlace;
     applyAutoMap([{ x: p.x, z: p.z }], false);
@@ -426,43 +464,42 @@
        auki ehdotuksineen. */
     box.querySelector('[data-a="to"]').onclick = function () { routeTo(item, 'end'); };
     box.querySelector('[data-a="from"]').onclick = function () { routeTo(item, 'start'); };
-
     box.querySelector('[data-a="copy"]').onclick = function () {
       copyText(p.x + ' ' + p.z, this, 'Kopioi X Z');
     };
     box.querySelector('[data-a="share"]').onclick = function () {
-      var url = location.origin + location.pathname + '#p=' + p.x + ',' + p.z;
-      copyText(url, this, 'Jaa');
+      copyText(location.origin + location.pathname + '#p=' + p.x + ',' + p.z, this, 'Jaa');
     };
-  }
-
-  function copyText(txt, btn, orig) {
-    var t = btn.querySelector('.kn-act__t') || btn;
-    var done = function () { t.textContent = 'Kopioitu'; setTimeout(function () { t.textContent = orig; }, 1600); };
-    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, done); else done();
-  }
-
-  /* Avaa reittiohjeet paikkakortista: toinen paa taytetaan ja kursori
-     viedaan tyhjaan kenttaan, jonka ehdotuslista aukeaa heti. */
-  function routeTo(item, which) {
-    closePlace();
-    openDir();
-    if (which === 'start') { stops[0] = item; if (!stops[stops.length - 1]) stops[stops.length - 1] = null; }
-    else { stops[stops.length - 1] = item; }
-    renderStops();
-    drawRoute(true);
-    writeHash();
-    var empty = stops.indexOf(null);
-    if (empty > -1) {
-      /* Viive: tama kutsutaan klikkauksesta, ja sama klikkaus kayy viela
-         dokumenttitason kuuntelijassa joka sulkee ehdotuslistat. */
-      setTimeout(function () {
-        var inp = document.querySelector('.kn-stop__in[data-i="' + empty + '"]');
-        if (!inp) return;
-        inp.focus();
-        inp.dispatchEvent(new Event('focus'));
-      }, 0);
+    if (real) {
+      $('kn-openmap').onclick = function () {
+        window.open('kartta.html#pin=' + encodeURIComponent(p.id), '_blank', 'noopener');
+      };
+      loadPlaceImages(p);
     }
+  }
+
+  /* Merkin kuvat haetaan vasta kun kohde avataan, ei koko listalle
+     etukateen. Ensimmainen kuva nousee kortin ylaosaan isoksi
+     kansikuvaksi ja loput pikkukuviksi; molemmat avaavat ison version. */
+  function loadPlaceImages(p) {
+    var token = ++placeToken;
+    fetch(SUPA.url + '/rest/v1/pin_images?select=*&pin_id=eq.' + encodeURIComponent(p.id) + '&order=created_at.asc', {
+      headers: { apikey: SUPA.key, Authorization: 'Bearer ' + SUPA.key }
+    }).then(function (r) { return r.ok ? r.json() : []; })
+      .catch(function () { return []; })
+      .then(function (imgs) {
+        if (token !== placeToken) return;          // kortti ehti vaihtua
+        var hero = $('kn-hero'), strip = $('kn-imgs');
+        if (!hero || !strip || !imgs.length) return;
+        hero.innerHTML = '<a href="' + esc(imgs[0].full_url) + '" target="_blank" rel="noopener">' +
+          '<img src="' + esc(imgs[0].thumb_url) + '" alt="' + esc(p.title) + '"></a>' +
+          (imgs.length > 1 ? '<span class="kn-hero__n">' + imgs.length + ' kuvaa</span>' : '');
+        hero.hidden = false;
+        strip.innerHTML = imgs.slice(1).map(function (im) {
+          return '<a class="kn-img" href="' + esc(im.full_url) + '" target="_blank" rel="noopener" title="Avaa kuva">' +
+            '<img src="' + esc(im.thumb_url) + '" alt="Merkin kuva" loading="lazy"></a>';
+        }).join('');
+      });
   }
 
   function closePlace() {
