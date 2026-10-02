@@ -582,6 +582,7 @@
 
   function renderSug(items, emptyText) {
     var box = $('kn-sug');
+    setTimeout(placeCollapseBtn, 0);
     if (!items.length) {
       if (!emptyText) { box.hidden = true; return; }
       box.innerHTML = '<div class="kn-sug__empty">' + esc(emptyText) + '</div>';
@@ -660,6 +661,7 @@
 
     box.hidden = false;
     box.scrollTop = 0;
+    placeCollapseBtn();
     var item = { x: p.x, z: p.z, label: p.title };
     $('kn-place-x').onclick = closePlace;
 
@@ -737,6 +739,7 @@
   function closePlace() {
     selected = null; drawPins();
     $('kn-place').hidden = true;
+    placeCollapseBtn();
   }
 
   /* ---------- kategoriasirut ---------- */
@@ -783,6 +786,7 @@
     $('kn-dirbtn').classList.add('is-on');
     $('kn-sug').hidden = true;
     renderStops();
+    placeCollapseBtn();
   }
   function closeDir() {
     dirMode = false;
@@ -790,6 +794,7 @@
     $('kn-search').classList.remove('is-dir');
     $('kn-dirbtn').classList.remove('is-on');
     setPicking(null);
+    placeCollapseBtn();
   }
 
   function setStop(i, item) {
@@ -1218,6 +1223,7 @@
   document.addEventListener('click', function (e) {
     if (!e.target.closest('.kn-search') && !e.target.closest('#kn-sug')) {
       $('kn-sug').hidden = true;
+      placeCollapseBtn();
     }
     if (!e.target.closest('.kn-stop')) document.querySelectorAll('.kn-stopsug').forEach(function (x) { x.remove(); });
     if (!e.target.closest('.kn-layers')) $('kn-layers-menu').hidden = true;
@@ -1231,42 +1237,11 @@
     });
   })();
   function updateBaseBtn() {
-    var i = MAP_ORDER.indexOf(curMap);
-    var next = MAP_ORDER[(i + 1) % MAP_ORDER.length];
-    var img = $('kn-base-img'), lab = $('kn-base-label');
-    if (!img || !lab) return;
-    img.src = MAPS + MAP_INFO[next].thumb;
-    lab.textContent = MAP_INFO[next].name;
-    $('kn-layers-btn').dataset.next = next;
+    /* Napin taustakuvana on nykyisen kartan tiili, mutta teksti on aina
+       "Tasot" tasosymbolin kanssa — kuten karttapalveluissa. */
+    var img = $('kn-base-img');
+    if (img) img.src = MAPS + MAP_INFO[curMap].thumb;
   }
-
-  /* Koordinaattiruudukko: 128 lohkon valein, piirretaan vektoritasona. */
-  function buildGrid() {
-    if (!map) return;
-    if (gridLayer) { map.removeLayer(gridLayer); gridLayer = null; }
-    if (!optGrid) return;
-    var src = new ol.source.Vector();
-    var step = 128, lim = 4000;
-    for (var v = -lim; v <= lim; v += step) {
-      src.addFeature(new ol.Feature({ geometry: new ol.geom.LineString([toView(v, -lim), toView(v, lim)]) }));
-      src.addFeature(new ol.Feature({ geometry: new ol.geom.LineString([toView(-lim, v), toView(lim, v)]) }));
-    }
-    gridLayer = new ol.layer.Vector({
-      source: src, zIndex: 1,
-      style: new ol.style.Style({ stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,.18)', width: 1 }) })
-    });
-    map.addLayer(gridLayer);
-  }
-
-  function bindOpt(id, set) {
-    var el = $(id);
-    if (!el) return;
-    el.onchange = function () { set(el.checked); };
-  }
-  bindOpt('kn-opt-pins',  function (v) { optPins = v; drawPins(); });
-  bindOpt('kn-opt-names', function (v) { optNames = v; if (pinLayer) pinLayer.changed(); });
-  bindOpt('kn-opt-nav',   function (v) { showNav = v; drawPins(); renderChips(); });
-  bindOpt('kn-opt-grid',  function (v) { optGrid = v; buildGrid(); });
 
   /* Tasot-valikko */
   $('kn-layers-btn').onclick = function (e) {
@@ -1281,26 +1256,6 @@
     var over = mr.right - (er.right - 12);
     if (over > 0) m.style.transform = 'translateX(' + (-Math.round(over)) + 'px)';
   };
-  /* Pitkä painallus ei ole tarpeen: valikosta valitaan taso, mutta
-     kaksoisklikkaus vaihtaa suoraan kuvassa nakyvaan tasoon. */
-  $('kn-layers-btn').ondblclick = function (e) {
-    e.stopPropagation();
-    $('kn-layers-menu').hidden = true;
-    var b = $('kn-layers-menu').querySelector('[data-map="' + this.dataset.next + '"]');
-    if (b) b.click();
-  };
-  $('kn-layers-menu').querySelectorAll('[data-map]').forEach(function (b) {
-    b.onclick = function () {
-      $('kn-layers-menu').querySelectorAll('[data-map]').forEach(function (x) { x.classList.remove('is-on'); });
-      b.classList.add('is-on');
-      $('kn-layers-menu').hidden = true;
-      autoMapOn = false;   // kayttajan oma valinta voittaa automatiikan
-      loadMeta(b.dataset.map).then(function (meta) {
-        buildMap(meta); drawPins(); drawRoute(false);
-      }).catch(function () {});
-    };
-  });
-
   /* zoom */
   $('kn-zin').onclick  = function () { view.animate({ zoom: view.getZoom() + 1, duration: 220 }); };
   $('kn-zout').onclick = function () { view.animate({ zoom: view.getZoom() - 1, duration: 220 }); };
@@ -1465,18 +1420,33 @@
 
   /* --- paneelin piilotus: kartta jaa kokonaan nakyviin ja reitti
      keskitetaan uudelleen vapautuneeseen tilaan --- */
+  /* Paneeli on "auki" vasta kun jotain on oikeasti auki: ehdotuslista,
+     kohteen tiedot, reittiohjeet tai navigointi. Pelkka hakupalkki ei
+     ole paneeli, joten sivulle saavuttaessa kartta on kokonaan vapaa:
+     piilotusnuoli ei nay ja Tasot-nappi on ruudun reunassa. */
+  function panelOpen() {
+    if (app.classList.contains('is-collapsed')) return false;
+    return ['kn-sug', 'kn-place', 'kn-dir', 'kn-nav'].some(function (id) {
+      var el = $(id);
+      return el && !el.hidden;
+    });
+  }
+
   function placeCollapseBtn() {
     var btn = $('kn-collapse');
     var layers = $('kn-layers');
     var collapsed = app.classList.contains('is-collapsed');
+    var open = panelOpen();
     var left = document.querySelector('.kn-left');
-    var w = (!collapsed && left && getComputedStyle(left).display !== 'none')
-      ? Math.round(left.getBoundingClientRect().width) : 0;
-    /* Nuoli ja Tasot-nappi siirtyvat paneelin mukana, jottei mikaan jaa
-       sen alle. Piilotettuna paneelista jaa nakyviin vain kapea kahva. */
+    var w = open && left ? Math.round(left.getBoundingClientRect().width) : 0;
+
+    /* Nuoli nakyy vain kun paneelia on jotain piilotettavaa — tai kun se
+       on jo piilotettu, jotta sen saa takaisin. */
+    btn.hidden = !open && !collapsed;
     btn.style.left = (w ? w + 20 : 12) + 'px';
     btn.innerHTML = collapsed ? '&#8250;' : '&#8249;';
     btn.title = collapsed ? 'Näytä paneeli' : 'Piilota paneeli';
+
     /* Kapealla ruudulla paneeli vie lahes koko leveyden, jolloin
        Tasot-nappi jaa reunaan — muuten se siirtyy paneelin viereen. */
     if (layers) {
@@ -1541,7 +1511,7 @@
   renderStops();
   renderRouteInfo(null);
   placeCollapseBtn();
-  setInterval(placeCollapseBtn, 1200);   // paneelin leveys elaa sisallon mukana
+  setInterval(placeCollapseBtn, 800);    // paneelin leveys elaa sisallon mukana
 
   loadMeta('5k').then(function (meta) {
     buildMap(meta);
