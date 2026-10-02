@@ -1189,7 +1189,7 @@
     return m + ':' + ('0' + ss).slice(-2);
   }
 
-  var navStart = 0, navTimer = null, navTotalSec = 0;
+  var navStart = 0, navTimer = null, navTotalSec = 0, autoEndCancelled = false;
 
   /* Navigointinakyma korvaa reittipaneelin kokonaan: reitti pystyviivana,
      jokainen osuus omana vaiheenaan matkoineen, kestoineen ja arvioituine
@@ -1255,8 +1255,10 @@
 
     box.hidden = false;
 
-    $('kn-nav-x').onclick = askStop;
-    $('kn-nav-stop').onclick = askStop;
+    /* Napista lopetus on tahallinen toimenpide, joten sita ei varmisteta
+       — vahvistus kysytaan vain Esc-nappaimelta. */
+    $('kn-nav-x').onclick = stopNav;
+    $('kn-nav-stop').onclick = stopNav;
     $('kn-nav-copy').onclick = function () {
       var b = this, url = routeUrl();
       var done = function () { b.textContent = 'Kopioitu!'; setTimeout(function () { b.textContent = 'Kopioi linkki'; }, 1600); };
@@ -1286,8 +1288,17 @@
     if (left <= 0) {
       var over = -left;
       var sub = document.querySelector('.kn-count__sub');
-      if (sub) sub.innerHTML = 'perillä · navigointi päättyy ' + Math.max(0, Math.ceil(15 - over)) + ' s kuluttua';
-      if (over >= 15) { stopNav(); openDir(); }
+      if (sub && !autoEndCancelled) {
+        sub.innerHTML = 'perillä · navigointi päättyy ' + Math.max(0, Math.ceil(15 - over)) + ' s kuluttua ' +
+          '<button type="button" class="kn-link" id="kn-cancel-end">Jatka navigointia</button>';
+        var cb = $('kn-cancel-end');
+        if (cb) cb.onclick = function () {
+          autoEndCancelled = true;
+          var s2 = document.querySelector('.kn-count__sub');
+          if (s2) s2.innerHTML = 'perillä · navigointi jatkuu kunnes lopetat sen';
+        };
+      }
+      if (over >= 15 && !autoEndCancelled) { stopNav(); openDir(); }
     }
   }
 
@@ -1296,6 +1307,7 @@
     navigating = true;
     navStart = Date.now();
     navDist = 0;
+    autoEndCancelled = false;
     app.classList.add('is-nav');
     $('kn-dir').hidden = true;
     renderNav();
