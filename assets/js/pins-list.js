@@ -69,13 +69,16 @@
         modeColors: v.modeColors === 'only' ? 'only' : 'hide',
         modeSymbols: v.modeSymbols === 'only' ? 'only' : 'hide',
         modeAuthors: v.modeAuthors === 'only' ? 'only' : 'hide',
+        /* Nayttaako lista merkin oman symbolin varipallon tilalla */
+        listIcons: v.listIcons !== false,
         scale: (typeof v.scale === 'number' && v.scale > 0) ? v.scale : 1
       };
     } catch (e) {
       return {
         hideColors: [], hideSymbols: [], hideAuthors: [],
         onlyColors: [], onlySymbols: [], onlyAuthors: [],
-        modeColors: 'hide', modeSymbols: 'hide', modeAuthors: 'hide', scale: 1
+        modeColors: 'hide', modeSymbols: 'hide', modeAuthors: 'hide',
+        listIcons: true, scale: 1
       };
     }
   }
@@ -211,18 +214,22 @@
       + '.pl-f input{padding:9px 12px;border-radius:10px;min-width:150px;'
       + 'background:rgba(8,14,11,.7);border:1px solid var(--line,rgba(255,255,255,.12));color:var(--text,#eaf3ee);font:inherit;font-size:.9rem}'
       + '.pl-f input:focus{outline:none;border-color:var(--green,#3ef08a)}'
-      + '.pl-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}'
-      + '.pl-card{padding:15px 17px;border-radius:14px;background:rgba(8,14,11,.6);'
-      + 'border:1px solid var(--line,rgba(255,255,255,.12));display:grid;gap:9px;align-content:start}'
+      + '.pl-grid{display:grid;gap:9px;grid-template-columns:repeat(auto-fill,minmax(228px,1fr))}'
+      + '.pl-card{padding:11px 13px;border-radius:12px;background:rgba(8,14,11,.6);'
+      + 'border:1px solid var(--line,rgba(255,255,255,.12));display:grid;gap:6px;align-content:start}'
       + '.pl-card.is-hidden{opacity:.55}'
-      + '.pl-t{display:flex;align-items:center;gap:9px;font-weight:600;font-size:1rem}'
+      + '.pl-t{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.92rem}'
+      + '.pl-sym{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;flex:0 0 auto;'
+      + 'filter:drop-shadow(0 0 1px rgba(0,0,0,.85))}'
+      + '.pl-sym svg{width:15px;height:15px;display:block}'
+      + '.pl-sym--g{font-size:14px;line-height:1}'
       + '.pl-dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 2px rgba(0,0,0,.5)}'
-      + '.pl-msg{margin:0;white-space:pre-wrap;word-break:break-word;font-size:.92rem;color:var(--text,#eaf3ee)}'
+      + '.pl-msg{margin:0;white-space:pre-wrap;word-break:break-word;font-size:.85rem;color:var(--text,#eaf3ee)}'
       + '.pl-img{width:100%;max-height:140px;object-fit:cover;border-radius:10px;'
       + 'border:1px solid var(--line,rgba(255,255,255,.12));display:block}'
       + '.pl-imggrid{display:flex;flex-wrap:wrap;gap:8px}'
-      + '.pl-imgitem{display:flex;flex-direction:column;align-items:center;gap:5px;width:78px}'
-      + '.pl-imgitem img{width:78px;height:78px;object-fit:cover;border-radius:10px;'
+      + '.pl-imgitem{display:flex;flex-direction:column;align-items:center;gap:5px;width:64px}'
+      + '.pl-imgitem img{width:64px;height:64px;object-fit:cover;border-radius:10px;'
       + 'border:1px solid var(--line,rgba(255,255,255,.12));display:block}'
       + '.pl-imgitem .pl-b{padding:4px 8px;font-size:.72rem}'
       + '.pl-meta{font-size:.8rem;color:var(--muted,#9db3a6);display:flex;flex-wrap:wrap;gap:10px}'
@@ -279,7 +286,9 @@
       + 'box-shadow:0 18px 40px -26px rgba(0,0,0,.95)}'
       + '.pl-t{cursor:pointer}'
       + '.pl-tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
-      + '.pl-sub{display:flex;flex-wrap:wrap;gap:10px;font-size:.8rem;color:var(--muted,#9db3a6);align-items:center}'
+      + '.pl-sub{display:flex;flex-wrap:wrap;gap:8px;font-size:.75rem;color:var(--muted,#9db3a6);align-items:center}'
+      + '.pl-fswitch{display:inline-flex;align-items:center;gap:7px;font-size:.8rem;color:var(--muted,#9db3a6);'
+      + 'align-self:center;cursor:pointer}'
       + '.pl-imgn{color:#ffd166;font-weight:600}'
       /* Yksiriviseen grid-kaareen perustuva korkeusanimaatio: sisalto on
          yhdessa lapsessa, jolloin gap ei jata korkeutta suljettuna. */
@@ -327,6 +336,7 @@
         fgroup('Authors', 'PELAAJA', 'pl-f-authors') +
         fgroup('Colors',  'VARI',    'pl-f-colors') +
         fgroup('Symbols', 'SYMBOLI', 'pl-f-symbols') +
+        '<label class="pl-fswitch"><input type="checkbox" id="pl-f-icons" checked> Nayta symbolit listassa</label>' +
         '<button class="pl-b pl-fclear" id="pl-f-reset">Nollaa oma nakyma</button>' +
       '</div>' +
       '<div class="pl-grid" id="pl-grid"></div>' +
@@ -364,6 +374,7 @@
   var $fColors  = document.getElementById('pl-f-colors');
   var $fSymbols = document.getElementById('pl-f-symbols');
   var $fReset   = document.getElementById('pl-f-reset');
+  var $fIcons   = document.getElementById('pl-f-icons');
   var $toggle   = document.getElementById('pl-toggle');
   var $toggleN  = document.getElementById('pl-toggle-n');
   var $toggleLabel = document.getElementById('pl-toggle-label');
@@ -483,14 +494,24 @@
     });
   }
 
+  $fIcons.checked = getView().listIcons;
+  $fIcons.onchange = function () {
+    var cur = getView();
+    cur.listIcons = $fIcons.checked;
+    setView(cur);
+    render();
+  };
+
   $fReset.onclick = function () {
     var v = getView();
     setView({
       hideColors: [], hideSymbols: [], hideAuthors: [],
       onlyColors: [], onlySymbols: [], onlyAuthors: [],
       modeColors: 'hide', modeSymbols: 'hide', modeAuthors: 'hide',
+      listIcons: true,
       scale: v.scale
     });
+    $fIcons.checked = true;
     render();
     tellMap({ kspk: 'pins-reload' });
   };
@@ -550,6 +571,21 @@
     probe.src = url;
   }
 
+  /* Merkin tunnus listassa: oletuksena merkin oma symboli sen omalla
+     varilla, ja jos symbolit on kytketty pois omasta nakymasta, pelkka
+     varipallo kuten ennen. */
+  function markGlyph(p) {
+    var col = p.color || '#3ef08a', sym = p.symbol || 'dot';
+    if (!getView().listIcons) {
+      return '<span class="pl-dot" style="background:' + esc(col) + '"></span>';
+    }
+    if (SYMBOL_SVG[sym]) {
+      return '<span class="pl-sym" style="color:' + esc(col) + '">' + SYMBOL_SVG[sym] + '</span>';
+    }
+    return '<span class="pl-sym pl-sym--g" style="color:' + esc(col) + '">' +
+      (SYMBOL_GLYPH[sym] || SYMBOL_GLYPH.dot) + '</span>';
+  }
+
   var NUMW = ['', 'yksi', 'kaksi', 'kolme', 'nelja', 'viisi'];
   function imgWord(n) { return (NUMW[n] || n) + ' kuva' + (n === 1 ? '' : 'a'); }
 
@@ -559,7 +595,7 @@
     var c = document.createElement('div');
     c.className = 'pl-card' + (p.hidden ? ' is-hidden' : '') + (p.is_nav && !p.is_target ? ' is-nav' : '');
     c.innerHTML =
-      '<div class="pl-t"><span class="pl-dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' +
+      '<div class="pl-t">' + markGlyph(p) +
         '<span class="pl-tt">' + esc(p.title) + '</span>' +
         (p.hidden ? '<span class="pl-tag">Piilotettu</span>' : '') +
         (p.is_nav && p.is_target ? '<span class="pl-tag pl-tag--nav">Myos navigointi</span>' : '') +
@@ -680,6 +716,11 @@
     /* Navigointipisteet ovat merkkeja joilla on vain navigointi-luokka. */
     var navs    = visible.filter(function (p) { return p.is_nav && p.is_target === false; });
     var targets = visible.filter(function (p) { return !(p.is_nav && p.is_target === false); });
+    /* Aakkosjarjestys otsikon mukaan (a-o-a oikein suomeksi) */
+    var byTitle = function (a, b) {
+      return String(a.title || '').localeCompare(String(b.title || ''), 'fi', { sensitivity: 'base', numeric: true });
+    };
+    targets.sort(byTitle); navs.sort(byTitle);
 
     $n.textContent = '(' + visible.length + ')';
     if ($toggleN) $toggleN.textContent = '(' + visible.length + ')';
