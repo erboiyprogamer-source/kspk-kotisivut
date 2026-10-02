@@ -391,17 +391,16 @@
   }
 
   var LETTERS = 'ABCDEFGH';
-  function stopStyle(i, total, label) {
+  function stopStyle(i, total, label, cum) {
     /* Lahtopiste on pieni valkoinen pallo, maaranpaa punainen
-       paikkamerkki ja valipysahdykset kirjaimilla A, B, C... */
+       paikkamerkki ja valipysahdykset harmaat pallot kirjaimilla. */
     if (i === 0) {
       return new ol.style.Style({
         image: new ol.style.Icon({ src: startIconUrl, anchor: [0.5, 0.5], scale: 0.62 }),
         text: smallLabel(label, -15)
       });
     }
-    var isLast = i === total - 1;
-    if (isLast) {
+    if (i === total - 1) {
       return new ol.style.Style({
         image: new ol.style.Icon({
           src: pinIcon(PIN_RED),
@@ -410,16 +409,17 @@
         text: smallLabel(label, -26)
       });
     }
+    var passed = navigating && navDist >= (cum || 0) - 0.5;
     return [
       new ol.style.Style({
         image: new ol.style.Circle({
           radius: 8,
-          fill: new ol.style.Fill({ color: '#5ad1ff' }),
-          stroke: new ol.style.Stroke({ color: '#06110b', width: 2 })
+          fill: new ol.style.Fill({ color: passed ? '#53605a' : '#b9c7c0' }),
+          stroke: new ol.style.Stroke({ color: 'rgba(6,17,11,.75)', width: 1.6 })
         }),
         text: new ol.style.Text({
           text: LETTERS[i - 1] || String(i), font: '700 11px Outfit, sans-serif',
-          fill: new ol.style.Fill({ color: '#06110b' })
+          fill: new ol.style.Fill({ color: passed ? '#c9d4ce' : '#111a16' })
         })
       }),
       new ol.style.Style({ text: smallLabel(label, -17) })
@@ -437,7 +437,8 @@
           })
         });
       }
-      return f.get('style');
+      if (f.get('stopIndex') === undefined) return null;
+      return stopStyle(f.get('stopIndex'), f.get('stopTotal'), f.get('stopLabel'), f.get('cum'));
     }
 
     /* Taakse jaanyt osuus harmaantuu navigoinnin aikana. */
@@ -876,9 +877,14 @@
     var r = legs();
     var pts = stops.filter(function (x) { return !!x; });
 
+    /* Pysahdysten tyyli lasketaan vasta piirtohetkella, jotta ohitettu
+       valipysahdys voi tummua navigoinnin edetessa. */
+    var cum = 0;
     pts.forEach(function (p, i) {
+      if (i > 0) cum += dist(pts[i - 1], p);
       var f = new ol.Feature({ geometry: new ol.geom.Point(toView(p.x, p.z)) });
-      f.set('style', stopStyle(i, pts.length, p.label));
+      f.set('stopIndex', i); f.set('stopTotal', pts.length);
+      f.set('stopLabel', p.label); f.set('cum', cum);
       s.addFeature(f);
     });
 
