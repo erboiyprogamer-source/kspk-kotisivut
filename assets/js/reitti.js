@@ -163,6 +163,7 @@
   /* ---------- tila ---------- */
   var map = null, view = null, tileLayer = null, pinLayer = null, routeLayer = null;
   var pendingView = null, curMap = 'paiva';
+  var regionMap = null, mapLevels = 0, mapMaxZoom = 0;   // tiilien kattavuuden tarkistusta varten
   var pins = [], picking = null, dirMode = false;
   /* Automaattinen kartanvalinta: paivakartta on tarkka mutta kattaa vain
      keskusta-alueen, suuri kartta kattaa koko maailman. Kun kaikki reitin
@@ -191,6 +192,7 @@
     var w = (o.maxRegionX + 1 - o.minRegionX) * 512;
     var h = (o.maxRegionZ + 1 - o.minRegionZ) * 512;
     var rm = new RegionMap(meta.regions, minX, minZ, w, h);
+    regionMap = rm;
     var dpi = window.devicePixelRatio || 1;
 
     var proj = new ol.proj.Projection({
@@ -202,6 +204,7 @@
     var extent = [Math.min(tl[0], br[0]), Math.min(tl[1], br[1]), Math.max(tl[0], br[0]), Math.max(tl[1], br[1])];
 
     var levels = o.maxZoom - o.minZoom, res = [];
+    mapLevels = levels; mapMaxZoom = o.maxZoom;
     for (var z = 0; z <= levels; z++) res[z] = (Math.pow(2, levels - z - o.maxZoom) / BPD) * dpi;
 
     var grid = new ol.tilegrid.TileGrid({ extent: extent, origin: [0, 0], resolutions: res, tileSize: TILE / dpi });
@@ -251,7 +254,7 @@
 
     /* Zoomin muutos ratkaisee nakyvatko merkit, joten piirto uusitaan
        kun liike on loppunut. */
-    map.on('moveend', function () { drawPins(); });
+    map.on('moveend', function () { drawPins(); checkCoverage(); });
 
     /* Suurella kartalla on vain yksi zoom-taso, joten lahentaminen ei
        tee mitaan. Jos kayttaja rullaa sita kohti, siirrytaan tarkkaan
@@ -500,6 +503,31 @@
     var note = $('kn-zoomnote');
     if (note) note.hidden = ok || !pins.length;
   }
+
+  /* Onko nykyisen nakyman keskella tiilta? Jos ei, kayttajalle
+     kerrotaan ettei alueella ole tarkkaa karttaa ja tarjotaan suurta
+     karttaa, joka kattaa koko maailman. */
+  function checkCoverage() {
+    var note = $('kn-nomap');
+    if (!note) return;
+    if (!regionMap || curMap === '5k' || !view) { note.hidden = true; return; }
+    var b = toBlock(view.getCenter());
+    var wz = -(mapLevels - Math.round(view.getZoom())) + mapMaxZoom;
+    var f = Math.pow(2, wz);
+    var has = regionMap.hasTile(Math.floor(b[0] * f / TILE), Math.floor(b[1] * f / TILE), wz);
+    note.hidden = !!has;
+  }
+  var nomapBtn = $('kn-nomap-btn');
+  if (nomapBtn) nomapBtn.onclick = function () {
+    var b = view ? toBlock(view.getCenter()) : [0, 0];
+    autoMapOn = false;                 // kayttajan oma valinta
+    $('kn-nomap').hidden = true;
+    loadMeta('5k').then(function (meta) {
+      buildMap(meta);
+      view.setCenter(toView(b[0], b[1]));
+      drawPins(); drawRoute(false);
+    }).catch(function () {});
+  };
 
   /* ---------- haku ---------- */
   function parseCoords(str) {

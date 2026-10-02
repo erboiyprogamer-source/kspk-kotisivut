@@ -1224,6 +1224,17 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
   border:1px solid var(--line-strong);color:var(--green);font:600 12.5px/1 var(--font-body);
   padding:10px 14px;border-radius:999px;pointer-events:none}
 
+.kn-nomap{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;
+  display:flex;flex-direction:column;align-items:center;gap:11px;text-align:center;
+  background:var(--panel-solid);border:1px solid var(--line-strong);border-radius:14px;
+  box-shadow:var(--shadow);padding:16px 18px;max-width:calc(100% - 40px)}
+.kn-nomap span{font-size:13.5px;color:var(--muted)}
+.kn-nomap button{
+  padding:10px 16px;border-radius:11px;cursor:pointer;border:0;font:600 13px var(--font-body);
+  background:linear-gradient(140deg,var(--green),var(--green-2));color:#04150c}
+.kn-nomap button:hover{filter:brightness(1.08)}
+
 .kn-zoomnote{
   position:absolute;left:50%;bottom:16px;transform:translateX(-50%);white-space:nowrap;
   background:rgba(6,10,8,.9);border:1px solid var(--line);color:var(--muted);
