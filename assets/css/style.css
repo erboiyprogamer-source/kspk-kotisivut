@@ -1125,6 +1125,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-stop__in{flex:1;min-width:0;background:none;border:0;color:var(--text);
   font:500 15px/1 var(--font-body);padding:14px 0;outline:none}
 .kn-stop__in::placeholder{color:var(--dim)}
+.kn-stop__role{flex:0 0 auto;font-size:11.5px;color:var(--dim);white-space:nowrap}
 .kn-stop__pick,.kn-stop__del{
   width:34px;height:34px;flex:0 0 auto;border-radius:8px;border:1px solid transparent;
   background:none;color:var(--muted);cursor:pointer;font-size:14px}

@@ -311,7 +311,7 @@
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
   var PIN_RED = '#ff3b30';
-  var PIN_SCALE = 0.55;         // merkit pienina kartalla
+  var PIN_SCALE = 0.45;         // merkit pienina kartalla
   var pinCache = {};
   function pinIcon(color) {
     if (pinCache[color]) return pinCache[color];
@@ -341,17 +341,23 @@
         '<g clip-path="url(#c)">' + sq + '</g>' +
       '</svg>');
   })();
+  /* Lahtopiste: pelkka pieni valkoinen pallo. */
+  var startIconUrl = svgUrl(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">' +
+      '<circle cx="11" cy="11" r="8" fill="#ffffff" stroke="#06110b" stroke-width="2"/>' +
+    '</svg>');
+
   var arrowIconUrl = svgUrl(
     '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">' +
       '<circle cx="14" cy="14" r="12" fill="#06110b" stroke="#3ef08a" stroke-width="2"/>' +
       '<path d="M14 6l6 12-6-3-6 3z" fill="#3ef08a"/>' +
     '</svg>');
 
-  function bigLabel(text, dy) {
+  function smallLabel(text, dy) {
     return new ol.style.Text({
-      text: text || '', offsetY: dy, font: '600 12.5px Outfit, sans-serif',
-      fill: new ol.style.Fill({ color: '#ffffff' }),
-      stroke: new ol.style.Stroke({ color: '#06110b', width: 4 })
+      text: text || '', offsetY: dy, font: '500 11px Outfit, sans-serif',
+      fill: new ol.style.Fill({ color: '#f2f8f4' }),
+      stroke: new ol.style.Stroke({ color: 'rgba(6,17,11,.75)', width: 2.5 })
     });
   }
 
@@ -368,7 +374,7 @@
           src: pinIcon(PIN_RED),
           anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: PIN_SCALE
         }),
-        text: bigLabel(p.title, -32)
+        text: smallLabel(p.title, -32)
       });
     }
 
@@ -380,27 +386,44 @@
         fill: new ol.style.Fill({ color: p.color || '#3ef08a' }),
         stroke: new ol.style.Stroke({ color: hov ? '#fff' : '#000', width: hov ? 2.5 : 1.6 })
       }),
-      text: hov ? bigLabel(p.title, -(r + 13)) : null
+      text: hov ? smallLabel(p.title, -(r + 13)) : null
     });
   }
 
+  var LETTERS = 'ABCDEFGH';
   function stopStyle(i, total, label) {
-    /* Lahtopiste on valkoinen ruutulippupallo ja maaranpaa punainen
-       paikkamerkki — valipysahdykset siniset pisarat. */
+    /* Lahtopiste on pieni valkoinen pallo, maaranpaa punainen
+       paikkamerkki ja valipysahdykset kirjaimilla A, B, C... */
     if (i === 0) {
       return new ol.style.Style({
-        image: new ol.style.Icon({ src: goalIconUrl, anchor: [0.5, 0.5], scale: 0.55 }),
-        text: bigLabel(label, -17)
+        image: new ol.style.Icon({ src: startIconUrl, anchor: [0.5, 0.5], scale: 0.62 }),
+        text: smallLabel(label, -15)
       });
     }
     var isLast = i === total - 1;
-    return new ol.style.Style({
-      image: new ol.style.Icon({
-        src: pinIcon(isLast ? PIN_RED : '#5ad1ff'),
-        anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: PIN_SCALE
+    if (isLast) {
+      return new ol.style.Style({
+        image: new ol.style.Icon({
+          src: pinIcon(PIN_RED),
+          anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: PIN_SCALE
+        }),
+        text: smallLabel(label, -26)
+      });
+    }
+    return [
+      new ol.style.Style({
+        image: new ol.style.Circle({
+          radius: 8,
+          fill: new ol.style.Fill({ color: '#5ad1ff' }),
+          stroke: new ol.style.Stroke({ color: '#06110b', width: 2 })
+        }),
+        text: new ol.style.Text({
+          text: LETTERS[i - 1] || String(i), font: '700 11px Outfit, sans-serif',
+          fill: new ol.style.Fill({ color: '#06110b' })
+        })
       }),
-      text: bigLabel(label, -32)
-    });
+      new ol.style.Style({ text: smallLabel(label, -17) })
+    ];
   }
 
   function routeStyle(f) {
@@ -419,17 +442,17 @@
 
     /* Taakse jaanyt osuus harmaantuu navigoinnin aikana. */
     var done = navigating && navDist >= (f.get('end') || 0) - 0.5;
-    var col = done ? 'rgba(150,170,160,.75)' : '#3ef08a';
+    var col = done ? 'rgba(150,165,158,.7)' : '#ffffff';
     return [
-      new ol.style.Style({ stroke: new ol.style.Stroke({ color: 'rgba(0,0,0,.7)', width: 8 }) }),
+      new ol.style.Style({ stroke: new ol.style.Stroke({ color: 'rgba(0,0,0,.45)', width: 5 }) }),
       new ol.style.Style({
-        stroke: new ol.style.Stroke({ color: col, width: 4 }),
+        stroke: new ol.style.Stroke({ color: col, width: 2.6 }),
         /* Pieni etaisyysteksti kulkee viivan suuntaisesti. */
         text: new ol.style.Text({
-          text: nf(f.get('d') || 0) + ' m', placement: 'line', textBaseline: 'bottom', offsetY: -4,
-          font: '600 12px Outfit, sans-serif',
-          fill: new ol.style.Fill({ color: done ? '#c8d6ce' : '#eafff2' }),
-          stroke: new ol.style.Stroke({ color: '#06110b', width: 4 })
+          text: nf(f.get('d') || 0) + ' m', placement: 'line', textBaseline: 'bottom', offsetY: -3,
+          font: '500 10px Outfit, sans-serif',
+          fill: new ol.style.Fill({ color: done ? '#a9b8b0' : '#cfdcd5' }),
+          stroke: new ol.style.Stroke({ color: 'rgba(6,17,11,.7)', width: 2.5 })
         })
       })
     ];
@@ -731,6 +754,11 @@
     if (map) map.getTargetElement().style.cursor = (i !== null) ? 'crosshair' : '';
   }
 
+  function stopRole(i) {
+    if (i === 0) return '(aloituspiste)';
+    if (i === stops.length - 1) return '(määränpää)';
+    return '(' + (LETTERS[i - 1] || i) + ')';
+  }
   function stopLabel(i) {
     if (i === 0) return 'Valitse aloituspiste tai klikkaa karttaa';
     if (i === stops.length - 1) return 'Valitse määränpää';
@@ -744,6 +772,7 @@
         '<span class="kn-stop__dot kn-stop__dot--' + cls + '"></span>' +
         '<input type="text" class="kn-stop__in" data-i="' + i + '" autocomplete="off" placeholder="' +
           esc(stopLabel(i)) + '" value="' + esc(s ? s.label : '') + '">' +
+        '<span class="kn-stop__role">' + esc(stopRole(i)) + '</span>' +
         '<button type="button" class="kn-stop__pick" data-i="' + i + '" title="Valitse kartalta">&#8853;</button>' +
         (stops.length > 2 ? '<button type="button" class="kn-stop__del" data-i="' + i + '" title="Poista">&#10005;</button>' : '') +
       '</div>';
@@ -1251,6 +1280,15 @@
     elBig.textContent = left > 0 ? mmss(left) : 'Perillä';
     elBig.classList.toggle('is-done', left <= 0);
     if (bar) bar.style.width = Math.min(100, Math.max(0, (1 - left / navTotalSec) * 100)) + '%';
+
+    /* Perilla: navigointi paattyy itsestaan ja reitin suunnittelu
+       aukeaa takaisin. */
+    if (left <= 0) {
+      var over = -left;
+      var sub = document.querySelector('.kn-count__sub');
+      if (sub) sub.innerHTML = 'perillä · navigointi päättyy ' + Math.max(0, Math.ceil(15 - over)) + ' s kuluttua';
+      if (over >= 15) { stopNav(); openDir(); }
+    }
   }
 
   function startNav() {
