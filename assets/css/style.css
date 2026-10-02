@@ -1093,8 +1093,12 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
   background:var(--panel-solid);border:1px solid var(--line);border-radius:16px;
   box-shadow:var(--shadow);padding:10px;display:flex;flex-direction:column;gap:9px;
   overflow:auto;flex:1 1 auto;min-height:0}
-.kn-modes{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;
-  border-bottom:1px solid var(--line);padding-bottom:7px}
+.kn-dir__head{display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--line);padding-bottom:7px}
+.kn-dir__x{
+  width:30px;height:30px;flex:0 0 auto;border-radius:50%;border:1px solid transparent;
+  background:none;color:var(--muted);cursor:pointer;font-size:13px}
+.kn-dir__x:hover{color:var(--text);border-color:var(--line)}
+.kn-modes{flex:1;min-width:0;display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
 .kn-mode{
   display:grid;gap:3px;justify-items:center;padding:7px 2px;border-radius:10px;cursor:pointer;
   background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font:inherit}
@@ -1152,26 +1156,35 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-link{background:none;border:0;color:var(--green);cursor:pointer;font:inherit;font-size:13px;padding:0}
 .kn-link:hover{text-decoration:underline}
 
-/* --- paikkakortti --- */
+/* --- paikkakortti (vasemmassa sarakkeessa, kuten karttapalveluissa) --- */
 .kn-place{
-  position:absolute;left:12px;bottom:12px;width:min(360px,calc(100% - 24px));
-  background:var(--panel-solid);border:1px solid var(--line);border-radius:16px;
-  box-shadow:var(--shadow);padding:15px 16px;animation:knUp .25s var(--ease-out)}
+  position:relative;background:var(--panel-solid);border:1px solid var(--line);border-radius:16px;
+  box-shadow:var(--shadow);padding:15px 16px;overflow:auto;flex:0 1 auto;min-height:0;
+  animation:knUp .25s var(--ease-out)}
 @keyframes knUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.kn-place h3{margin:0 26px 4px 0;font-size:1.05rem;display:flex;align-items:center;gap:9px}
+.kn-place h3{margin:0 30px 4px 0;font-size:1.1rem;display:flex;align-items:center;gap:9px;line-height:1.25}
 .kn-place__dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
 .kn-place__meta{margin:0;font-size:12.5px;color:var(--muted)}
-.kn-place__msg{margin:8px 0 0;font-size:13.5px;white-space:pre-wrap;word-break:break-word}
-.kn-place__acts{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.kn-place__msg{margin:9px 0 0;font-size:13.5px;white-space:pre-wrap;word-break:break-word}
 .kn-place__x{
   position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;
   border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;font-size:12px}
 .kn-place__x:hover{color:var(--text)}
-.kn-btn{
-  border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);
-  padding:8px 13px;border-radius:10px;cursor:pointer;font:inherit;font-size:.82rem}
-.kn-btn:hover{border-color:var(--line-strong)}
-.kn-btn--primary{background:var(--green);color:#04150c;border-color:var(--green);font-weight:600}
+
+/* pyoreat toimintonapit tekstilla alla */
+.kn-acts{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap}
+.kn-act{
+  display:grid;gap:6px;justify-items:center;width:62px;background:none;border:0;cursor:pointer;
+  color:var(--muted);font:inherit;padding:0}
+.kn-act__ico{
+  width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:17px;
+  background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text);
+  transition:.18s var(--ease)}
+.kn-act:hover .kn-act__ico{border-color:var(--line-strong);transform:translateY(-2px)}
+.kn-act__t{font-size:11.5px;line-height:1.2;text-align:center}
+.kn-act--primary .kn-act__ico{
+  background:linear-gradient(140deg,var(--green),var(--green-2));color:#04150c;border-color:transparent}
+.kn-act--primary .kn-act__t{color:var(--green)}
 
 /* --- kelluvat napit --- */
 .kn-fab{
@@ -1195,7 +1208,6 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
   padding:10px 14px;border-radius:999px;pointer-events:none}
 
 .kn-layers{position:absolute;left:12px;bottom:12px}
-.kn-app:has(.kn-place:not([hidden])) .kn-layers{display:none}
 .kn-layers__btn{
   display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;cursor:pointer;
   background:var(--panel-solid);border:1px solid var(--line);color:var(--text);
@@ -1213,6 +1225,5 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 @media (max-width:860px){
   .kn-left{width:calc(100% - 24px)}
   .kn-dir{max-height:46vh}
-  .kn-place{width:calc(100% - 24px)}
-  .kn-coord{display:none}
+    .kn-coord{display:none}
 }

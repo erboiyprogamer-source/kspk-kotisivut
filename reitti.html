@@ -63,8 +63,13 @@
 
           <div class="kn-sug" id="kn-sug" hidden></div>
 
+          <div class="kn-place" id="kn-place" hidden></div>
+
           <div class="kn-dir" id="kn-dir" hidden>
-            <div class="kn-modes" id="kn-modes"></div>
+            <div class="kn-dir__head">
+              <div class="kn-modes" id="kn-modes"></div>
+              <button type="button" class="kn-dir__x" id="kn-dirx" title="Sulje reittiohjeet">&#10005;</button>
+            </div>
             <div class="kn-stops" id="kn-stops"></div>
             <div class="kn-dir__row">
               <button type="button" class="kn-add" id="kn-add">&#43; Lisää määränpää</button>
@@ -77,9 +82,6 @@
             </div>
           </div>
         </div>
-
-        <!-- paikkakortti -->
-        <div class="kn-place" id="kn-place" hidden></div>
 
         <!-- oikea ylakulma -->
         <button type="button" class="kn-fab kn-fab--full" id="kn-full" title="Koko näyttö">&#9974;</button>
