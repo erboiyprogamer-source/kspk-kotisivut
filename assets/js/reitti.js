@@ -183,6 +183,10 @@
   function buildMap(meta) {
     var o = meta.props;
     curMap = meta.name;
+    var menu = document.getElementById('kn-layers-menu');
+    if (menu) menu.querySelectorAll('[data-map]').forEach(function (x) {
+      x.classList.toggle('is-on', x.dataset.map === curMap);
+    });
     var minX = o.minRegionX * 512, minZ = o.minRegionZ * 512;
     var w = (o.maxRegionX + 1 - o.minRegionX) * 512;
     var h = (o.maxRegionZ + 1 - o.minRegionZ) * 512;
@@ -248,6 +252,27 @@
     /* Zoomin muutos ratkaisee nakyvatko merkit, joten piirto uusitaan
        kun liike on loppunut. */
     map.on('moveend', function () { drawPins(); });
+
+    /* Suurella kartalla on vain yksi zoom-taso, joten lahentaminen ei
+       tee mitaan. Jos kayttaja rullaa sita kohti, siirrytaan tarkkaan
+       paivakarttaan samaan kohtaan — mikali kohta on sen alueella. */
+    var wheelAcc = 0, wheelTimer = null;
+    map.getTargetElement().addEventListener('wheel', function (ev) {
+      if (curMap !== '5k' || ev.deltaY >= 0) { wheelAcc = 0; return; }
+      wheelAcc += Math.abs(ev.deltaY);
+      clearTimeout(wheelTimer);
+      wheelTimer = setTimeout(function () { wheelAcc = 0; }, 900);
+      if (wheelAcc < 160) return;
+      wheelAcc = 0;
+      var b = toBlock(view.getCenter());
+      if (Math.max(Math.abs(b[0]), Math.abs(b[1])) > 1500) return;   // paivakartan ulkopuolella
+      loadMeta('paiva').then(function (meta) {
+        buildMap(meta);
+        view.setCenter(toView(b[0], b[1]));
+        view.setZoom(Math.max(0, view.getMaxZoom() - 1));
+        drawPins(); drawRoute(false);
+      }).catch(function () {});
+    }, { passive: true });
 
     map.on('pointermove', function (e) {
       var b = toBlock(e.coordinate);
