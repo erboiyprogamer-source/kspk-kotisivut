@@ -1118,14 +1118,19 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-stop{position:relative;display:flex;align-items:center;gap:9px;
   background:var(--bg-3);border:1px solid var(--line);border-radius:11px;padding:0 8px 0 12px}
 .kn-stop:focus-within{border-color:var(--line-strong)}
-.kn-stop__dot{width:10px;height:10px;flex:0 0 auto;border-radius:50%;box-shadow:0 0 0 3px rgba(0,0,0,.4)}
+/* Pisteet ja roolitekstit ovat pelkkaa koristetta: ne eivat ota
+   klikkauksia eivatka ole maalattavissa, jotta kentan ja nappien
+   osuminen on helppoa. */
+.kn-stop__dot{width:10px;height:10px;flex:0 0 auto;border-radius:50%;
+  box-shadow:0 0 0 3px rgba(0,0,0,.4);pointer-events:none;user-select:none}
 .kn-stop__dot--a{background:var(--green)}
-.kn-stop__dot--b{background:var(--gold);border-radius:50% 50% 50% 0;transform:rotate(-45deg)}
+.kn-stop__dot--b{background:var(--gold)}
 .kn-stop__dot--w{background:var(--sky)}
 .kn-stop__in{flex:1;min-width:0;background:none;border:0;color:var(--text);
   font:500 15px/1 var(--font-body);padding:14px 0;outline:none}
 .kn-stop__in::placeholder{color:var(--dim)}
-.kn-stop__role{flex:0 0 auto;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.kn-stop__role{flex:0 0 auto;font-size:11.5px;color:var(--dim);white-space:nowrap;
+  pointer-events:none;user-select:none}
 .kn-stop__pick,.kn-stop__del{
   width:34px;height:34px;flex:0 0 auto;border-radius:8px;border:1px solid transparent;
   background:none;color:var(--muted);cursor:pointer;font-size:14px}

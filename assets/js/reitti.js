@@ -814,6 +814,16 @@
       '</div>';
     }).join('');
 
+    /* Klikkaus mihin tahansa kentan rivilla vie kursorin kenttaan. */
+    box.querySelectorAll('.kn-stop').forEach(function (row) {
+      row.addEventListener('mousedown', function (e) {
+        if (e.target.closest('button') || e.target.classList.contains('kn-stop__in')) return;
+        e.preventDefault();
+        var inp = row.querySelector('.kn-stop__in');
+        if (inp) inp.focus();
+      });
+    });
+
     box.querySelectorAll('.kn-stop__in').forEach(function (inp) {
       var i = +inp.dataset.i;
       inp.addEventListener('input', function () {
