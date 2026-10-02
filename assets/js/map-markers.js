@@ -113,6 +113,22 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
      Unicode-glyfia, joten valitsimen nappi piirretaan pienena inline-SVG:na
      (glyph-kentta), ja itse kartalla ne piirretaan ol.style.Iconina
      ICON_SVGS-taulukon SVG:sta varjattynа merkin varilla (ks. pinStyle). */
+  /* KasaNavin kategoriat: nama nakyvat navigointisivun suodatinsiruina
+     (vrt. karttapalveluiden "Ravintolat", "Hotellit"). */
+  var CATEGORIES = [
+    { id: '',          name: 'Ei kategoriaa' },
+    { id: 'koti',      name: 'Koti' },
+    { id: 'kaupunki',  name: 'Kaupunki' },
+    { id: 'metro',     name: 'Metroasema' },
+    { id: 'portti',    name: 'Portti' },
+    { id: 'farmi',     name: 'Farmi' },
+    { id: 'kauppa',    name: 'Kauppa' },
+    { id: 'satama',    name: 'Satama' },
+    { id: 'nahtavyys', name: 'Nähtävyys' },
+    { id: 'luola',     name: 'Luola tai kaivos' },
+    { id: 'muu',       name: 'Muu' }
+  ];
+
   var SYMBOLS = [
     { id: 'dot',      glyph: '●' },
     { id: 'square',   glyph: '■' },
@@ -458,18 +474,18 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         /* Luokka (kohde / navigointipiste) tallennetaan omalla
            funktiollaan, jotta pin_add sailyy entisellaan. Oletus on
            kohde, joten kutsu tehdaan vain jos valinta poikkeaa siita. */
-        if (!saved || (pin.is_target !== false && !pin.is_nav)) return saved;
-        return self.setKind(saved.id, pin.is_target !== false, !!pin.is_nav, c)
+        if (!saved || (pin.is_target !== false && !pin.is_nav && !pin.category)) return saved;
+        return self.setKind(saved.id, pin.is_target !== false, !!pin.is_nav, pin.category, c)
           .then(function (r) { return r || saved; })
           .catch(function () { return saved; });
       });
     },
-    setKind: function (id, isTarget, isNav, c) {
+    setKind: function (id, isTarget, isNav, cat, c) {
       if (!SHARED) return Promise.resolve(null);
       var self = this;
-      return this.rpc('pin_set_kind', {
+      return this.rpc('pin_set_meta', {
         p_pass: c.pass, p_author: c.author, p_id: id,
-        p_is_target: !!isTarget, p_is_nav: !!isNav
+        p_is_target: !!isTarget, p_is_nav: !!isNav, p_category: cat || null
       }).then(function (d) { return self.one(d); });
     },
     update: function (id, patch, c) {
@@ -486,8 +502,8 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         p_x: v('x'), p_z: v('z'), p_hidden: v('hidden'),
         p_symbol: v('symbol'), p_size: v('size'), p_show_text: v('show_text')
       }).then(function (r) {
-        if (patch.is_target === undefined && patch.is_nav === undefined) return r;
-        return self.setKind(id, patch.is_target !== false, !!patch.is_nav, c)
+        if (patch.is_target === undefined && patch.is_nav === undefined && patch.category === undefined) return r;
+        return self.setKind(id, patch.is_target !== false, !!patch.is_nav, patch.category, c)
           .then(function (k) { return k || r; });
       });
     },
@@ -659,9 +675,10 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + '.kspk-card h3{margin:0 0 4px;font-size:17px}'
       + '.kspk-card .sub{margin:0 0 14px;font-size:12.5px;opacity:.6}'
       + '.kspk-card label{display:block;font-size:12px;opacity:.75;margin:12px 0 5px}'
-      + '.kspk-card input,.kspk-card textarea{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;'
+      + '.kspk-card input,.kspk-card textarea,.kspk-card select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;'
       + 'background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:inherit;font:inherit}'
       + '.kspk-card textarea{min-height:80px;resize:vertical}'
+      + '.kspk-card select{appearance:none;cursor:pointer}'
       + '.kspk-card input:focus,.kspk-card textarea:focus{outline:none;border-color:#3ef08a}'
       + '.kspk-xy{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}'
       + '.kspk-xy .kspk-btn{padding:10px 12px;white-space:nowrap}'
@@ -847,6 +864,12 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       '<label class="kspk-check"><input type="checkbox" id="kp-kn"> Navigointipiste (reittien piirtamiseen)</label>' +
       '<div class="kspk-hint">Navigointipisteita voi lisata vapaasti monta. Jos merkki on pelkka navigointipiste, se nakyy merkkilistassa omana listanaan eika kohteiden joukossa.</div>' +
 
+      '<label>Kategoria (KasaNavi)</label>' +
+      '<select id="kp-cat">' + CATEGORIES.map(function (c) {
+        return '<option value="' + c.id + '">' + esc(c.name) + '</option>';
+      }).join('') + '</select>' +
+      '<div class="kspk-hint">Kategoria nakyy KasaNavin suodatinsiruina, joilla kartalta voi nayttaa esimerkiksi pelkat metroasemat tai farmit.</div>' +
+
       '<label>Kuvat (<span id="kp-img-count">0</span>/' + MAX_IMAGES + ', valinnainen)</label>' +
       '<div class="kspk-imggrid" id="kp-imggrid"></div>' +
       '<div id="kp-img-addwrap"><input id="kp-img" type="file" accept="image/*"></div>' +
@@ -916,6 +939,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
     $('#kp-text').checked = edit ? !!p.show_text : false;
 
+    $('#kp-cat').value = (edit && p.category) ? p.category : '';
     $('#kp-kt').checked = edit ? (p.is_target !== false) : true;
     $('#kp-kn').checked = edit ? !!p.is_nav : false;
     /* Merkin on kuuluttava ainakin toiseen listaan, muuten se katoaisi
@@ -1065,7 +1089,8 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       done({
         x: x, z: z, title: t, message: $('#kp-m').value.trim(), author: a, color: color,
         symbol: symbol, size: parseFloat($('#kp-size').value) || 1, show_text: $('#kp-text').checked,
-        is_target: $('#kp-kt').checked, is_nav: $('#kp-kn').checked
+        is_target: $('#kp-kt').checked, is_nav: $('#kp-kn').checked,
+        category: $('#kp-cat').value || null
       }, { pass: pw, author: a }, pendingImage);
     };
   }

@@ -1061,15 +1061,22 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-dirbtn.is-on{filter:brightness(1.15)}
 .kn-search.is-dir{opacity:.9}
 
-/* --- kategoriasirut --- */
-.kn-chips{display:flex;gap:7px;overflow-x:auto;padding:1px;scrollbar-width:none;flex:0 0 auto}
+/* --- kategoriasirut: oma rivinsa kartan ylareunassa, hakupalkin
+       oikealla puolella (vrt. karttapalveluiden kategoriapainikkeet) --- */
+.kn-chips{
+  position:absolute;top:12px;left:476px;right:70px;display:flex;gap:9px;
+  overflow-x:auto;padding:2px;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);
+          mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
 .kn-chips::-webkit-scrollbar{display:none}
 .kn-chip{
-  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;
-  padding:10px 17px;border-radius:999px;font:500 13.5px var(--font-body);
+  display:inline-flex;align-items:center;gap:7px;white-space:nowrap;cursor:pointer;
+  padding:11px 18px;border-radius:999px;font:500 13.5px var(--font-body);
   background:var(--panel-solid);border:1px solid var(--line);color:var(--muted);
-  box-shadow:0 10px 24px -20px rgba(0,0,0,.9);transition:.18s var(--ease)}
-.kn-chip span{font-size:12px;opacity:.65}
+  box-shadow:0 12px 26px -20px rgba(0,0,0,.95);transition:.18s var(--ease)}
+.kn-chip__ico{font-size:14px;line-height:1}
+.kn-chip span:not(.kn-chip__ico){font-size:12px;opacity:.65}
+.kn-chip:hover{color:var(--text);border-color:var(--line-strong)}
 .kn-chip.is-on{color:var(--text);border-color:var(--line-strong);background:rgba(62,240,138,.14)}
 .kn-chip--nav.is-on{background:rgba(90,169,255,.16);border-color:rgba(90,169,255,.45)}
 
@@ -1222,6 +1229,12 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-layers__menu button:hover{background:rgba(255,255,255,.06);color:var(--text)}
 .kn-layers__menu button.is-on{background:rgba(62,240,138,.14);color:var(--green);font-weight:600}
 
+@media (max-width:1180px){
+  /* kapealla ruudulla sirut siirtyvat hakupalkin alle */
+  .kn-chips{left:12px;right:12px;top:76px}
+  /* sirut vievat tilaa hakupalkin alta, joten seuraava paneeli alkaa alempaa */
+  .kn-left > .kn-sug,.kn-left > .kn-place,.kn-left > .kn-dir{margin-top:52px}
+}
 @media (max-width:860px){
   .kn-left{width:calc(100% - 80px)}
   .kn-dir{max-height:46vh}

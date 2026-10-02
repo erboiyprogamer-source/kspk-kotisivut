@@ -41,6 +41,28 @@
     { id: 'elytra', ico: '&#128640;', name: 'Elytra',   v: 30,    note: 'Raketeilla, suoraan maaston yli — tämä arvio on tarkin.' }
   ];
 
+  /* KasaNavin kategoriat (sama lista kuin merkkien lisayslomakkeessa
+     map-markers.js:ssa). Ilman kategoriaa oleva merkki nakyy kohdassa
+     "Muut". */
+  var CATEGORIES = [
+    { id: 'koti',      name: 'Kodit',        ico: '&#127968;' },
+    { id: 'kaupunki',  name: 'Kaupungit',    ico: '&#127961;' },
+    { id: 'metro',     name: 'Metroasemat',  ico: '&#128647;' },
+    { id: 'portti',    name: 'Portit',       ico: '&#128751;' },
+    { id: 'farmi',     name: 'Farmit',       ico: '&#127806;' },
+    { id: 'kauppa',    name: 'Kaupat',       ico: '&#128722;' },
+    { id: 'satama',    name: 'Satamat',      ico: '&#9875;' },
+    { id: 'nahtavyys', name: 'Nähtävyydet',  ico: '&#127963;' },
+    { id: 'luola',     name: 'Luolat',       ico: '&#9935;' },
+    { id: 'muu',       name: 'Muut',         ico: '&#128205;' }
+  ];
+  function catOf(p) { return p.category || 'muu'; }
+  function catName(p) {
+    var id = catOf(p);
+    var c = CATEGORIES.filter(function (o) { return o.id === id; })[0];
+    return c ? c.name.replace(/t$/, '') : 'Merkki';
+  }
+
   var SYMBOL_NAMES = {
     dot: 'Piste', square: 'Neliö', triangle: 'Kolmio', star: 'Tähti', diamond: 'Timantti',
     house: 'Talo', skull: 'Pääkallo', sword: 'Miekka', hammer: 'Vasara', smiley: 'Hymiö',
@@ -148,7 +170,7 @@
   var autoMapOn = true;
   var AUTO_RADIUS = 1000;   // paivakartan alue: -1000…1000 molemmilla akseleilla
   var stops = [null, null];        // {x, z, label}
-  var hideSymbols = {};            // kategoriasiruilla piilotetut
+  var hideCats = {};               // kategoriasiruilla piilotetut
   var showNav = true;
   var selected = null;             // paikkakortissa nakyva merkki
 
@@ -282,14 +304,13 @@
 
   /* ---------- merkit Supabasesta ---------- */
   function loadPins() {
-    return fetch(SUPA.url + '/rest/v1/pins?select=id,title,message,x,z,author,color,symbol,is_nav,is_target&order=created_at.desc', {
+    return fetch(SUPA.url + '/rest/v1/pins?select=id,title,message,x,z,author,color,symbol,is_nav,is_target,category&order=created_at.desc', {
       headers: { apikey: SUPA.key, Authorization: 'Bearer ' + SUPA.key }
     }).then(function (r) { return r.ok ? r.json() : []; }).catch(function () { return []; });
   }
   function pinVisible(p) {
-    if (hideSymbols[p.symbol || 'dot']) return false;
-    if (!showNav && p.is_nav && p.is_target === false) return false;
-    return true;
+    if (p.is_nav && p.is_target === false) return showNav;
+    return !hideCats[catOf(p)];
   }
   function drawPins() {
     if (!pinLayer) return;
@@ -325,7 +346,7 @@
   function pinToItem(p) {
     return {
       x: p.x, z: p.z, label: p.title, pin: p, color: p.color,
-      sub: (SYMBOL_NAMES[p.symbol] || 'Merkki') + ' · ' + (p.author || 'Nimetön') + ' · X ' + p.x + ', Z ' + p.z
+      sub: catName(p) + ' · ' + (p.author || 'Nimetön') + ' · X ' + p.x + ', Z ' + p.z
     };
   }
   function recents() { return lsGet(LS_RECENT, []); }
@@ -380,7 +401,7 @@
       '<button type="button" class="kn-place__x" id="kn-place-x" title="Sulje">&#10005;</button>' +
       '<h3><span class="kn-place__dot" style="background:' + esc(p.color || '#3ef08a') + '"></span>' + esc(p.title) + '</h3>' +
       '<p class="kn-place__meta">' +
-        (p.symbol ? esc(SYMBOL_NAMES[p.symbol] || p.symbol) + ' · ' : '') +
+        esc(catName(p)) + ' · ' +
         'X ' + p.x + ', Z ' + p.z +
         (p.author ? ' · ' + esc(p.author) : '') +
         (p.is_nav && p.is_target === false ? ' · navigointipiste' : '') + '</p>' +
@@ -454,25 +475,24 @@
     var counts = {}, navCount = 0;
     pins.forEach(function (p) {
       if (p.is_nav && p.is_target === false) { navCount++; return; }
-      var s = p.symbol || 'dot';
-      counts[s] = (counts[s] || 0) + 1;
+      var c = catOf(p);
+      counts[c] = (counts[c] || 0) + 1;
     });
-    var list = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
-    var html = list.map(function (s) {
-      return '<button type="button" class="kn-chip' + (hideSymbols[s] ? '' : ' is-on') + '" data-sym="' + esc(s) + '">' +
-        esc(SYMBOL_NAMES[s] || s) + ' <span>' + counts[s] + '</span></button>';
+    var html = CATEGORIES.filter(function (c) { return counts[c.id]; }).map(function (c) {
+      return '<button type="button" class="kn-chip' + (hideCats[c.id] ? '' : ' is-on') + '" data-cat="' + c.id + '">' +
+        '<span class="kn-chip__ico">' + c.ico + '</span>' + esc(c.name) + ' <span>' + counts[c.id] + '</span></button>';
     }).join('');
     if (navCount) {
       html += '<button type="button" class="kn-chip kn-chip--nav' + (showNav ? ' is-on' : '') + '" data-nav="1">' +
-        '&#129517; Navigointi <span>' + navCount + '</span></button>';
+        '<span class="kn-chip__ico">&#129517;</span>Navigointi <span>' + navCount + '</span></button>';
     }
     var box = $('kn-chips');
     box.innerHTML = html;
-    box.querySelectorAll('[data-sym]').forEach(function (b) {
+    box.querySelectorAll('[data-cat]').forEach(function (b) {
       b.onclick = function () {
-        var s = b.dataset.sym;
-        hideSymbols[s] = !hideSymbols[s];
-        b.classList.toggle('is-on', !hideSymbols[s]);
+        var c = b.dataset.cat;
+        hideCats[c] = !hideCats[c];
+        b.classList.toggle('is-on', !hideCats[c]);
         drawPins();
       };
     });
