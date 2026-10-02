@@ -277,43 +277,96 @@
     });
   }
 
+  /* ---------- karttamerkit (SVG-kuvakkeet) ----------
+     Haettu tai valittu kohde saa pisaranmuotoisen paikkamerkin, ja
+     reitin maaranpaa ison valkoisen ruutulippupallon — samaan tapaan
+     kuin karttapalveluissa. */
+  function svgUrl(svg) {
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+  var pinCache = {};
+  function pinIcon(color) {
+    if (pinCache[color]) return pinCache[color];
+    var svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46">' +
+        '<path d="M17 1C8.7 1 2 7.7 2 16c0 11 15 29 15 29s15-18 15-29C32 7.7 25.3 1 17 1z" ' +
+          'fill="' + color + '" stroke="#06110b" stroke-width="2"/>' +
+        '<circle cx="17" cy="16" r="6" fill="#fff"/>' +
+      '</svg>';
+    pinCache[color] = svgUrl(svg);
+    return pinCache[color];
+  }
+  var goalIconUrl = (function () {
+    /* Valkoinen pallo ja mustat ruudut keskella (ruutulippu). */
+    var sq = '', size = 5.2, x0 = 17 - size * 1.5, y0 = 17 - size * 1.5;
+    for (var r = 0; r < 3; r++) {
+      for (var c = 0; c < 3; c++) {
+        if ((r + c) % 2) continue;
+        sq += '<rect x="' + (x0 + c * size).toFixed(1) + '" y="' + (y0 + r * size).toFixed(1) +
+              '" width="' + size + '" height="' + size + '" fill="#101813"/>';
+      }
+    }
+    return svgUrl(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 34 34">' +
+        '<defs><clipPath id="c"><circle cx="17" cy="17" r="9.5"/></clipPath></defs>' +
+        '<circle cx="17" cy="17" r="15" fill="#fff" stroke="#06110b" stroke-width="3"/>' +
+        '<g clip-path="url(#c)">' + sq + '</g>' +
+      '</svg>');
+  })();
+  function bigLabel(text, dy) {
+    return new ol.style.Text({
+      text: text || '', offsetY: dy, font: '700 16px Outfit, sans-serif',
+      fill: new ol.style.Fill({ color: '#ffffff' }),
+      stroke: new ol.style.Stroke({ color: '#06110b', width: 5 })
+    });
+  }
+
   /* ---------- tyylit ---------- */
   function pinStyle(f) {
     var p = f.get('pin'), nav = p && p.is_nav && p.is_target === false;
     var sel = selected && p && selected.id === p.id;
     var hov = p && hoveredId !== null && p.id === hoveredId;
+
+    /* Valittu kohde nostetaan pisaramerkiksi, jotta se erottuu muista. */
+    if (sel) {
+      return new ol.style.Style({
+        image: new ol.style.Icon({
+          src: pinIcon(p.color || '#3ef08a'),
+          anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: 1
+        }),
+        text: bigLabel(p.title, -54)
+      });
+    }
+
     var r = nav ? 3.6 : 5;
-    if (sel) r += 2.5;
     if (hov) r += 2;                      // merkki tuntuu napilta hiiren alla
     return new ol.style.Style({
       image: new ol.style.Circle({
         radius: r,
         fill: new ol.style.Fill({ color: p.color || '#3ef08a' }),
-        stroke: new ol.style.Stroke({ color: (sel || hov) ? '#fff' : '#000', width: (sel || hov) ? 2.5 : 1.6 })
+        stroke: new ol.style.Stroke({ color: hov ? '#fff' : '#000', width: hov ? 2.5 : 1.6 })
       }),
-      text: (sel || hov) ? new ol.style.Text({
-        text: p.title || '', offsetY: -(r + 11), font: '600 13px Outfit, sans-serif',
-        fill: new ol.style.Fill({ color: '#e9f7ef' }),
-        stroke: new ol.style.Stroke({ color: '#000', width: 4 })
-      }) : null
+      text: hov ? bigLabel(p.title, -(r + 13)) : null
     });
   }
 
   function stopStyle(i, total, label) {
-    var isFirst = i === 0, isLast = i === total - 1;
-    var col = isFirst ? '#3ef08a' : (isLast ? '#ffc94d' : '#5ad1ff');
+    var isLast = i === total - 1;
+    if (isLast) {
+      return new ol.style.Style({
+        image: new ol.style.Icon({ src: goalIconUrl, anchor: [0.5, 0.5], scale: 1 }),
+        text: bigLabel(label, -30)
+      });
+    }
     return new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 8, fill: new ol.style.Fill({ color: col }),
-        stroke: new ol.style.Stroke({ color: '#06110b', width: 3 })
+      image: new ol.style.Icon({
+        src: pinIcon(i === 0 ? '#3ef08a' : '#5ad1ff'),
+        anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: 1
       }),
-      text: new ol.style.Text({
-        text: label || '', offsetY: -19, font: '600 13px Outfit, sans-serif',
-        fill: new ol.style.Fill({ color: '#e9f7ef' }),
-        stroke: new ol.style.Stroke({ color: '#000', width: 3.5 })
-      })
+      text: bigLabel(label, -54)
     });
   }
+
   function routeStyle(f) {
     if (f.getGeometry().getType() === 'Point') return f.get('style');
     return [
