@@ -285,6 +285,8 @@
   function svgUrl(svg) {
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   }
+  var PIN_RED = '#ff3b30';
+  var PIN_SCALE = 0.7;          // merkit pienempina kartalla
   var pinCache = {};
   function pinIcon(color) {
     if (pinCache[color]) return pinCache[color];
@@ -338,10 +340,10 @@
     if (sel) {
       return new ol.style.Style({
         image: new ol.style.Icon({
-          src: pinIcon(p.color || '#3ef08a'),
-          anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: 1
+          src: pinIcon(PIN_RED),
+          anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: PIN_SCALE
         }),
-        text: bigLabel(p.title, -54)
+        text: bigLabel(p.title, -40)
       });
     }
 
@@ -358,19 +360,21 @@
   }
 
   function stopStyle(i, total, label) {
-    var isLast = i === total - 1;
-    if (isLast) {
+    /* Lahtopiste on valkoinen ruutulippupallo ja maaranpaa punainen
+       paikkamerkki — valipysahdykset siniset pisarat. */
+    if (i === 0) {
       return new ol.style.Style({
-        image: new ol.style.Icon({ src: goalIconUrl, anchor: [0.5, 0.5], scale: 1 }),
-        text: bigLabel(label, -30)
+        image: new ol.style.Icon({ src: goalIconUrl, anchor: [0.5, 0.5], scale: 0.72 }),
+        text: bigLabel(label, -24)
       });
     }
+    var isLast = i === total - 1;
     return new ol.style.Style({
       image: new ol.style.Icon({
-        src: pinIcon(i === 0 ? '#3ef08a' : '#5ad1ff'),
-        anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: 1
+        src: pinIcon(isLast ? PIN_RED : '#5ad1ff'),
+        anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: PIN_SCALE
       }),
-      text: bigLabel(label, -54)
+      text: bigLabel(label, -40)
     });
   }
 
@@ -873,6 +877,20 @@
     f.set('arrow', true); f.set('rot', a.rot);
     routeLayer.getSource().addFeature(f);
   }
+  var navRaf = null;
+  /* Nuoli paivitetaan naytön virkistystahdissa, jolloin liike on sulava
+     — laskuri paivittyy edelleen kerran sekunnissa. */
+  function animArrow() {
+    if (!navigating) { navRaf = null; return; }
+    var r = legs();
+    if (r && navTotalSec > 0) {
+      var elapsed = (Date.now() - navStart) / 1000;
+      navDist = Math.max(0, Math.min(r.total, r.total * (elapsed / navTotalSec)));
+      updateArrow();
+    }
+    navRaf = requestAnimationFrame(animArrow);
+  }
+
   function updateArrow() {
     if (!routeLayer) return;
     var r = legs();
@@ -1197,11 +1215,7 @@
   function tickNav() {
     if (!navigating) return;
     var left = navTotalSec - (Date.now() - navStart) / 1000;
-    var r = legs();
-    if (r) {
-      navDist = Math.max(0, Math.min(r.total, r.total * (1 - left / navTotalSec)));
-      updateArrow();
-    }
+
     var elBig = $('kn-count'), bar = $('kn-count-bar');
     if (!elBig) return;
     elBig.textContent = left > 0 ? mmss(left) : 'Perillä';
@@ -1219,6 +1233,7 @@
     renderNav();
     clearInterval(navTimer);
     navTimer = setInterval(tickNav, 1000);
+    if (!navRaf) navRaf = requestAnimationFrame(animArrow);
     placeCollapseBtn();
     drawRoute(true);
   }
@@ -1226,6 +1241,7 @@
     navigating = false;
     navDist = 0;
     clearInterval(navTimer); navTimer = null;
+    if (navRaf) { cancelAnimationFrame(navRaf); navRaf = null; }
     $('kn-confirm').hidden = true;
     $('kn-nav').hidden = true;
     app.classList.remove('is-nav');
