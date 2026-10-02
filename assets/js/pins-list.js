@@ -517,6 +517,39 @@
      Kortti on oletuksena tiivis: nimi, vari, sijainti ja kuvien maara.
      Hiiren alla (tai klikkauksesta kosketuslaitteella) se laajenee ja
      nayttaa viestin, kuvien esikatselut ja toiminnot. */
+  /* ---------- kuvien lataus ----------
+     Thumbnailien osoitteet ovat data-src-attribuutissa, joten selain ei
+     lataa yhtaan kuvaa pelkasta listan avaamisesta. Kuva haetaan kun
+     kortti viedaan auki (hover/napautus), ja sen lisaksi taustajono
+     esilataa niita yksi kerrallaan pienella viiveella, jotta ne ovat
+     valmiina kun kayttaja ehtii kortin kohdalle. */
+  function hydrate(card) {
+    [].forEach.call(card.querySelectorAll('img[data-src]'), function (img) {
+      img.src = img.getAttribute('data-src');
+      img.removeAttribute('data-src');
+    });
+  }
+
+  var queueRunning = false;
+  function runQueue() {
+    if (queueRunning) return;
+    var next = $grid.querySelector('img[data-src]') ||
+               ($navGrid ? $navGrid.querySelector('img[data-src]') : null);
+    if (!next) return;
+    queueRunning = true;
+    var url = next.getAttribute('data-src');
+    next.removeAttribute('data-src');
+    var probe = new Image();
+    var go = function () {
+      next.src = url;
+      queueRunning = false;
+      setTimeout(runQueue, 250);
+    };
+    probe.onload = go;
+    probe.onerror = go;
+    probe.src = url;
+  }
+
   var NUMW = ['', 'yksi', 'kaksi', 'kolme', 'nelja', 'viisi'];
   function imgWord(n) { return (NUMW[n] || n) + ' kuva' + (n === 1 ? '' : 'a'); }
 
@@ -553,7 +586,11 @@
 
     /* Kosketuslaitteella ei ole hoveria, joten kortin saa auki myos
        napauttamalla sen otsikkoriviä. */
-    c.querySelector('.pl-t').onclick = function () { c.classList.toggle('is-open'); };
+    c.querySelector('.pl-t').onclick = function () { c.classList.toggle('is-open'); hydrate(c); };
+    /* Kuvat haetaan vasta kun kortti on menossa auki — eivat siis kaikki
+       kerralla listan avautuessa. */
+    c.addEventListener('mouseenter', function () { hydrate(c); });
+    c.addEventListener('focusin', function () { hydrate(c); });
 
     var imggrid = c.querySelector('[data-imggrid]');
     if (imggrid) {
@@ -563,7 +600,7 @@
         var canImg = mayEditImage(im);
         item.innerHTML =
           '<a href="' + esc(im.full_url) + '" target="_blank" rel="noopener">' +
-            '<img src="' + esc(im.thumb_url) + '" alt="Merkin kuva" loading="lazy"></a>' +
+            '<img data-src="' + esc(im.thumb_url) + '" alt="Merkin kuva" loading="lazy" decoding="async"></a>' +
           (canImg ? '<button class="pl-b pl-b--danger" type="button">Poista</button>' : '');
         var b = item.querySelector('button');
         if (b) b.onclick = function () {
@@ -673,6 +710,10 @@
     } else {
       $navSec.setAttribute('hidden', '');
     }
+
+    /* Taustaesilataus alkaa vasta kun lista on nakyvissa, ja etenee
+       yksi kuva kerrallaan — sivun avaaminen ei siis lataa mitaan. */
+    setTimeout(runQueue, 600);
   }
 
   function plainLoad() {
