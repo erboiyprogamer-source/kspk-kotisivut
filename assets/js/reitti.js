@@ -1243,6 +1243,35 @@
     if (img) img.src = MAPS + MAP_INFO[curMap].thumb;
   }
 
+  /* Koordinaattiruudukko: 128 lohkon valein, piirretaan vektoritasona. */
+  function buildGrid() {
+    if (!map) return;
+    if (gridLayer) { map.removeLayer(gridLayer); gridLayer = null; }
+    if (!optGrid) return;
+    var src = new ol.source.Vector();
+    var step = 128, lim = 4000;
+    for (var v = -lim; v <= lim; v += step) {
+      src.addFeature(new ol.Feature({ geometry: new ol.geom.LineString([toView(v, -lim), toView(v, lim)]) }));
+      src.addFeature(new ol.Feature({ geometry: new ol.geom.LineString([toView(-lim, v), toView(lim, v)]) }));
+    }
+    gridLayer = new ol.layer.Vector({
+      source: src, zIndex: 1,
+      style: new ol.style.Style({ stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,.18)', width: 1 }) })
+    });
+    map.addLayer(gridLayer);
+  }
+
+  /* Kartan tiedot -valinnat Tasot-valikossa. */
+  function bindOpt(id, set) {
+    var el = $(id);
+    if (!el) return;
+    el.onchange = function () { set(el.checked); };
+  }
+  bindOpt('kn-opt-pins',  function (v) { optPins = v; drawPins(); });
+  bindOpt('kn-opt-names', function (v) { optNames = v; if (pinLayer) pinLayer.changed(); });
+  bindOpt('kn-opt-nav',   function (v) { showNav = v; drawPins(); renderChips(); });
+  bindOpt('kn-opt-grid',  function (v) { optGrid = v; buildGrid(); });
+
   /* Tasot-valikko */
   $('kn-layers-btn').onclick = function (e) {
     e.stopPropagation();
