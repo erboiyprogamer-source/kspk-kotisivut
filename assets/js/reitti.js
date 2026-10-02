@@ -378,15 +378,17 @@
       });
     }
 
-    var r = nav ? 3.6 : 5;
-    if (hov) r += 2;                      // merkki tuntuu napilta hiiren alla
+    /* Tavalliset karttamerkit piirretaan pienina pisteina, jotta kartta
+       pysyy luettavana myos kun merkkeja on paljon. */
+    var r = nav ? 2.2 : 3;
+    if (hov) r += 1.6;                    // merkki tuntuu napilta hiiren alla
     return new ol.style.Style({
       image: new ol.style.Circle({
         radius: r,
         fill: new ol.style.Fill({ color: p.color || '#3ef08a' }),
-        stroke: new ol.style.Stroke({ color: hov ? '#fff' : '#000', width: hov ? 2.5 : 1.6 })
+        stroke: new ol.style.Stroke({ color: hov ? '#fff' : 'rgba(0,0,0,.8)', width: hov ? 1.8 : 1 })
       }),
-      text: hov ? smallLabel(p.title, -(r + 13)) : null
+      text: hov ? smallLabel(p.title, -(r + 9)) : null
     });
   }
 
