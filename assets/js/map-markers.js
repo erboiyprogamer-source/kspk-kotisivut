@@ -678,7 +678,11 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       + '.kspk-card input,.kspk-card textarea,.kspk-card select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;'
       + 'background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:inherit;font:inherit}'
       + '.kspk-card textarea{min-height:80px;resize:vertical}'
-      + '.kspk-card select{appearance:none;cursor:pointer}'
+      + '.kspk-cats{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}'
+      + '.kspk-cats button{padding:8px 13px;border-radius:999px;cursor:pointer;font:inherit;font-size:.82rem;'
+      + 'background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.18);color:#cfe3d7}'
+      + '.kspk-cats button:hover{color:#fff;border-color:rgba(62,240,138,.5)}'
+      + '.kspk-cats button[aria-checked="true"]{background:#3ef08a;color:#04150c;border-color:#3ef08a;font-weight:600}'
       + '.kspk-card input:focus,.kspk-card textarea:focus{outline:none;border-color:#3ef08a}'
       + '.kspk-xy{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end}'
       + '.kspk-xy .kspk-btn{padding:10px 12px;white-space:nowrap}'
@@ -865,9 +869,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
       '<div class="kspk-hint">Navigointipisteita voi lisata vapaasti monta. Jos merkki on pelkka navigointipiste, se nakyy merkkilistassa omana listanaan eika kohteiden joukossa.</div>' +
 
       '<label>Kategoria (KasaNavi)</label>' +
-      '<select id="kp-cat">' + CATEGORIES.map(function (c) {
-        return '<option value="' + c.id + '">' + esc(c.name) + '</option>';
-      }).join('') + '</select>' +
+      '<div class="kspk-cats" id="kp-cat" role="radiogroup"></div>' +
       '<div class="kspk-hint">Kategoria nakyy KasaNavin suodatinsiruina, joilla kartalta voi nayttaa esimerkiksi pelkat metroasemat tai farmit.</div>' +
 
       '<label>Kuvat (<span id="kp-img-count">0</span>/' + MAX_IMAGES + ', valinnainen)</label>' +
@@ -939,7 +941,24 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
 
     $('#kp-text').checked = edit ? !!p.show_text : false;
 
-    $('#kp-cat').value = (edit && p.category) ? p.category : '';
+    /* Natiivin <select>-valikon varit tulevat kayttojarjestelmasta eika
+       niita voi tyylitella luotettavasti — siksi sama painikeryhma kuin
+       symboleilla ja vareilla. */
+    var category = (edit && p.category) ? p.category : '';
+    var catBox = $('#kp-cat');
+    CATEGORIES.forEach(function (c) {
+      var b = el('button', null, c.name);
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.setAttribute('data-cat', c.id);
+      b.setAttribute('aria-checked', c.id === category ? 'true' : 'false');
+      b.onclick = function () {
+        category = c.id;
+        [].forEach.call(catBox.children, function (o) { o.setAttribute('aria-checked', 'false'); });
+        b.setAttribute('aria-checked', 'true');
+      };
+      catBox.appendChild(b);
+    });
     $('#kp-kt').checked = edit ? (p.is_target !== false) : true;
     $('#kp-kn').checked = edit ? !!p.is_nav : false;
     /* Merkin on kuuluttava ainakin toiseen listaan, muuten se katoaisi
@@ -1090,7 +1109,7 @@ var UnminedCustomMarkers = { isEnabled: false, markers: [] };
         x: x, z: z, title: t, message: $('#kp-m').value.trim(), author: a, color: color,
         symbol: symbol, size: parseFloat($('#kp-size').value) || 1, show_text: $('#kp-text').checked,
         is_target: $('#kp-kt').checked, is_nav: $('#kp-kn').checked,
-        category: $('#kp-cat').value || null
+        category: category || null
       }, { pass: pw, author: a }, pendingImage);
     };
   }
