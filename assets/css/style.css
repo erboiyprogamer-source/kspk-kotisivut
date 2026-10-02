@@ -1038,7 +1038,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 
 /* --- vasen sarake: haku ja reitti --- */
 .kn-left{
-  position:absolute;top:12px;left:12px;width:min(390px,calc(100% - 24px));
+  position:absolute;top:12px;left:12px;width:min(440px,calc(100% - 24px));
   display:flex;flex-direction:column;gap:9px;max-height:calc(100% - 24px)}
 .kn-search{
   display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:999px;
@@ -1046,7 +1046,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-search__ico{font-size:14px;opacity:.8;flex:0 0 auto}
 .kn-search input{
   flex:1;min-width:0;background:none;border:0;color:var(--text);
-  font:500 15px/1 var(--font-body);padding:11px 0;outline:none}
+  font:500 16px/1 var(--font-body);padding:13px 0;outline:none}
 .kn-search input::placeholder{color:var(--dim)}
 .kn-search:focus-within{border-color:var(--line-strong);box-shadow:var(--glow)}
 .kn-search__clear{
@@ -1054,7 +1054,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
   cursor:pointer;font-size:12px;flex:0 0 auto}
 .kn-search__clear:hover{color:var(--text)}
 .kn-dirbtn{
-  width:40px;height:40px;border-radius:50%;flex:0 0 auto;cursor:pointer;font-size:17px;
+  width:46px;height:46px;border-radius:50%;flex:0 0 auto;cursor:pointer;font-size:17px;
   background:linear-gradient(140deg,var(--green),var(--green-2));color:#04150c;border:0;
   transition:transform .2s var(--ease),filter .2s var(--ease)}
 .kn-dirbtn:hover{transform:scale(1.06)}
@@ -1066,25 +1066,25 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-chips::-webkit-scrollbar{display:none}
 .kn-chip{
   display:inline-flex;align-items:center;gap:6px;white-space:nowrap;cursor:pointer;
-  padding:8px 14px;border-radius:999px;font:500 12.5px var(--font-body);
+  padding:10px 17px;border-radius:999px;font:500 13.5px var(--font-body);
   background:var(--panel-solid);border:1px solid var(--line);color:var(--muted);
   box-shadow:0 10px 24px -20px rgba(0,0,0,.9);transition:.18s var(--ease)}
-.kn-chip span{font-size:11px;opacity:.65}
+.kn-chip span{font-size:12px;opacity:.65}
 .kn-chip.is-on{color:var(--text);border-color:var(--line-strong);background:rgba(62,240,138,.14)}
 .kn-chip--nav.is-on{background:rgba(90,169,255,.16);border-color:rgba(90,169,255,.45)}
 
 /* --- ehdotukset --- */
 .kn-sug{
   background:var(--panel-solid);border:1px solid var(--line);border-radius:14px;
-  box-shadow:var(--shadow);padding:5px;overflow:auto;max-height:320px;flex:0 1 auto}
+  box-shadow:var(--shadow);padding:6px;overflow:auto;max-height:380px;flex:0 1 auto}
 .kn-sug__i{
   display:flex;gap:11px;align-items:center;width:100%;text-align:left;border:0;background:none;
-  color:var(--text);padding:9px 11px;border-radius:10px;cursor:pointer;font:inherit}
+  color:var(--text);padding:12px 13px;border-radius:11px;cursor:pointer;font:inherit}
 .kn-sug__i:hover{background:rgba(62,240,138,.1)}
-.kn-sug__ico{font-size:14px;flex:0 0 auto;width:18px;text-align:center}
+.kn-sug__ico{font-size:16px;flex:0 0 auto;width:20px;text-align:center}
 .kn-sug__txt{min-width:0}
-.kn-sug__txt strong{display:block;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.kn-sug__txt em{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:1px}
+.kn-sug__txt strong{display:block;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kn-sug__txt em{display:block;font-style:normal;font-size:12.5px;color:var(--muted);margin-top:1px}
 .kn-sug__empty{padding:12px;color:var(--muted);font-size:13.5px;text-align:center}
 .kn-stopsug{position:absolute;top:calc(100% + 5px);left:0;right:0;z-index:30}
 
@@ -1101,11 +1101,11 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-modes{flex:1;min-width:0;display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
 .kn-mode{
   display:grid;gap:3px;justify-items:center;padding:7px 2px;border-radius:10px;cursor:pointer;
-  background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font:inherit}
+  background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font:inherit;min-height:52px}
 .kn-mode:hover{background:rgba(255,255,255,.05)}
 .kn-mode.is-on{color:var(--green);border-bottom-color:var(--green);background:rgba(62,240,138,.08)}
-.kn-mode__ico{font-size:16px;line-height:1}
-.kn-mode__t{font-size:11px;font-weight:600}
+.kn-mode__ico{font-size:19px;line-height:1}
+.kn-mode__t{font-size:12px;font-weight:600}
 
 .kn-stops{display:grid;gap:7px}
 .kn-stop{position:relative;display:flex;align-items:center;gap:9px;
@@ -1116,10 +1116,10 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-stop__dot--b{background:var(--gold);border-radius:50% 50% 50% 0;transform:rotate(-45deg)}
 .kn-stop__dot--w{background:var(--sky)}
 .kn-stop__in{flex:1;min-width:0;background:none;border:0;color:var(--text);
-  font:500 14px/1 var(--font-body);padding:11px 0;outline:none}
+  font:500 15px/1 var(--font-body);padding:14px 0;outline:none}
 .kn-stop__in::placeholder{color:var(--dim)}
 .kn-stop__pick,.kn-stop__del{
-  width:30px;height:30px;flex:0 0 auto;border-radius:8px;border:1px solid transparent;
+  width:34px;height:34px;flex:0 0 auto;border-radius:8px;border:1px solid transparent;
   background:none;color:var(--muted);cursor:pointer;font-size:14px}
 .kn-stop__pick:hover,.kn-stop__del:hover{color:var(--text);border-color:var(--line)}
 .kn-stop__pick.is-on{background:var(--green);color:#04150c}
@@ -1140,12 +1140,12 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-route{padding:11px 13px;border-radius:12px;background:var(--bg-3);border:1px solid var(--line)}
 .kn-route.is-best{border-color:var(--line-strong);background:rgba(62,240,138,.08)}
 .kn-route__head{display:flex;align-items:baseline;gap:9px}
-.kn-route__time{font:700 19px/1.2 var(--font-body);color:var(--text)}
+.kn-route__time{font:700 21px/1.2 var(--font-body);color:var(--text)}
 .kn-route.is-best .kn-route__time{color:var(--green)}
 .kn-route__km{font-size:13px;color:var(--muted)}
 .kn-route__sub{font-size:12.5px;color:var(--muted);margin-top:3px}
 .kn-legs{list-style:none;margin:2px 0 0;padding:0;display:grid;gap:6px}
-.kn-legs li{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted)}
+.kn-legs li{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted)}
 .kn-leg__n{
   width:19px;height:19px;flex:0 0 auto;border-radius:50%;display:grid;place-items:center;
   background:rgba(90,169,255,.18);color:var(--sky);font-size:11px;font-weight:600}
@@ -1153,7 +1153,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-leg__d{flex:0 0 auto}
 .kn-modenote{margin:2px 0 0;font-size:12.5px;color:var(--dim)}
 .kn-dir__foot{display:flex;gap:14px;border-top:1px solid var(--line);padding-top:8px}
-.kn-link{background:none;border:0;color:var(--green);cursor:pointer;font:inherit;font-size:13px;padding:0}
+.kn-link{background:none;border:0;color:var(--green);cursor:pointer;font:inherit;font-size:13.5px;padding:0}
 .kn-link:hover{text-decoration:underline}
 
 /* --- paikkakortti (vasemmassa sarakkeessa, kuten karttapalveluissa) --- */
@@ -1188,14 +1188,14 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 
 /* --- kelluvat napit --- */
 .kn-fab{
-  position:absolute;width:40px;height:40px;border-radius:11px;cursor:pointer;font-size:15px;
+  position:absolute;width:46px;height:46px;border-radius:12px;cursor:pointer;font-size:17px;
   background:var(--panel-solid);border:1px solid var(--line);color:var(--text);box-shadow:var(--shadow)}
 .kn-fab:hover{border-color:var(--line-strong)}
 .kn-fab--full{top:12px;right:12px}
 .kn-zoom{position:absolute;right:12px;bottom:12px;display:grid;
   border-radius:11px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow)}
 .kn-zoom button{
-  width:40px;height:38px;border:0;background:var(--panel-solid);color:var(--text);
+  width:46px;height:44px;border:0;background:var(--panel-solid);color:var(--text);
   cursor:pointer;font-size:17px;line-height:1}
 .kn-zoom button:hover{background:rgba(62,240,138,.14)}
 .kn-zoom button + button{border-top:1px solid var(--line)}
@@ -1209,16 +1209,16 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 
 .kn-layers{position:absolute;left:12px;bottom:12px}
 .kn-layers__btn{
-  display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:12px;cursor:pointer;
   background:var(--panel-solid);border:1px solid var(--line);color:var(--text);
-  font:500 12.5px var(--font-body);box-shadow:var(--shadow)}
+  font:600 14px var(--font-body);box-shadow:var(--shadow)}
 .kn-layers__btn:hover{border-color:var(--line-strong)}
 .kn-layers__menu{
-  position:absolute;left:0;bottom:calc(100% + 7px);display:grid;gap:2px;padding:5px;
+  position:absolute;left:0;bottom:calc(100% + 8px);display:grid;gap:3px;padding:6px;min-width:190px;
   background:var(--panel-solid);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
 .kn-layers__menu button{
   text-align:left;white-space:nowrap;border:0;background:none;color:var(--muted);
-  padding:9px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:13px}
+  padding:12px 18px;border-radius:9px;cursor:pointer;font:inherit;font-size:14.5px}
 .kn-layers__menu button:hover{background:rgba(255,255,255,.06);color:var(--text)}
 .kn-layers__menu button.is-on{background:rgba(62,240,138,.14);color:var(--green);font-weight:600}
 

@@ -707,10 +707,18 @@
   }
 
   /* ---------- jaettava linkki ---------- */
-  function writeHash() {
+  /* Reittia EI tallenneta osoiteriville automaattisesti: sivun
+     paivitys aloittaa aina puhtaalta poydalta. Jaettava linkki
+     rakennetaan vasta Kopioi linkki -napista. */
+  function writeHash() {}
+  function routeUrl() {
     var pts = stops.filter(function (s) { return !!s; });
-    var h = pts.length >= 2 ? '#r=' + pts.map(function (p) { return p.x + ',' + p.z; }).join(';') : '';
-    if (location.hash !== h) history.replaceState(null, '', location.pathname + location.search + h);
+    if (pts.length < 2) return location.origin + location.pathname;
+    return location.origin + location.pathname + '#r=' +
+      pts.map(function (p) { return p.x + ',' + p.z; }).join(';');
+  }
+  function clearHash() {
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   }
   function readHash() {
     var pm = /^#p=(-?\d+),(-?\d+)$/.exec(location.hash || '');
@@ -720,6 +728,7 @@
       var place = hit || { id: 'coord', title: px + ' ' + pz, x: px, z: pz, color: '#5ad1ff' };
       openPlace(place);
       view.animate({ center: toView(px, pz), duration: 400, zoom: view.getMaxZoom() });
+      clearHash();
       return;
     }
     var m = /^#r=(.+)$/.exec(location.hash || '');
@@ -736,6 +745,7 @@
     stops = pts.slice(0, 6);
     openDir();
     drawRoute(true);
+    clearHash();
   }
 
   /* ---------- kayttoliittyman kytkennat ---------- */
@@ -772,9 +782,9 @@
     stops = [null, null]; renderStops(); drawRoute(false); writeHash();
   };
   $('kn-copy').onclick = function () {
-    var b = this; writeHash();
+    var b = this, url = routeUrl();
     var done = function () { b.textContent = 'Kopioitu!'; setTimeout(function () { b.textContent = 'Kopioi linkki'; }, 1600); };
-    if (navigator.clipboard) navigator.clipboard.writeText(location.href).then(done, done); else done();
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, done); else done();
   };
 
   document.addEventListener('click', function (e) {
@@ -845,6 +855,10 @@
   /* ---------- kaynnistys ---------- */
   renderStops();
   renderRouteInfo(null);
+
+  /* KasaNavi avautuu suoraan koko naytön nakymaan — Esc tai oikean
+     ylakulman nappi palauttaa tavalliselle sivulle. */
+  fullOn();
 
   loadMeta('paiva').then(function (meta) {
     buildMap(meta);
