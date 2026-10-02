@@ -433,8 +433,14 @@
     writeHash();
     var empty = stops.indexOf(null);
     if (empty > -1) {
-      var inp = document.querySelector('.kn-stop__in[data-i="' + empty + '"]');
-      if (inp) { inp.focus(); inp.dispatchEvent(new Event('focus')); }
+      /* Viive: tama kutsutaan klikkauksesta, ja sama klikkaus kayy viela
+         dokumenttitason kuuntelijassa joka sulkee ehdotuslistat. */
+      setTimeout(function () {
+        var inp = document.querySelector('.kn-stop__in[data-i="' + empty + '"]');
+        if (!inp) return;
+        inp.focus();
+        inp.dispatchEvent(new Event('focus'));
+      }, 0);
     }
   }
 
