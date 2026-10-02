@@ -442,6 +442,16 @@
           })
         });
       }
+      if (f.get('preview')) {
+        return new ol.style.Style({
+          image: new ol.style.Icon({
+            src: pinIcon(PIN_RED),
+            anchor: [0.5, 1], anchorXUnits: 'fraction', anchorYUnits: 'fraction', scale: PIN_SCALE,
+            opacity: 0.92
+          }),
+          text: smallLabel(f.get('label'), -26)
+        });
+      }
       if (f.get('stopIndex') === undefined) return null;
       return stopStyle(f.get('stopIndex'), f.get('stopTotal'), f.get('stopLabel'), f.get('cum'));
     }
@@ -579,13 +589,20 @@
         '<em>' + esc(o.sub || '') + '</em></span></button>';
     }).join('');
     box.hidden = false;
+    /* Ensimmainen osuma nakyy heti kartalla; hiiren liikuttaminen
+       listassa vaihtaa esikatseltavan kohteen. */
+    var first = items.filter(function (o) { return !o.pickOnMap; })[0];
+    if (first) previewPlace(first);
     box.querySelectorAll('.kn-sug__i').forEach(function (b) {
-      b.onclick = function () { pickItem(items[+b.dataset.i]); };
+      var o = items[+b.dataset.i];
+      b.onmouseenter = function () { if (!o.pickOnMap) previewPlace(o); };
+      b.onclick = function () { pickItem(o); };
     });
   }
 
   function pickItem(item) {
     $('kn-sug').hidden = true;
+    clearPreview();
     pushRecent(item);
     if (dirMode) {
       var slot = stops.indexOf(null);
@@ -598,6 +615,28 @@
     var p = item.pin || { id: 'coord:' + item.x + ',' + item.z, title: item.label, x: item.x, z: item.z, color: '#5ad1ff' };
     openPlace(p);
     view.animate({ center: toView(p.x, p.z), duration: 420, zoom: Math.min(view.getMaxZoom(), view.getZoom() + 1) });
+  }
+
+  /* ---------- haun esikatselu ----------
+     Heti kun haku tuottaa osumia, ensimmainen (tai se jonka paalla hiiri
+     on) nakyy kartalla punaisena paikkamerkkina nimineen — kohdetta ei
+     tarvitse ensin valita. */
+  function previewPlace(item) {
+    if (!routeLayer || !item) return;
+    clearPreview();
+    var f = new ol.Feature({ geometry: new ol.geom.Point(toView(item.x, item.z)) });
+    f.set('preview', true); f.set('label', item.label);
+    routeLayer.getSource().addFeature(f);
+    /* Siirretaan karttaa vain jos kohde on nakyman ulkopuolella. */
+    var ext = view.calculateExtent(map.getSize());
+    if (!ol.extent.containsCoordinate(ext, toView(item.x, item.z))) {
+      view.animate({ center: toView(item.x, item.z), duration: 350 });
+    }
+  }
+  function clearPreview() {
+    if (!routeLayer) return;
+    var src = routeLayer.getSource();
+    src.getFeatures().forEach(function (f) { if (f.get('preview')) src.removeFeature(f); });
   }
 
   /* ---------- paikkakortti ---------- */
@@ -855,10 +894,14 @@
         '<span class="kn-sug__txt"><strong>' + esc(o.label) + '</strong><em>' + esc(o.sub || '') + '</em></span></button>';
     }).join('');
     inp.parentNode.appendChild(box);
+    var firstS = items.filter(function (o) { return !o.pickOnMap; })[0];
+    if (firstS && inp.value.trim()) previewPlace(firstS);
     box.querySelectorAll('.kn-sug__i').forEach(function (b) {
+      var o = items[+b.dataset.k];
+      b.onmouseenter = function () { if (!o.pickOnMap) previewPlace(o); };
       b.onclick = function () {
-        var o = items[+b.dataset.k];
         box.remove();
+        clearPreview();
         if (o.pickOnMap) { setPicking(i); return; }
         pushRecent(o); setStop(i, o);
       };
@@ -1160,7 +1203,7 @@
     if (items.length) pickItem(items[0]);
   });
   $('kn-qx').onclick = function () {
-    q.value = ''; this.hidden = true; $('kn-sug').hidden = true; closePlace(); q.focus();
+    q.value = ''; this.hidden = true; $('kn-sug').hidden = true; clearPreview(); closePlace(); q.focus();
   };
   $('kn-dirbtn').onclick = function () { dirMode ? closeDir() : openDir(); };
   $('kn-dirx').onclick = closeDir;
@@ -1183,7 +1226,10 @@
   };
 
   document.addEventListener('click', function (e) {
-    if (!e.target.closest('.kn-search') && !e.target.closest('#kn-sug')) $('kn-sug').hidden = true;
+    if (!e.target.closest('.kn-search') && !e.target.closest('#kn-sug')) {
+      $('kn-sug').hidden = true;
+      if (!e.target.closest('.kn-stop')) clearPreview();
+    }
     if (!e.target.closest('.kn-stop')) document.querySelectorAll('.kn-stopsug').forEach(function (x) { x.remove(); });
     if (!e.target.closest('.kn-layers')) $('kn-layers-menu').hidden = true;
   });
