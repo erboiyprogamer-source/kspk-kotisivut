@@ -1097,7 +1097,7 @@ pre,code{overflow-wrap:anywhere;word-break:break-word}
   .nav2__maps{margin-left:0;width:100%;justify-content:center}
 }
 
-/* ---------- KasaNavigointi: koko näytön navigointinäkymä ---------- */
+/* ---------- KasaNavi: koko näytön navigointinäkymä ---------- */
 .kn-cta{display:grid;gap:10px;justify-items:start;margin-top:22px;max-width:640px}
 .kn-cta__note{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55}
 .kn-cta__note strong{color:var(--gold);font-weight:600}

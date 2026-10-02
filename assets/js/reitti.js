@@ -415,7 +415,7 @@
     knClose();
   });
 
-  /* ---------- KasaNavigointi: koko naytön navigointinakyma ----------
+  /* ---------- KasaNavi: koko naytön navigointinakyma ----------
      Ei omaa karttaa eika omaa logiikkaa: samat DOM-elementit (paneeli,
      karttalaatikko ja tulokset) siirretaan koko naytön kehykseen ja
      takaisin, jolloin haku, reitti ja kuuntelijat sailyvat sellaisenaan.
@@ -451,7 +451,7 @@
       '<div class="kn__map" id="kn-mapslot"></div>' +
       '<div class="kn__ui">' +
         '<div class="kn__bar">' +
-          '<span class="kn__brand">&#129517; KasaNavigointi</span>' +
+          '<span class="kn__brand">&#129517; KasaNavi</span>' +
           '<span class="kn__beta">beta</span>' +
           '<button type="button" class="kn__close" id="kn-close" title="Sulje (Esc)">&#10005;</button>' +
         '</div>' +
