@@ -146,7 +146,7 @@
      pisteet mahtuvat keskustan sisaan, kaytetaan tarkkaa paivakarttaa.
      Kayttajan oma valinta Tasot-valikosta lopettaa automatiikan. */
   var autoMapOn = true;
-  var AUTO_RADIUS = 1000;
+  var AUTO_RADIUS = 1000;   // paivakartan alue: -1000…1000 molemmilla akseleilla
   var stops = [null, null];        // {x, z, label}
   var hideSymbols = {};            // kategoriasiruilla piilotetut
   var showNav = true;
@@ -649,10 +649,15 @@
 
   function fitRoute(r) {
     var e = ol.extent.boundingExtent(r.pts.map(function (p) { return toView(p.x, p.z); }));
-    var pad = Math.max(ol.extent.getWidth(e), ol.extent.getHeight(e)) * 0.4 || 200 / BPD;
+    /* Marginaali on 40 % reitin pituudesta, mutta vahintaan 150 lohkoa,
+       jottei lyhyt reitti zoomaudu kiinni paatepisteisiin. */
+    var span = Math.max(ol.extent.getWidth(e), ol.extent.getHeight(e));
+    var pad = Math.max(span * 0.4, 150 / BPD);
+    var wide = window.innerWidth > 860;
     view.fit(ol.extent.buffer(e, pad), {
       size: map.getSize(), duration: 420, maxZoom: view.getMaxZoom(),
-      padding: [70, 40, 40, dirMode && window.innerWidth > 860 ? 430 : 40]
+      /* ylaosassa hakupalkki ja sirut, vasemmalla reittipaneeli */
+      padding: [wide ? 90 : 190, 60, 60, dirMode && wide ? 480 : 60]
     });
   }
 
@@ -860,7 +865,7 @@
      ylakulman nappi palauttaa tavalliselle sivulle. */
   fullOn();
 
-  loadMeta('paiva').then(function (meta) {
+  loadMeta('5k').then(function (meta) {
     buildMap(meta);
     return loadPins();
   }).then(function (rows) {
