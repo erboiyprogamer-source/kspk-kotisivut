@@ -738,11 +738,21 @@
        jottei lyhyt reitti zoomaudu kiinni paatepisteisiin. */
     var span = Math.max(ol.extent.getWidth(e), ol.extent.getHeight(e));
     var pad = Math.max(span * 0.4, 150 / BPD);
-    var wide = window.innerWidth > 860;
+
+    /* Reunukset mitataan paneelin todellisesta koosta, jottei reitti jaa
+       sen alle. Jos paneeli ei mahdu kartan viereen, se varaa tilaa
+       ylhaalta — mutta enintaan reilun puolet korkeudesta, jotta reitille
+       jaa jarkeva alue. */
+    var el = map.getTargetElement().getBoundingClientRect();
+    var panel = document.querySelector('.kn-left');
+    var pr = panel ? panel.getBoundingClientRect() : { width: 0, height: 0 };
+    var sideFits = (el.width - pr.width) > 340;
+    var padding = sideFits
+      ? [90, 60, 60, Math.round(pr.width) + 36]
+      : [Math.min(Math.round(pr.height) + 24, Math.round(el.height * 0.55)), 50, 70, 50];
+
     view.fit(ol.extent.buffer(e, pad), {
-      size: map.getSize(), duration: 420, maxZoom: view.getMaxZoom(),
-      /* ylaosassa hakupalkki ja sirut, vasemmalla reittipaneeli */
-      padding: [wide ? 90 : 190, 60, 60, dirMode && wide ? 480 : 60]
+      size: map.getSize(), duration: 420, maxZoom: view.getMaxZoom(), padding: padding
     });
   }
 
