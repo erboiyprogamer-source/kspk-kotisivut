@@ -457,7 +457,6 @@
     box.scrollTop = 0;
     var item = { x: p.x, z: p.z, label: p.title };
     $('kn-place-x').onclick = closePlace;
-    applyAutoMap([{ x: p.x, z: p.z }], false);
 
     /* Sama kulku kuin karttapalveluissa: haku vie paikkaan, ja vasta
        Reittiohjeet avaa reitin — kohde on valmiina ja lahtokentta jaa
@@ -692,8 +691,11 @@
     points.forEach(function (p) { r = Math.max(r, Math.abs(p.x), Math.abs(p.z)); });
     return r <= AUTO_RADIUS ? 'paiva' : '5k';
   }
+  /* Kartta vaihdetaan vasta kun seka lahto etta maaranpaa on valittu:
+     yksittainen piste ei saa vaihtaa tasoa kesken valinnan. */
   function applyAutoMap(points, refit) {
     if (!autoMapOn) return false;
+    if (points.length < 2) return false;
     var want = wantedMap(points);
     if (want === curMap) return false;
     var menu = $('kn-layers-menu');
@@ -726,8 +728,10 @@
     renderRouteInfo(r);
     if (fit && r) {
       /* Vaihto rakentaa kartan uudelleen ja piirtaa reitin sitten uudelleen,
-         joten tassa ei enaa sovitettaisi oikeaan nakymaan. */
-      if (applyAutoMap(r.pts, true)) return;
+         joten tassa ei enaa sovitettaisi oikeaan nakymaan. Vaihto tehdaan
+         vain kun jokainen pysahdys on valittu. */
+      var allSet = stops.every(function (st) { return !!st; });
+      if (allSet && applyAutoMap(r.pts, true)) return;
       fitRoute(r);
     }
   }
@@ -947,6 +951,28 @@
   $('kn-zin').onclick  = function () { view.animate({ zoom: view.getZoom() + 1, duration: 220 }); };
   $('kn-zout').onclick = function () { view.animate({ zoom: view.getZoom() - 1, duration: 220 }); };
 
+  /* --- paneelin piilotus: kartta jaa kokonaan nakyviin ja reitti
+     keskitetaan uudelleen vapautuneeseen tilaan --- */
+  function placeCollapseBtn() {
+    var btn = $('kn-collapse');
+    var collapsed = app.classList.contains('is-collapsed');
+    if (collapsed) { btn.style.left = '12px'; btn.innerHTML = '&#8250;'; btn.title = 'Näytä paneeli'; return; }
+    var left = document.querySelector('.kn-left');
+    var w = left ? left.getBoundingClientRect().width : 440;
+    btn.style.left = Math.round(w) + 20 + 'px';
+    btn.innerHTML = '&#8249;';
+    btn.title = 'Piilota paneeli';
+  }
+  $('kn-collapse').onclick = function () {
+    app.classList.toggle('is-collapsed');
+    placeCollapseBtn();
+    sizeSoon();
+    /* Reitti sovitetaan uusiksi, jolloin se asettuu nyt koko ruudun
+       keskelle (tai paneelin viereen kun paneeli palaa). */
+    setTimeout(function () { if (legs()) drawRoute(true); }, 120);
+  };
+  window.addEventListener('resize', placeCollapseBtn);
+
   /* kokonaytto */
   function sizeSoon() {
     if (!map) return;
@@ -987,6 +1013,8 @@
   /* ---------- kaynnistys ---------- */
   renderStops();
   renderRouteInfo(null);
+  placeCollapseBtn();
+  setInterval(placeCollapseBtn, 1200);   // paneelin leveys elaa sisallon mukana
 
   /* KasaNavi avautuu suoraan koko naytön nakymaan — Esc tai oikean
      ylakulman nappi palauttaa tavalliselle sivulle. */
