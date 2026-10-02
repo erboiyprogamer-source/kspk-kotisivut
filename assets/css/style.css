@@ -1038,7 +1038,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 
 /* --- vasen sarake: haku ja reitti --- */
 .kn-left{
-  position:absolute;top:12px;left:12px;width:min(440px,calc(100% - 24px));
+  position:absolute;top:12px;left:12px;width:min(440px,calc(100% - 80px));
   display:flex;flex-direction:column;gap:9px;max-height:calc(100% - 24px)}
 .kn-search{
   display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:999px;
@@ -1223,7 +1223,7 @@ body.kn-lock .nav,body.kn-lock .footer,body.kn-lock .support-fab,body.kn-lock .t
 .kn-layers__menu button.is-on{background:rgba(62,240,138,.14);color:var(--green);font-weight:600}
 
 @media (max-width:860px){
-  .kn-left{width:calc(100% - 24px)}
+  .kn-left{width:calc(100% - 80px)}
   .kn-dir{max-height:46vh}
     .kn-coord{display:none}
 }
